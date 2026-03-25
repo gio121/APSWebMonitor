@@ -1,0 +1,383 @@
+@page "/sinoptico/{WindowId:int}"
+@using System.Text.Json
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="editor-header d-flex justify-space-between align-center px-4 py-2">
+    <div class="d-flex align-center">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo("/ventanas"))" />
+        <MudText Typo="Typo.h6" Class="fw-bold ml-2">@(_window?.Nombre ?? "Cargando...")</MudText>
+        <MudText Typo="Typo.caption" Class="text-muted ml-2 mt-1">(Sinóptico)</MudText>
+    </div>
+    <div class="d-flex gap-2">
+        <MudButton Variant="@(_showGrid ? Variant.Filled : Variant.Outlined)" Color="Color.Info" StartIcon="@Icons.Material.Filled.GridOn" OnClick="ToggleGrid">Rejilla</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Save" OnClick="SaveSinoptico">Guardar</MudButton>
+    </div>
+</div>
+
+<div class="editor-container d-flex">
+    <!-- LEFT PANEL: ELEMENTS -->
+    <div class="sidebar left-sidebar d-flex flex-column pa-2">
+        <MudText Typo="Typo.caption" Class="text-muted fw-bold mb-2 px-2 text-uppercase">Elementos</MudText>
+        <div class="elements-list">
+            @foreach (var type in elementTypes)
+            {
+                <div class="element-item d-flex align-center px-2 py-1" draggable="true" @ondragstart="@(e => OnDragStartPalette(type))">
+                    <MudIcon Icon="@GetIconForType(type)" Size="Size.Small" Color="Color.Info" Class="mr-2" />
+                    <MudText Typo="Typo.body2">@type</MudText>
+                </div>
+            }
+        </div>
+        
+        <MudDivider Class="my-4 op-10" />
+        
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ContentCopy" FullWidth="true" Class="justify-start mb-1" OnClick="DuplicateSelected" Disabled="@(_selectedElement == null)">Duplicar</MudButton>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" FullWidth="true" Class="justify-start" OnClick="DeleteSelected" Disabled="@(_selectedElement == null)">Eliminar</MudButton>
+    </div>
+
+    <!-- CENTER PANEL: CANVAS -->
+    <div class="main-canvas-area flex-grow-1" @ondrop="OnCanvasDrop" @ondragover="OnDragOver" @ondragover:preventDefault>
+        @if (_showGrid)
+        {
+            <div class="grid-background"></div>
+        }
+        <div class="canvas mx-auto mt-4" @onclick="ClearSelection">
+            @foreach (var el in _elements)
+            {
+                <div class="canvas-element @(el == _selectedElement ? "selected" : "")" 
+                     style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);"
+                     draggable="true" 
+                     @onclick="@(e => SelectElement(e, el))" 
+                     @onclick:stopPropagation
+                     @ondragstart="@(e => OnDragStartCanvas(e, el))">
+                    
+                    @if (el.Type == "Etiqueta")
+                    {
+                        <div class="element-content label-content">@el.Text</div>
+                    }
+                    else if (el.Type == "Señal")
+                    {
+                        <div class="element-content signal-content d-flex flex-column">
+                            <span class="signal-name">@el.Text</span>
+                            <span class="signal-value fw-bold">--</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="element-content icon-content">
+                            <MudIcon Icon="@GetIconForType(el.Type)" Color="Color.Warning" />
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: PROPERTIES -->
+    <div class="sidebar right-sidebar pa-4">
+        <MudText Typo="Typo.caption" Class="text-muted fw-bold mb-4 d-block text-uppercase">Propiedades</MudText>
+        
+        @if (_selectedElement != null)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-4 text-info">@_selectedElement.Type</MudText>
+
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_selectedElement.X" Label="X" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_selectedElement.Y" Label="Y" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_selectedElement.Width" Label="Ancho" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_selectedElement.Height" Label="Alto" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudNumericField @bind-Value="_selectedElement.Rotation" Label="Rotación" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                
+                @if (_selectedElement.Type == "Señal" || _selectedElement.Type == "Comando")
+                {
+                    <MudItem xs="12">
+                        <MudSelect @bind-Value="_selectedElement.SignalId" Label="Señal" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            @foreach (var sig in _availableSignals)
+                            {
+                                <MudSelectItem Value="@((int?)sig.Id)">@sig.Nombre [@sig.Tag]</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+                
+                @if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal")
+                {
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_selectedElement.Text" Label="Etiqueta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="text-muted">Seleccione un elemento</MudText>
+        }
+    </div>
+</div>
+
+<style>
+    .editor-header {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        background-color: #151921;
+        height: 60px;
+    }
+    .editor-container {
+        height: calc(100vh - 60px);
+        background-color: #0f1218;
+    }
+    .sidebar {
+        background-color: #19212d;
+        width: 260px;
+        border-right: 1px solid rgba(255,255,255,0.05);
+        overflow-y: auto;
+    }
+    .right-sidebar {
+        border-right: none;
+        border-left: 1px solid rgba(255,255,255,0.05);
+    }
+    .main-canvas-area {
+        position: relative;
+        overflow: auto;
+    }
+    .canvas {
+        width: 1200px;
+        height: 800px;
+        background-color: transparent;
+        position: relative;
+    }
+    .grid-background {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        background-size: 20px 20px;
+        background-image: 
+            linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+    .element-item {
+        cursor: grab;
+        border-radius: 4px;
+    }
+    .element-item:hover {
+        background-color: rgba(255,255,255,0.05);
+    }
+    
+    /* Elements on Canvas */
+    .canvas-element {
+        position: absolute;
+        cursor: grab;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .canvas-element:active {
+        cursor: grabbing;
+    }
+    .canvas-element.selected {
+        outline: 2px solid var(--mud-palette-info);
+    }
+    
+    .element-content {
+        width: 100%;
+        height: 100%;
+    }
+    .label-content {
+        color: #e2e8f0;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+    .signal-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 4px;
+        padding: 8px;
+        color: #e2e8f0;
+    }
+    .signal-name {
+        font-size: 10px;
+        color: #94a3b8;
+    }
+    .signal-value {
+        font-size: 16px;
+    }
+    .icon-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .op-10 { opacity: 0.1; }
+</style>
+
+@code {
+    [Parameter] public int WindowId { get; set; }
+    
+    private Window? _window;
+    private List<Signal> _availableSignals = new();
+    private List<SinopticoElement> _elements = new();
+    private SinopticoElement? _selectedElement;
+    
+    private bool _showGrid = true;
+    
+    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Borne" };
+    
+    // Drag state
+    private string _draggedType = "";
+    private SinopticoElement? _draggedElement;
+    private double _dragOffsetX;
+    private double _dragOffsetY;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allWindows = await DataService.GetWindowsAsync();
+        _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
+        _availableSignals = await DataService.GetSignalsAsync();
+        
+        if (_window != null && !string.IsNullOrWhiteSpace(_window.ContentJson))
+        {
+            try
+            {
+                _elements = JsonSerializer.Deserialize<List<SinopticoElement>>(_window.ContentJson) ?? new();
+            }
+            catch
+            {
+                _elements = new();
+            }
+        }
+    }
+
+    private string GetIconForType(string type)
+    {
+        return type switch
+        {
+            "Etiqueta" => Icons.Material.Filled.TextFormat,
+            "Señal" => Icons.Material.Filled.Sensors,
+            "Comando" => Icons.Material.Filled.ToggleOn,
+            "Linea H" => Icons.Material.Filled.Remove,
+            "Linea V" => Icons.Material.Filled.MoreVert,
+            "Diodo" => Icons.Material.Filled.PlayArrow,
+            "Resistencia" => Icons.Material.Filled.Timeline,
+            "Transformador" => Icons.Material.Filled.SyncAlt,
+            "Fusible" => Icons.Material.Filled.PowerInput,
+            "Interruptor" => Icons.Material.Filled.ToggleOff,
+            "Borne" => Icons.Material.Filled.RadioButtonUnchecked,
+            _ => Icons.Material.Filled.SettingsInputComponent
+        };
+    }
+
+    private void ToggleGrid() => _showGrid = !_showGrid;
+    
+    private void ClearSelection() => _selectedElement = null;
+    
+    private void SelectElement(MouseEventArgs e, SinopticoElement el) => _selectedElement = el;
+
+    private void OnDragStartPalette(string type)
+    {
+        _draggedType = type;
+        _draggedElement = null;
+    }
+
+    private void OnDragStartCanvas(DragEventArgs e, SinopticoElement el)
+    {
+        _draggedElement = el;
+        _draggedType = "";
+        _dragOffsetX = e.OffsetX;
+        _dragOffsetY = e.OffsetY;
+        _selectedElement = el;
+    }
+    
+    private void OnDragOver(DragEventArgs e) { } // Needed to allow drop
+
+    private void OnCanvasDrop(DragEventArgs e)
+    {
+        // Snap to grid (20px)
+        double snap = 20;
+        double x = Math.Round(e.OffsetX / snap) * snap;
+        double y = Math.Round(e.OffsetY / snap) * snap;
+
+        if (!string.IsNullOrEmpty(_draggedType))
+        {
+            // Drop from palette
+            var newEl = new SinopticoElement 
+            { 
+                Type = _draggedType, 
+                X = x, 
+                Y = y,
+                Text = _draggedType == "Etiqueta" || _draggedType == "Señal" ? _draggedType : ""
+            };
+            
+            // Default sizes based on type
+            if (_draggedType == "Señal") { newEl.Width = 160; newEl.Height = 60; }
+            else if (_draggedType.Contains("Linea")) { newEl.Width = (_draggedType == "Linea H") ? 100 : 4; newEl.Height = (_draggedType == "Linea V") ? 100 : 4; }
+            else { newEl.Width = 60; newEl.Height = 30; }
+
+            _elements.Add(newEl);
+            _selectedElement = newEl;
+            _draggedType = "";
+        }
+        else if (_draggedElement != null)
+        {
+            // Move existing element
+            // We adjust by offset relative to element top-left to avoid jumping
+            double adjX = e.OffsetX - _dragOffsetX;
+            double adjY = e.OffsetY - _dragOffsetY;
+            _draggedElement.X = Math.Round(adjX / snap) * snap;
+            _draggedElement.Y = Math.Round(adjY / snap) * snap;
+            _draggedElement = null;
+        }
+    }
+
+    private void DuplicateSelected()
+    {
+        if (_selectedElement != null)
+        {
+            var dupe = new SinopticoElement
+            {
+                Type = _selectedElement.Type,
+                X = _selectedElement.X + 20,
+                Y = _selectedElement.Y + 20,
+                Width = _selectedElement.Width,
+                Height = _selectedElement.Height,
+                Rotation = _selectedElement.Rotation,
+                Text = _selectedElement.Text,
+                SignalId = _selectedElement.SignalId
+            };
+            _elements.Add(dupe);
+            _selectedElement = dupe;
+        }
+    }
+
+    private void DeleteSelected()
+    {
+        if (_selectedElement != null)
+        {
+            _elements.Remove(_selectedElement);
+            _selectedElement = null;
+        }
+    }
+
+    private async Task SaveSinoptico()
+    {
+        if (_window != null)
+        {
+            _window.ContentJson = JsonSerializer.Serialize(_elements);
+            await DataService.UpdateWindowAsync(_window);
+            Snackbar.Add("Sinóptico guardado correctamente", Severity.Success);
+        }
+    }
+}

@@ -1,0 +1,170 @@
+@page "/"
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+
+<MudText Typo="Typo.h5" Class="fw-bold mb-6">Panel de Control</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <!-- Top Summary Cards -->
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 dashboard-card" Elevation="0">
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.FitScreen" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
+                    <MudText Typo="Typo.body2" Class="text-muted">Ventanas Activas</MudText>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold">@_windows.Count(w => w.IsActive)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 dashboard-card" Elevation="0">
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Sensors" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
+                    <MudText Typo="Typo.body2" Class="text-muted">Señales</MudText>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold">@_signals.Count</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 dashboard-card" Elevation="0">
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
+                    <MudText Typo="Typo.body2" Class="text-muted">Comandos</MudText>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold">4</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4 dashboard-card border-left-error" Elevation="0" Style="border-left: 3px solid #ef4444;">
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Color="Color.Error" Class="mr-2" />
+                    <MudText Typo="Typo.body2" Class="text-muted">Alarmas</MudText>
+                </div>
+                <MudText Typo="Typo.h4" Class="fw-bold text-error">1</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <!-- Ventanas Activas -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="min-height: 400px;">
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">Ventanas Activas</MudText>
+                <MudList T="Window" Dense="true" Class="pa-0">
+                    @foreach (var window in _windows.Where(w => w.IsActive))
+                    {
+                        <div class="pa-3 mb-3 d-flex align-center justify-space-between list-item-card rounded">
+                            <div>
+                                <MudText Typo="Typo.body1" Class="fw-bold">@window.Nombre</MudText>
+                                <MudText Typo="Typo.body2" Class="text-muted">@window.Descripcion</MudText>
+                            </div>
+                            <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
+                                @window.Tipo
+                            </MudChip>
+                        </div>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Señales -->
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="min-height: 400px;">
+                <div class="d-flex align-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.Insights" Color="Color.Info" Size="Size.Small" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold">Señales en Tiempo Real</MudText>
+                </div>
+                
+                <MudSimpleTable Dense="true" Hover="true" Class="signals-table" Style="background: transparent;">
+                    <tbody>
+                        @foreach (var signal in _signals)
+                        {
+                            <tr>
+                                <td class="border-b-0 py-3">
+                                    <MudText Typo="Typo.body2" Class="fw-bold">@signal.Nombre <span class="text-muted fw-normal">[@signal.Tag]</span></MudText>
+                                </td>
+                                <td class="border-b-0 text-end py-3">
+                                    @if (signal.TipoVariable == "UINT8")
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="@(signal.ValorActual == 1 ? Color.Success : Color.Dark)" Variant="Variant.Filled" Class="rounded">
+                                            @(signal.ValorActual == 1 ? "ON" : "OFF")
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.body2" Class="fw-bold">@signal.GetFormattedValue()</MudText>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Ultimos Eventos -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4 dashboard-card" Elevation="0">
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">Últimos Eventos</MudText>
+                <MudList T="EventMessage" Dense="true" Class="pa-0">
+                    @foreach (var ev in _events)
+                    {
+                        <div class="pa-3 mb-2 d-flex align-center justify-space-between list-item-card rounded">
+                            <MudText Typo="Typo.body2">@ev.Mensaje</MudText>
+                            <div class="d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="text-muted mr-3">@ev.Fecha.ToString("d/M/yyyy, HH:mm:ss")</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@(ev.Estado == "OK" ? Color.Success : Color.Error)" Variant="Variant.Filled">
+                                    @ev.Estado
+                                </MudChip>
+                            </div>
+                        </div>
+                    }
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+<style>
+    .dashboard-card {
+        border: 1px solid rgba(255,255,255,0.05);
+        background-color: #1a222c;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .text-error {
+        color: #ef4444 !important;
+    }
+    .list-item-card {
+        background-color: #212a36;
+        border: 1px solid rgba(255,255,255,0.02);
+    }
+    .signals-table .mud-table-cell {
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    .signals-table tr:last-child .mud-table-cell {
+        border-bottom: none !important;
+    }
+</style>
+
+@code {
+    private List<Window> _windows = new();
+    private List<Signal> _signals = new();
+    private List<EventMessage> _events = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _windows = await DataService.GetWindowsAsync();
+        _signals = await DataService.GetSignalsAsync();
+        _events = await DataService.GetEventsAsync();
+        _isLoading = false;
+    }
+}

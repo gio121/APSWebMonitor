@@ -1,0 +1,129 @@
+@page "/senales"
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@using ApsMonitor.Components.Dialogs
+@inject ApsDataService DataService
+@inject IDialogService DialogService
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <div class="d-flex align-center">
+        <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Info" Class="mr-2" />
+        <MudText Typo="Typo.h5" Class="fw-bold">Señales</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="OpenNewSignalDialog">Nueva Señal</MudButton>
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudPaper Elevation="0" Class="signals-table-container">
+        <MudDataGrid T="Signal" Items="@_signals" Dense="true" Hover="true" FixedHeader="true" Height="600px">
+            <Columns>
+                <PropertyColumn Property="x => x.Nombre" Title="Nombre" />
+                <PropertyColumn Property="x => x.Tag" Title="Tag" />
+                <PropertyColumn Property="x => x.TipoVariable" Title="Tipo" />
+                <PropertyColumn Property="x => x.BytePosicion" Title="Byte" />
+                <PropertyColumn Property="x => x.Escala" Title="Escala" />
+                <PropertyColumn Property="x => x.Offset" Title="Offset" />
+                <TemplateColumn Title="Valor">
+                    <CellTemplate>
+                        @if (context.Item.TipoVariable == "UINT8")
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="@(context.Item.ValorActual == 1 ? Color.Success : Color.Dark)" Variant="Variant.Filled">
+                                @(context.Item.ValorActual == 1 ? "ON" : "OFF")
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2">@context.Item.GetFormattedValue()</MudText>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Acciones">
+                    <CellTemplate>
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" OnClick="@(() => OpenEditSignalDialog(context.Item))" />
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteSignal(context.Item))" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+<style>
+    .signals-table-container {
+        border: 1px solid rgba(255,255,255,0.05);
+        background-color: #1a222c;
+    }
+    .mud-table-root .mud-table-head .mud-table-cell {
+        background-color: #1a222c !important;
+        color: #94a3b8;
+        font-weight: 500;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .mud-table-root .mud-table-body .mud-table-cell {
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .mud-table-root .mud-table-row:hover {
+        background-color: rgba(255,255,255,0.03) !important;
+    }
+</style>
+
+@code {
+    private List<Signal> _signals = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _signals = await DataService.GetSignalsAsync();
+        _isLoading = false;
+    }
+
+    private async Task OpenNewSignalDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<SignalDialog>("Nueva Señal", options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenEditSignalDialog(Signal signal)
+    {
+        var parameters = new DialogParameters { ["Signal"] = signal };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<SignalDialog>("Editar Señal", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteSignal(Signal signal)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Eliminar", 
+            "¿Estás seguro de que deseas eliminar esta señal?", 
+            yesText: "Eliminar", cancelText: "Cancelar");
+            
+        if (result == true)
+        {
+            await DataService.DeleteSignalAsync(signal.Id);
+            await LoadData();
+        }
+    }
+}

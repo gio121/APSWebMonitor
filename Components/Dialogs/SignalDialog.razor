@@ -1,0 +1,223 @@
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+
+<MudDialog Class="signal-dialog">
+    <DialogContent>
+        <MudTabs @bind-ActivePanelIndex="_activeTab" Rounded="true" ApplyEffectsToContainer="true"
+                 Color="Color.Dark" Class="mb-4">
+
+            {{!-- ===================== TAB 1: GENERAL ===================== --}}
+            <MudTabPanel Text="General">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Signal.Nombre"
+                                      Label="Nombre *"
+                                      Required="true"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Signal.Tag"
+                                      Label="Tag *"
+                                      Required="true"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="Signal.DescripcionEs"
+                                      Label="Descripción (ES)"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="Signal.DescripcionEn"
+                                      Label="Description (EN)"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="Signal.Unidad"
+                                      Label="Unidad"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="Signal.Formato"
+                                      Label="Formato"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true"
+                                      Placeholder="0.1" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="Signal.ValorInicial"
+                                         Label="Valor inicial"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         FullWidth="true" />
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            {{!-- ===================== TAB 2: PROTOCOLO ===================== --}}
+            <MudTabPanel Text="Protocolo">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudSelect T="string" Value="@Signal.TipoVariable"
+                                   Label="Tipo de variable"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   FullWidth="true"
+                                   ValueChanged="@OnTipoChanged">
+                            <MudSelectItem Value="@("UINT16")">UINT16 (2 bytes)</MudSelectItem>
+                            <MudSelectItem Value="@("UINT8")">UINT8 (1 byte)</MudSelectItem>
+                            <MudSelectItem Value="@("INT16")">INT16 (2 bytes)</MudSelectItem>
+                            <MudSelectItem Value="@("FLOAT32")">FLOAT32 (4 bytes)</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="Signal.BytePosicion"
+                                         Label="Byte en la trama (posición)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         FullWidth="true"
+                                         Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="Signal.Escala"
+                                         Label="Escala (multiplicador)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="Signal.Offset"
+                                         Label="Offset (sumado)"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-4 formula-card" Elevation="0">
+                            <MudText Typo="Typo.caption" Class="text-muted d-block mb-1">Fórmula:</MudText>
+                            <code style="color: #94a3b8; font-family: monospace;">
+                                valor = (raw &times; @Signal.Escala) + @Signal.Offset
+                            </code>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            {{!-- ===================== TAB 3: BITS ===================== --}}
+            <MudTabPanel Text="@($"Bits ({Signal.BitCount})")">
+                <MudText Typo="Typo.body2" Class="text-muted mb-4">
+                    Configure descripciones para cada bit activo/inactivo. Solo aplica si la señal se usa
+                    como variable digital de estado. Tipo actual: <strong>@Signal.TipoVariable</strong>
+                    = @Signal.BitCount bits configurables.
+                </MudText>
+
+                <div style="overflow-y:auto; max-height:340px;">
+                    @for (int i = 0; i < Signal.BitCount; i++)
+                    {
+                        var bitIndex = i; // capture for lambda
+                        <div class="bit-row d-flex align-center mb-2">
+                            <MudText Typo="Typo.body2" Class="bit-label text-muted">Bit @bitIndex</MudText>
+                            <MudTextField Value="@Signal.BitTextoActivo[bitIndex]"
+                                          ValueChanged="@((string v) => Signal.BitTextoActivo[bitIndex] = v)"
+                                          Placeholder="Texto bit activo (1)"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="mx-2 flex-1" />
+                            <MudTextField Value="@Signal.BitTextoInactivo[bitIndex]"
+                                          ValueChanged="@((string v) => Signal.BitTextoInactivo[bitIndex] = v)"
+                                          Placeholder="Texto bit inactivo (0)"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="flex-1" />
+                        </div>
+                    }
+                </div>
+            </MudTabPanel>
+        </MudTabs>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="mr-2">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .signal-dialog .mud-dialog-title {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 12px;
+    }
+    .signal-dialog .mud-dialog-actions {
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding: 16px;
+    }
+    .formula-card {
+        background-color: #1a222c;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 6px;
+    }
+    .bit-row {
+        gap: 8px;
+    }
+    .bit-label {
+        min-width: 48px;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+</style>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Signal Signal { get; set; } = new Signal { Escala = 1, Formato = "0.1", ValorInicial = 0 };
+
+    private int _activeTab = 0;
+    private bool IsEditMode => Signal.Id > 0;
+
+    protected override void OnParametersSet()
+    {
+        // Ensure arrays are always size 16 (in case the object came from DB without them)
+        Signal.BitTextoActivo   ??= new string?[16];
+        Signal.BitTextoInactivo ??= new string?[16];
+        
+        var activo = Signal.BitTextoActivo;
+        if (activo.Length < 16) { Array.Resize(ref activo, 16); Signal.BitTextoActivo = activo; }
+        
+        var inactivo = Signal.BitTextoInactivo;
+        if (inactivo.Length < 16) { Array.Resize(ref inactivo, 16); Signal.BitTextoInactivo = inactivo; }
+    }
+
+    private void OnTipoChanged(string newTipo)
+    {
+        Signal.TipoVariable = newTipo;
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Signal.Nombre) || string.IsNullOrWhiteSpace(Signal.Tag))
+        {
+            _activeTab = 0; // jump to General tab to show validation
+            return;
+        }
+
+        if (IsEditMode)
+            await DataService.UpdateSignalAsync(Signal);
+        else
+            await DataService.AddSignalAsync(Signal);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

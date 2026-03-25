@@ -1,0 +1,31 @@
+<MudNavMenu Class="mt-2">
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Inicio</MudNavLink>
+    <MudNavLink Href="/ventanas" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Window">Ventanas</MudNavLink>
+    <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Señales</MudNavLink>
+    
+    <MudNavGroup Title="Comandos" Icon="@Icons.Material.Filled.Terminal" Expanded="false">
+        <MudNavLink Href="/comandos/log">Log de Comandos</MudNavLink>
+    </MudNavGroup>
+    
+    <MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administración</MudNavLink>
+</MudNavMenu>
+
+<style>
+    /* Add slight transparency to unselected nav links per screenshot */
+    .mud-nav-link {
+        color: #94a3b8 !important;
+        padding-left: 24px !important;
+    }
+    .mud-nav-link:hover {
+        background-color: rgba(255,255,255,0.05) !important;
+        color: #e2e8f0 !important;
+    }
+    .mud-nav-link.active {
+        color: #3b82f6 !important;
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        border-right: 3px solid #3b82f6;
+    }
+    .mud-nav-link .mud-nav-link-icon.mud-nav-link-icon-default {
+        color: inherit !important;
+    }
+</style>

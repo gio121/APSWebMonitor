@@ -1,0 +1,67 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="ApsMudTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Docked">
+        <div class="px-4 py-6 d-flex flex-column align-center justify-center logo-header">
+            <MudIcon Icon="@Icons.Material.Filled.ElectricBolt" Color="Color.Primary" Size="Size.Large" Class="mb-2" />
+            <MudText Typo="Typo.h6" Class="fw-bold" Color="Color.Primary">APS Monitor</MudText>
+            <MudText Typo="Typo.caption" Class="text-muted text-uppercase" Style="letter-spacing: 1px;">SISTEMA SCADA</MudText>
+        </div>
+        
+        <NavMenu />
+        
+        <div class="mt-auto px-4 py-4 d-flex align-center user-footer">
+            <div>
+                <MudText Typo="Typo.body2" Class="fw-bold">Administrador</MudText>
+                <MudText Typo="Typo.caption" Class="text-muted">Administrador</MudText>
+            </div>
+            <MudSpacer />
+            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" />
+        </div>
+    </MudDrawer>
+
+    <MudMainContent>
+        <div class="px-8 pt-8">
+            @Body
+        </div>
+    </MudMainContent>
+</MudLayout>
+
+<style>
+    .logo-header {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .user-footer {
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+</style>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true; // Always dark mode as per screenshot
+    private MudThemeProvider? _themeProvider;
+
+    public static readonly MudTheme ApsMudTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#3b82f6", // Blue
+            Secondary = "#ef4444", // Red
+            Background = "#151921", // Very dark blue/grey
+            AppbarBackground = "#151921",
+            DrawerBackground = "#19212d",
+            Surface = "#1f2937", // Card background
+            TextPrimary = "#e2e8f0",
+            TextSecondary = "#94a3b8",
+            Success = "#22c55e",
+            Error = "#ef4444",
+            LinesDefault = "rgba(255,255,255,0.05)",
+            TableLines = "rgba(255,255,255,0.05)"
+        },
+    };
+}

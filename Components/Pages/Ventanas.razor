@@ -1,0 +1,108 @@
+@page "/ventanas"
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <MudText Typo="Typo.h5" Class="fw-bold">Ventanas</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg">Nueva Ventana</MudButton>
+</div>
+
+<MudTextField @bind-Value="searchString" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
+              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
+              Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: #1a222c;" />
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var window in _windows.Where(FilterWindow))
+        {
+            <MudItem xs="12" sm="6" md="4" lg="6"> <!-- lg=6 because in screenshot there are two cards per row -->
+                <MudPaper Class="pa-4 window-card h-100 d-flex flex-column" Elevation="0">
+                    <div class="d-flex justify-space-between align-start mb-2">
+                        <div>
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@window.Nombre</MudText>
+                            <MudText Typo="Typo.body2" Class="text-muted mb-1">@window.Descripcion</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Categoría: @window.Categoria</MudText>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
+                                @window.Tipo
+                            </MudChip>
+                            @if (window.IsActive)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Activa</MudChip>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
+                        @if (window.Tipo == "Sinóptico")
+                        {
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
+                        }
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.PowerSettingsNew" Size="Size.Small">Desactivar</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small">Duplicar</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto">Eliminar</MudButton>
+                    </div>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+<style>
+    .window-card {
+        border: 1px solid rgba(255,255,255,0.08);
+        background-color: #1a222c;
+        border-radius: 8px;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .action-buttons .mud-button {
+        text-transform: none;
+        color: #e2e8f0;
+        border-color: rgba(255,255,255,0.1);
+        border-radius: 4px;
+        background-color: transparent;
+    }
+    .action-buttons .mud-button-label {
+        font-weight: normal;
+    }
+    .search-input .mud-input {
+        border-radius: 6px;
+    }
+</style>
+
+@code {
+    private List<Window> _windows = new();
+    private bool _isLoading = true;
+    private string searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _windows = await DataService.GetWindowsAsync();
+        _isLoading = false;
+    }
+
+    private bool FilterWindow(Window window)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (window.Nombre.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (window.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+}
