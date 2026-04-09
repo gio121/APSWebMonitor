@@ -12,6 +12,8 @@ public class Signal
     public string? Unidad { get; set; }
     public string Formato { get; set; } = "0.1";
     public double ValorInicial { get; set; } = 0;
+    public int NodoNumero { get; set; } = 0;
+    public string NodoDescripcion { get; set; } = string.Empty;
 
     // Protocol Tab
     public string TipoVariable { get; set; } = "UINT16"; // e.g. UINT16 (2 bytes), UINT8

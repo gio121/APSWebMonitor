@@ -1,0 +1,99 @@
+@using ApsMonitor.Services
+@using ApsMonitor.Models
+@inject SessionStateService SessionState
+@implements IDisposable
+
+@if (SessionState.IsLoaded)
+{
+    <div class="session-player-global-bar">
+        <MudPaper Elevation="25" Class="pa-2 px-4 d-flex align-center gap-4">
+            <!-- Info y Controles -->
+            <div class="d-flex align-center gap-2" style="min-width: 280px;">
+                <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious" Size="Size.Small" OnClick="SessionState.GoToStart" />
+                
+                @if (SessionState.IsPlaying)
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Pause" Color="Color.Warning" Size="Size.Medium" OnClick="SessionState.Pause" />
+                }
+                else
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Medium" OnClick="SessionState.Play" />
+                }
+                
+                <MudIconButton Icon="@Icons.Material.Filled.SkipNext" Size="Size.Small" OnClick="SessionState.GoToEnd" />
+                
+                <MudDivider Vertical="true" Class="mx-2" Style="height:24px;" />
+                
+                <MudText Typo="Typo.caption" Class="text-muted d-none d-sm-block">@SessionState.FileName</MudText>
+            </div>
+
+            <!-- Slider Temporal -->
+            <div class="d-flex align-center gap-3 flex-grow-1">
+                <MudText Typo="Typo.caption" Style="min-width:60px;">@FormatTime(SessionState.Frames![SessionState.CurrentFrame].Timestamp)</MudText>
+                <MudSlider T="int" Value="SessionState.CurrentFrame" 
+                           ValueChanged="OnSliderChanged" 
+                           Min="0" Max="@(SessionState.Frames.Count - 1)" 
+                           Step="1" Color="Color.Primary" Class="ma-0" />
+                <MudText Typo="Typo.caption" Style="min-width:60px; text-align:right;">@FormatTime(SessionState.TotalDuration)</MudText>
+            </div>
+
+            <!-- Velocidad -->
+            <div class="d-flex align-center gap-1 d-none d-md-flex">
+                @foreach (var speed in SessionState.Velocidades.Where(s => s <= 10))
+                {
+                    <MudChip T="double" Size="Size.Small" 
+                             Color="@(SessionState.VelocidadActual == speed ? Color.Primary : Color.Default)" 
+                             Variant="Variant.Filled" 
+                             OnClick="@(() => SessionState.VelocidadActual = speed)"
+                             Style="cursor:pointer; scale: 0.8;">@(speed)x</MudChip>
+                }
+            </div>
+
+            <!-- Botón Cerrar Sesión -->
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="SessionState.Stop" Title="Cerrar sesión" />
+        </MudPaper>
+    </div>
+}
+
+<style>
+    .session-player-global-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 2000;
+        padding: 8px 16px;
+        background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%);
+    }
+    .session-player-global-bar .mud-paper {
+        background-color: #1a212d !important;
+        border-top: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 12px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        SessionState.OnStateChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    private void OnSliderChanged(int val)
+    {
+        SessionState.SeekTo(val);
+    }
+
+    private string FormatTime(TimeSpan ts)
+    {
+        return ts.ToString(@"mm\:ss\.ff");
+    }
+
+    public void Dispose()
+    {
+        SessionState.OnStateChanged -= StateHasChanged;
+    }
+}

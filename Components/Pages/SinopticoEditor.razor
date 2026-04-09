@@ -7,7 +7,8 @@
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
-<div class="editor-header d-flex justify-space-between align-center px-4 py-2">
+<div class="sinoptico-wrapper ml-n4 mr-n8 mt-n8">
+    <div class="editor-header d-flex justify-space-between align-center px-4 py-2">
     <div class="d-flex align-center">
         <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo("/ventanas"))" />
         <MudText Typo="Typo.h6" Class="fw-bold ml-2">@(_window?.Nombre ?? "Cargando...")</MudText>
@@ -102,10 +103,15 @@
                     <MudNumericField @bind-Value="_selectedElement.Rotation" Label="Rotación" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 
-                @if (_selectedElement.Type == "Señal" || _selectedElement.Type == "Comando")
+                @if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal" || _selectedElement.Type == "Comando")
                 {
                     <MudItem xs="12">
-                        <MudSelect @bind-Value="_selectedElement.SignalId" Label="Señal" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                        <MudSelect T="int?" Value="@_selectedElement.SignalId" 
+                                   Label="Señal vinculada" 
+                                   Variant="Variant.Outlined" 
+                                   Margin="Margin.Dense" 
+                                   Clearable="true"
+                                   ValueChanged="@OnSignalSelected">
                             @foreach (var sig in _availableSignals)
                             {
                                 <MudSelectItem Value="@((int?)sig.Id)">@sig.Nombre [@sig.Tag]</MudSelectItem>
@@ -128,16 +134,25 @@
         }
     </div>
 </div>
+</div>
 
 <style>
+    .sinoptico-wrapper {
+        height: calc(100vh - 96px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
     .editor-header {
         border-bottom: 1px solid rgba(255,255,255,0.05);
         background-color: #151921;
         height: 60px;
+        flex-shrink: 0;
     }
     .editor-container {
-        height: calc(100vh - 60px);
+        flex-grow: 1;
         background-color: #0f1218;
+        overflow: hidden;
     }
     .sidebar {
         background-color: #19212d;
@@ -154,8 +169,8 @@
         overflow: auto;
     }
     .canvas {
-        width: 1200px;
-        height: 800px;
+        min-width: 100%;
+        min-height: 100%;
         background-color: transparent;
         position: relative;
     }
@@ -281,6 +296,31 @@
     }
 
     private void ToggleGrid() => _showGrid = !_showGrid;
+
+    private async Task OnSignalSelected(int? signalId)
+    {
+        if (_selectedElement == null) return;
+        
+        _selectedElement.SignalId = signalId;
+        
+        if (signalId.HasValue)
+        {
+            var signal = _availableSignals.FirstOrDefault(s => s.Id == signalId.Value);
+            if (signal != null)
+            {
+                // Si es una etiqueta y el texto es el por defecto, lo actualizamos con el nombre de la señal
+                if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal")
+                {
+                    if (string.IsNullOrWhiteSpace(_selectedElement.Text) || 
+                        _selectedElement.Text == "Etiqueta" || 
+                        _selectedElement.Text == "Señal")
+                    {
+                        _selectedElement.Text = signal.Nombre;
+                    }
+                }
+            }
+        }
+    }
     
     private void ClearSelection() => _selectedElement = null;
     

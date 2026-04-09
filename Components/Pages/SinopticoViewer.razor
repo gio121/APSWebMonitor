@@ -1,0 +1,169 @@
+@page "/sinoptico/ver/{WindowId:int}"
+@using System.Text.Json
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="sinoptico-wrapper ml-n4 mr-n8 mt-n8">
+    <div class="editor-header d-flex justify-space-between align-center px-4 py-2">
+        <div class="d-flex align-center">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo("/ventanas"))" />
+            <MudText Typo="Typo.h6" Class="fw-bold ml-2">@(_window?.Nombre ?? "Cargando...")</MudText>
+            <MudText Typo="Typo.caption" Class="text-muted ml-2 mt-1">(@(_window?.Tipo ?? "Sinóptico"))</MudText>
+        </div>
+        <div>
+            <!-- Botones adicionales en modo visualización (ej. Actualizar, Fullscreen) podrían ir aquí -->
+        </div>
+    </div>
+
+    <div class="editor-container d-flex justify-center align-center">
+        <!-- CENTER PANEL: CANVAS -->
+        <div class="main-canvas-area flex-grow-1">
+            <div class="canvas mx-auto">
+                @foreach (var el in _elements)
+                {
+                    <div class="canvas-element" 
+                         style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
+                        
+                        @if (el.Type == "Etiqueta")
+                        {
+                            <div class="element-content label-content">@el.Text</div>
+                        }
+                        else if (el.Type == "Señal")
+                        {
+                            <div class="element-content signal-content d-flex flex-column">
+                                <span class="signal-name">@el.Text</span>
+                                <!-- Valor estático para visualización, los datos reales de la red requerirían un servicio RT -->
+                                <span class="signal-value fw-bold">--</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="element-content icon-content">
+                                <MudIcon Icon="@GetIconForType(el.Type)" Color="Color.Warning" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sinoptico-wrapper {
+        height: calc(100vh - 96px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .editor-header {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        background-color: #151921;
+        height: 60px;
+        flex-shrink: 0;
+    }
+    .editor-container {
+        flex-grow: 1;
+        background-color: #0f1218;
+        overflow: auto;
+    }
+    .main-canvas-area {
+        position: relative;
+        overflow: auto;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        /* Centrar o dejar al inicio según preferencia, usamos flex start/center auto márgenes el canvas */
+    }
+    .canvas {
+        min-width: 100%;
+        min-height: 100%;
+        background-color: transparent;
+        position: relative;
+    }
+    
+    /* Elements on Canvas */
+    .canvas-element {
+        position: absolute;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .element-content {
+        width: 100%;
+        height: 100%;
+    }
+    .label-content {
+        color: #e2e8f0;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+    .signal-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 4px;
+        padding: 8px;
+        color: #e2e8f0;
+    }
+    .signal-name {
+        font-size: 10px;
+        color: #94a3b8;
+    }
+    .signal-value {
+        font-size: 16px;
+    }
+    .icon-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+@code {
+    [Parameter] public int WindowId { get; set; }
+    
+    private Window? _window;
+    private List<SinopticoElement> _elements = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var allWindows = await DataService.GetWindowsAsync();
+        _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
+        
+        if (_window != null && !string.IsNullOrWhiteSpace(_window.ContentJson))
+        {
+            try
+            {
+                _elements = JsonSerializer.Deserialize<List<SinopticoElement>>(_window.ContentJson) ?? new();
+            }
+            catch
+            {
+                _elements = new();
+            }
+        }
+    }
+
+    private string GetIconForType(string type)
+    {
+        return type switch
+        {
+            "Etiqueta" => Icons.Material.Filled.TextFormat,
+            "Señal" => Icons.Material.Filled.Sensors,
+            "Comando" => Icons.Material.Filled.ToggleOn,
+            "Linea H" => Icons.Material.Filled.Remove,
+            "Linea V" => Icons.Material.Filled.MoreVert,
+            "Diodo" => Icons.Material.Filled.PlayArrow,
+            "Resistencia" => Icons.Material.Filled.Timeline,
+            "Transformador" => Icons.Material.Filled.SyncAlt,
+            "Fusible" => Icons.Material.Filled.PowerInput,
+            "Interruptor" => Icons.Material.Filled.ToggleOff,
+            "Borne" => Icons.Material.Filled.RadioButtonUnchecked,
+            _ => Icons.Material.Filled.SettingsInputComponent
+        };
+    }
+}

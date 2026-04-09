@@ -2,13 +2,16 @@
 @using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ApsDataService DataService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <div class="d-flex justify-space-between align-center mb-6">
     <MudText Typo="Typo.h5" Class="fw-bold">Ventanas</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg">Nueva Ventana</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">Nueva Ventana</MudButton>
 </div>
 
-<MudTextField @bind-Value="searchString" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
+<MudTextField @bind-Value="searchString" Immediate="true" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
               Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: #1a222c;" />
 
@@ -40,19 +43,22 @@ else
                         </div>
                     </div>
                     
-                    <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
-                        @if (window.Tipo == "Sinóptico")
-                        {
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
-                        }
-                        else
-                        {
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
-                        }
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.PowerSettingsNew" Size="Size.Small">Desactivar</MudButton>
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small">Duplicar</MudButton>
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto">Eliminar</MudButton>
+                        <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
+                            @if (window.Tipo == "Sinóptico")
+                            {
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">Ver</MudButton>
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
+                            }
+                        <MudButton Variant="Variant.Outlined" StartIcon="@(window.IsActive ? Icons.Material.Filled.PowerOff : Icons.Material.Filled.PowerSettingsNew)" Size="Size.Small" OnClick="@(() => ToggleActivarVentana(window))">
+                            @(window.IsActive ? "Desactivar" : "Activar")
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => DuplicarVentana(window))">Duplicar</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto" OnClick="@(() => EliminarVentana(window))">Eliminar</MudButton>
                     </div>
                 </MudPaper>
             </MudItem>
@@ -104,5 +110,77 @@ else
         if (window.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
+    }
+
+    private async Task CrearNuevaVentana()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Nueva Ventana", options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is string nombre)
+        {
+            var nuevaVentana = new Window
+            {
+                Nombre = nombre,
+                Descripcion = "Descripción sin asignar",
+                Categoria = "General",
+                Tipo = "Sinóptico",
+                IsActive = false,
+                ContentJson = "[]" // Canvas vacío
+            };
+            
+            var creada = await DataService.AddWindowAsync(nuevaVentana);
+            if (creada != null && creada.Id > 0)
+            {
+                // Redirigir inmediatamente al editor del sinóptico creado
+                NavigationManager.NavigateTo($"/sinoptico/{creada.Id}", forceLoad: false);
+            }
+        }
+    }
+
+    private async Task EliminarVentana(Window window)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Confirmar Eliminación", 
+            $"¿Estás seguro de que quieres eliminar la ventana '{window.Nombre}' permanentemente?", 
+            yesText: "Eliminar", cancelText: "Cancelar");
+            
+        if (result == true)
+        {
+            await DataService.DeleteWindowAsync(window.Id);
+            _windows.Remove(window);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleActivarVentana(Window window)
+    {
+        window.IsActive = !window.IsActive;
+        await DataService.UpdateWindowAsync(window);
+        Snackbar.Add($"Ventana '{window.Nombre}' {(window.IsActive ? "activada" : "desactivada")} correctamente", Severity.Success);
+        StateHasChanged();
+    }
+
+    private async Task DuplicarVentana(Window window)
+    {
+        var nuevaVentana = new Window
+        {
+            Nombre = window.Nombre + " (copia)",
+            Descripcion = window.Descripcion,
+            Categoria = window.Categoria,
+            Tipo = window.Tipo,
+            IsActive = false,
+            ContentJson = window.ContentJson
+        };
+
+        var creada = await DataService.AddWindowAsync(nuevaVentana);
+        if (creada != null && creada.Id > 0)
+        {
+            // La añadimos a la lista local para verla instantáneamente
+            _windows.Add(creada);
+            Snackbar.Add($"Ventana '{window.Nombre}' duplicada correctamente", Severity.Success);
+            StateHasChanged();
+        }
     }
 }

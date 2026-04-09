@@ -16,8 +16,17 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=aps.db"));
 
 builder.Services.AddScoped<ApsDataService>();
+builder.Services.AddScoped<SessionStateService>();
 
 var app = builder.Build();
+
+// Inicializar la base de datos
+using (var scope = app.Services.CreateScope())
+{
+    var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApsDbContext>>();
+    using var context = contextFactory.CreateDbContext();
+    context.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

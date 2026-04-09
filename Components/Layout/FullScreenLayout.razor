@@ -1,6 +1,4 @@
 @inherits LayoutComponentBase
-@inject SessionStateService _sessionState
-@implements IDisposable
 
 <MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="ApsMudTheme" />
 <MudPopoverProvider />
@@ -28,10 +26,10 @@
     </MudDrawer>
 
     <MudMainContent>
-        <div class="@(_sessionState.IsLoaded ? "px-8 pt-8 pb-24" : "px-8 pt-8")">
+        <!-- Retirado px-8 pt-8 para usar el 100% de la pantalla sin márgenes globales -->
+        <div class="h-100">
             @Body
         </div>
-        <SessionPlayerBar />
     </MudMainContent>
 </MudLayout>
 
@@ -49,29 +47,19 @@
 
 @code {
     private bool _drawerOpen = true;
-    private bool _isDarkMode = true; // Always dark mode as per screenshot
+    private bool _isDarkMode = true;
     private MudThemeProvider? _themeProvider;
-
-    protected override void OnInitialized()
-    {
-        _sessionState.OnStateChanged += () => InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        _sessionState.OnStateChanged -= StateHasChanged;
-    }
 
     public static readonly MudTheme ApsMudTheme = new MudTheme()
     {
         PaletteDark = new PaletteDark()
         {
-            Primary = "#3b82f6", // Blue
-            Secondary = "#ef4444", // Red
-            Background = "#151921", // Very dark blue/grey
+            Primary = "#3b82f6",
+            Secondary = "#ef4444",
+            Background = "#151921",
             AppbarBackground = "#151921",
             DrawerBackground = "#19212d",
-            Surface = "#1f2937", // Card background
+            Surface = "#1f2937",
             TextPrimary = "#e2e8f0",
             TextSecondary = "#94a3b8",
             Success = "#22c55e",

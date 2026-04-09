@@ -19,6 +19,14 @@ public class ApsDataService
         return await context.Windows.ToListAsync();
     }
     
+    public async Task<Window> AddWindowAsync(Window window)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Windows.Add(window);
+        await context.SaveChangesAsync();
+        return window;
+    }
+    
     public async Task UpdateWindowAsync(Window window)
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -42,6 +50,14 @@ public class ApsDataService
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
         return await context.Signals.ToListAsync();
+    }
+
+    public async Task DeleteAllSignalsAsync()
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        var signals = await context.Signals.ToListAsync();
+        context.Signals.RemoveRange(signals);
+        await context.SaveChangesAsync();
     }
 
     public async Task<Signal> GetSignalAsync(int id)

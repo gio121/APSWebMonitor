@@ -7,12 +7,34 @@
         <MudTabs @bind-ActivePanelIndex="_activeTab" Rounded="true" ApplyEffectsToContainer="true"
                  Color="Color.Dark" Class="mb-4">
 
-            {{!-- ===================== TAB 1: GENERAL ===================== --}}
+            
             <MudTabPanel Text="General">
                 <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField Value="Signal.NodoNumero"
+                                         ValueChanged="@((int v) => OnNodeNumberChanged(v))"
+                                         Label="Nº Nodo *"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         FullWidth="true"
+                                         Required="true"
+                                         Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8">
+                        <MudTextField @bind-Value="Signal.NodoDescripcion"
+                                      Label="Nombre del Nodo *"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      FullWidth="true"
+                                      Required="true"
+                                      Placeholder="Ej: Control, Potencia..." />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                    </MudItem>
                     <MudItem xs="12">
                         <MudTextField @bind-Value="Signal.Nombre"
-                                      Label="Nombre *"
+                                      Label="Nombre Señal *"
                                       Required="true"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
@@ -65,7 +87,7 @@
                 </MudGrid>
             </MudTabPanel>
 
-            {{!-- ===================== TAB 2: PROTOCOLO ===================== --}}
+            
             <MudTabPanel Text="Protocolo">
                 <MudGrid Spacing="3">
                     <MudItem xs="12">
@@ -114,7 +136,7 @@
                 </MudGrid>
             </MudTabPanel>
 
-            {{!-- ===================== TAB 3: BITS ===================== --}}
+            
             <MudTabPanel Text="@($"Bits ({Signal.BitCount})")">
                 <MudText Typo="Typo.body2" Class="text-muted mb-4">
                     Configure descripciones para cada bit activo/inactivo. Solo aplica si la señal se usa
@@ -195,6 +217,22 @@
         
         var inactivo = Signal.BitTextoInactivo;
         if (inactivo.Length < 16) { Array.Resize(ref inactivo, 16); Signal.BitTextoInactivo = inactivo; }
+    }
+
+    private async Task OnNodeNumberChanged(int newNumber)
+    {
+        Signal.NodoNumero = newNumber;
+        
+        // Si no tenemos descripción y el número es > 0, intentamos buscar una descripción existente
+        if (string.IsNullOrWhiteSpace(Signal.NodoDescripcion) || Signal.Id == 0)
+        {
+            var existingSignals = await DataService.GetSignalsAsync();
+            var existingNode = existingSignals.FirstOrDefault(s => s.NodoNumero == newNumber);
+            if (existingNode != null)
+            {
+                Signal.NodoDescripcion = existingNode.NodoDescripcion;
+            }
+        }
     }
 
     private void OnTipoChanged(string newTipo)
