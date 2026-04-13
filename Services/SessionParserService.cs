@@ -12,52 +12,89 @@ public class SessionParserService
     private const double FRAME_INTERVAL_MS = 2.0;
 
     /// <summary>
-    /// Decodifica todas las tramas del stream .dat usando la lista de señales configuradas.
+    /// Decodifica todas las tramas del stream .dat que viene en formato texto con timestamps.
     /// </summary>
     public List<SessionFrame> Parse(byte[] fileData, List<Signal> signals)
     {
-        if (signals.Count == 0 || fileData.Length == 0)
-            return new List<SessionFrame>();
+        var frames = new List<SessionFrame>();
+        if (signals == null || signals.Count == 0 || fileData == null || fileData.Length == 0)
+            return frames;
 
-        // Calcular tamaño de trama: máximo (BytePosicion + tamaño del tipo) de todas las señales
-        int frameSize = 0;
-        foreach (var signal in signals)
+        string fileContent;
+        try
         {
-            int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
-            if (end > frameSize)
-                frameSize = end;
+            fileContent = System.Text.Encoding.UTF8.GetString(fileData);
+        }
+        catch
+        {
+            return frames;
         }
 
-        if (frameSize == 0)
-            return new List<SessionFrame>();
+        var lines = fileContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        
+        var currentValues = new Dictionary<int, double>();
+        DateTime? startTime = null;
+        int frameIndex = 0;
 
-        int totalFrames = fileData.Length / frameSize;
-        var frames = new List<SessionFrame>(totalFrames);
-
-        for (int i = 0; i < totalFrames; i++)
+        foreach (var line in lines)
         {
-            int offset = i * frameSize;
+            var parts = line.Split(';');
+            if (parts.Length < 2) continue;
 
-            var frame = new SessionFrame
+            if (!DateTime.TryParse(parts[0], out var timestamp))
+                continue;
+
+            if (startTime == null) startTime = timestamp;
+
+            string hexString = parts[1].Trim();
+            var hexParts = hexString.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var frameData = new byte[hexParts.Length];
+            for (int i = 0; i < hexParts.Length; i++)
             {
-                Index = i,
-                Timestamp = TimeSpan.FromMilliseconds(i * FRAME_INTERVAL_MS),
-                Values = new Dictionary<int, double>()
-            };
-
-            foreach (var signal in signals)
-            {
-                int pos = offset + signal.BytePosicion;
-
-                double rawValue = ReadValue(fileData, pos, signal.TipoVariable);
-
-                // Cálculo Físico Robusto usando utilidades centralizadas
-                double physicalValue = ApsCalculationUtils.CalculatePhysical(rawValue, signal.Escala, signal.Offset);
-                
-                frame.Values[signal.Id] = physicalValue;
+                if (byte.TryParse(hexParts[i], System.Globalization.NumberStyles.HexNumber, null, out byte b))
+                    frameData[i] = b;
             }
 
-            frames.Add(frame);
+            if (frameData.Length < 6) continue;
+
+            // Identificar si es petición o respuesta. 
+            // Las peticiones (1D para control, 1A para comms) son tramas cortas.
+            if (frameData.Length < 30)
+                continue;
+
+            // Es una trama de respuesta (Control o Comms).
+            // Separamos solo los datos reales: omitimos los primeros 6 bytes (Cabecera) y el último byte (Checksum).
+            int payloadLength = frameData.Length - 7;
+            if (payloadLength <= 0) continue;
+
+            byte[] payload = new byte[payloadLength];
+            Array.Copy(frameData, 6, payload, 0, payloadLength);
+
+            // Extraemos todas las señales que entren en la longitud del payload de la respuesta actual.
+            bool anyChange = false;
+            foreach (var signal in signals)
+            {
+                int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
+                if (end <= payload.Length)
+                {
+                    double rawValue = ReadValue(payload, signal.BytePosicion, signal.TipoVariable);
+                    double physicalValue = ApsCalculationUtils.CalculatePhysical(rawValue, signal.Escala, signal.Offset);
+                    currentValues[signal.Id] = physicalValue;
+                    anyChange = true;
+                }
+            }
+
+            if (anyChange)
+            {
+                var frame = new SessionFrame
+                {
+                    Index = frameIndex++,
+                    Timestamp = timestamp - startTime.Value,
+                    AbsoluteTimestamp = timestamp,
+                    Values = new Dictionary<int, double>(currentValues)
+                };
+                frames.Add(frame);
+            }
         }
 
         return frames;

@@ -32,27 +32,46 @@ public class SessionStateService : IDisposable
         NotifyStateChanged();
     }
 
+    private DateTime _playRealStartTime;
+    private TimeSpan _playStartOffset;
+
     public void Play()
     {
         if (!IsLoaded) return;
         if (CurrentFrame >= Frames!.Count - 1) CurrentFrame = 0;
 
         IsPlaying = true;
+        _playRealStartTime = DateTime.UtcNow;
+        _playStartOffset = Frames![CurrentFrame].Timestamp;
+
+        // Tasa de actualización de UI
         int tickMs = 50;
-        int framesPerTick = Math.Max(1, (int)(VelocidadActual * 0.5));
 
         _playTimer?.Dispose();
         _playTimer = new System.Threading.Timer(_ =>
         {
             if (!IsPlaying) return;
 
-            CurrentFrame += framesPerTick;
-            if (CurrentFrame >= Frames!.Count)
+            var elapsedRealTime = DateTime.UtcNow - _playRealStartTime;
+            var targetTime = _playStartOffset + TimeSpan.FromMilliseconds(elapsedRealTime.TotalMilliseconds * VelocidadActual);
+
+            int newFrame = CurrentFrame;
+            while (newFrame < Frames.Count - 1 && Frames[newFrame + 1].Timestamp <= targetTime)
+            {
+                newFrame++;
+            }
+
+            if (newFrame >= Frames.Count - 1)
             {
                 CurrentFrame = Frames.Count - 1;
                 IsPlaying = false;
                 _playTimer?.Dispose();
             }
+            else
+            {
+                CurrentFrame = newFrame;
+            }
+
             NotifyStateChanged();
         }, null, 0, tickMs);
     }
@@ -103,6 +122,12 @@ public class SessionStateService : IDisposable
     {
         if (!IsLoaded) return;
         CurrentFrame = Math.Clamp(frame, 0, Frames!.Count - 1);
+        if (IsPlaying)
+        {
+            // Reset start time so it plays from the new seek position without jumping back
+            _playRealStartTime = DateTime.UtcNow;
+            _playStartOffset = Frames![CurrentFrame].Timestamp;
+        }
         NotifyStateChanged();
     }
 

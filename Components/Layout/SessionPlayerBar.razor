@@ -29,12 +29,12 @@
 
             <!-- Slider Temporal -->
             <div class="d-flex align-center gap-3 flex-grow-1">
-                <MudText Typo="Typo.caption" Style="min-width:60px;">@FormatTime(SessionState.Frames![SessionState.CurrentFrame].Timestamp)</MudText>
+                <MudText Typo="Typo.caption" Style="min-width:70px;">@FormatTime(SessionState.Frames![SessionState.CurrentFrame])</MudText>
                 <MudSlider T="int" Value="SessionState.CurrentFrame" 
                            ValueChanged="OnSliderChanged" 
                            Min="0" Max="@(SessionState.Frames.Count - 1)" 
                            Step="1" Color="Color.Primary" Class="ma-0" />
-                <MudText Typo="Typo.caption" Style="min-width:60px; text-align:right;">@FormatTime(SessionState.TotalDuration)</MudText>
+                <MudText Typo="Typo.caption" Style="min-width:60px; text-align:right;">@FormatDuration(SessionState.TotalDuration)</MudText>
             </div>
 
             <!-- Velocidad -->
@@ -44,7 +44,7 @@
                     <MudChip T="double" Size="Size.Small" 
                              Color="@(SessionState.VelocidadActual == speed ? Color.Primary : Color.Default)" 
                              Variant="Variant.Filled" 
-                             OnClick="@(() => SessionState.VelocidadActual = speed)"
+                             OnClick="@(() => { SessionState.VelocidadActual = speed; if(SessionState.IsPlaying) SessionState.SeekTo(SessionState.CurrentFrame); })"
                              Style="cursor:pointer; scale: 0.8;">@(speed)x</MudChip>
                 }
             </div>
@@ -87,7 +87,13 @@
         SessionState.SeekTo(val);
     }
 
-    private string FormatTime(TimeSpan ts)
+    private string FormatTime(SessionFrame? frame)
+    {
+        if (frame == null) return "00:00:00.000";
+        return frame.AbsoluteTimestamp.ToString("HH:mm:ss.fff");
+    }
+
+    private string FormatDuration(TimeSpan ts)
     {
         return ts.ToString(@"mm\:ss\.ff");
     }

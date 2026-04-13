@@ -8,5 +8,6 @@ public class SessionFrame
 {
     public int Index { get; set; }
     public TimeSpan Timestamp { get; set; }
+    public DateTime AbsoluteTimestamp { get; set; }
     public Dictionary<int, double> Values { get; set; } = new();
 }

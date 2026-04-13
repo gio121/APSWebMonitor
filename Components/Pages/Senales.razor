@@ -206,20 +206,18 @@ else
             var nodes = doc.Descendants("node_t").ToList();
             if (nodes.Count == 0)
             {
-                // Si no hay nodos, tratamos de buscar señales directamente por si es un XML plano
                 await ProcessDirectSignals(doc, file.Name);
                 return;
             }
 
             int importados = 0;
-            int bytePos = 0;
 
             foreach (var node in nodes)
             {
                 // Extraer info del NODO
                 int nodeNumber = ApsCalculationUtils.SafeParseInt(node.Element("pte_address_node_number")?.Value);
                 
-                // Buscar descripción en sw/description (según el fragmento del usuario) o en la raíz del nodo
+                // Buscar descripción en sw/description o en la raíz del nodo
                 var swDesc = node.Element("sw")?.Element("description");
                 var rootDesc = node.Element("description");
                 var descSource = swDesc ?? rootDesc;
@@ -230,13 +228,53 @@ else
                 string nodeDescription = nodeDescElement?.Element("stringvalue")?.Value 
                                          ?? (nodeNumber == 1 ? "Control" : $"Nodo {nodeNumber}");
 
-                // 2. Extraer señales solo de ESTE NODO
-                var elements = node.Descendants("value_element_t").ToList();
+                // 2. Construir mapa keyname → lista de BytePosicion leyendo <elements>/<valuereference_element_t>
+                //    Guardamos LISTA de posiciones porque varias señales (spareByte) comparten keyname
+                var positionListMap = new Dictionary<string, Queue<int>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var vref in node.Descendants("valuereference_element_t"))
+                {
+                    var kn = vref.Element("keyname")?.Value ?? "";
+                    var pos = ApsCalculationUtils.SafeParseInt(vref.Element("position")?.Value, -1);
+                    if (!string.IsNullOrWhiteSpace(kn) && pos >= 0)
+                    {
+                        if (!positionListMap.ContainsKey(kn))
+                            positionListMap[kn] = new Queue<int>();
+                        positionListMap[kn].Enqueue(pos);
+                    }
+                }
+
+                // 3. Extraer señales del nodo, deduplicando por keyname (solo la primera aparición)
+                //    Esto evita duplicados sin depender de si los elementos están dentro de frame_t o no
+                var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var elements = node.Descendants("value_element_t")
+                    .Where(el => {
+                        var kn = el.Element("keyname")?.Value ?? "";
+                        return !string.IsNullOrWhiteSpace(kn) && seenKeys.Add(kn);
+                    })
+                    .ToList();
+                int sequentialBytePos = 0;
 
                 foreach (var el in elements)
                 {
                     var keyname = el.Element("keyname")?.Value ?? "";
                     if (string.IsNullOrWhiteSpace(keyname)) continue;
+
+                    // Ignorar bytes de relleno (spareByte) — comparten nombre y no tienen datos útiles
+                    if (keyname.StartsWith("spare", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Avanzar la cola de posiciones para no desfasar las siguientes señales
+                        if (positionListMap.TryGetValue(keyname, out var spareQ) && spareQ.Count > 0)
+                            spareQ.Dequeue();
+                        sequentialBytePos += 1; // spare suele ser 1 byte
+                        continue;
+                    }
+
+                    // Tomar la siguiente posición disponible para este keyname
+                    int bytePos;
+                    if (positionListMap.TryGetValue(keyname, out var posQ) && posQ.Count > 0)
+                        bytePos = posQ.Dequeue();
+                    else
+                        bytePos = sequentialBytePos;
 
                     // Descripciones
                     var descriptions = el.Element("description")?.Elements("localized_string_t").ToList();
@@ -258,8 +296,6 @@ else
                     // Forzar a UINT16 si es BITFIELD
                     var infoType = infoNode?.Element("type")?.Value ?? "";
                     if (infoType.ToUpper() == "BITFIELD") tipoVariable = "UINT16";
-
-                    int byteSize = GetByteSize(tipoVariable);
 
                     var signal = new Signal
                     {
@@ -284,7 +320,7 @@ else
                     }
 
                     await DataService.AddSignalAsync(signal);
-                    bytePos += byteSize;
+                    sequentialBytePos += GetByteSize(tipoVariable);
                     importados++;
                 }
             }

@@ -57,7 +57,7 @@ else
             <MudPaper Class="pa-4 h-100 d-flex flex-column justify-center" Elevation="0" Style="background-color: #1a222c; border: 1px solid rgba(255,255,255,0.05);">
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">POSICIÓN ACTUAL</MudText>
                 <div class="d-flex align-center gap-4">
-                    <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatTime(SessionState.Frames![SessionState.CurrentFrame].Timestamp)</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.Frames![SessionState.CurrentFrame])</MudText>
                     <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatTime(SessionState.TotalDuration)</MudText>
                     <MudSpacer />
                     <MudChip T="string" Color="Color.Info" Variant="Variant.Text">Trama @(SessionState.CurrentFrame + 1)</MudChip>
@@ -292,6 +292,12 @@ else
     }
 
     private string FormatTime(TimeSpan ts) => ts.ToString(@"mm\:ss\.ff");
+
+    private string FormatAbsoluteTime(SessionFrame? frame)
+    {
+        if (frame == null) return "00:00:00.000";
+        return frame.AbsoluteTimestamp.ToString("HH:mm:ss.fff");
+    }
 
     public void Dispose()
     {
