@@ -97,4 +97,43 @@ public class ApsDataService
         using var context = await _dbContextFactory.CreateDbContextAsync();
         return await context.Events.OrderByDescending(e => e.Fecha).Take(10).ToListAsync();
     }
+
+    public async Task AddEventAsync(EventMessage evento)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Events.Add(evento);
+        await context.SaveChangesAsync();
+    }
+
+    // Commands
+    public async Task<List<ScadaCommand>> GetCommandsAsync()
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.Commands.ToListAsync();
+    }
+
+    public async Task AddCommandAsync(ScadaCommand command)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Commands.Add(command);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateCommandAsync(ScadaCommand command)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Commands.Update(command);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteCommandAsync(int id)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        var command = await context.Commands.FindAsync(id);
+        if (command != null)
+        {
+            context.Commands.Remove(command);
+            await context.SaveChangesAsync();
+        }
+    }
 }

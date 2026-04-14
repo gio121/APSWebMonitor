@@ -15,4 +15,5 @@ public class SinopticoElement
     // Properties for specific types
     public string Text { get; set; } = "Texto";
     public int? SignalId { get; set; } // Nullable, bound to Signal if it's a "Señal"
+    public string CommandValue { get; set; } = string.Empty; // The actual command to execute
 }

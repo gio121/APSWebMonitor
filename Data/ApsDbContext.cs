@@ -10,6 +10,7 @@ public class ApsDbContext : DbContext
     public DbSet<Signal> Signals { get; set; }
     public DbSet<Window> Windows { get; set; }
     public DbSet<EventMessage> Events { get; set; }
+    public DbSet<ScadaCommand> Commands { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,13 @@ public class ApsDbContext : DbContext
 
         modelBuilder.Entity<EventMessage>().HasData(
             new EventMessage { Id = 1, Mensaje = "Arrancar Inversor", Fecha = new DateTime(2023, 3, 20, 12, 13, 14), Estado = "OK" }
+        );
+
+        modelBuilder.Entity<ScadaCommand>().HasData(
+            new ScadaCommand { Id = 1, Nombre = "Arrancar Inversor", CommandValue = "CMD_START_INV", RequiereConfirmacion = true, Estilo = "success" },
+            new ScadaCommand { Id = 2, Nombre = "Parar Inversor", CommandValue = "CMD_STOP_INV", RequiereConfirmacion = true, Estilo = "destructive" },
+            new ScadaCommand { Id = 3, Nombre = "Reset Alarmas", CommandValue = "CMD_RESET_ALM", RequiereConfirmacion = false, Estilo = "warning" },
+            new ScadaCommand { Id = 4, Nombre = "Test Comunicaciones", CommandValue = "CMD_TEST_COM", RequiereConfirmacion = false, Estilo = "default" }
         );
     }
 }

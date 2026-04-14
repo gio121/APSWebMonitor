@@ -1,0 +1,223 @@
+@page "/comandos"
+@rendermode InteractiveServer
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@using ApsMonitor.Components.Dialogs
+@inject ApsDataService DataService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <div class="d-flex align-center">
+        <MudText Typo="Typo.h5" Class="fw-bold" Color="Color.Info" Style="font-family: monospace;">>_</MudText>
+        <MudText Typo="Typo.h5" Class="fw-bold ml-2">Comandos</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="OpenNewCommandDialog">Nuevo Comando</MudButton>
+</div>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid Class="mb-6">
+        @foreach (var cmd in _commands)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="4">
+                <MudPaper Class="pa-4 command-card h-100 d-flex flex-column" Elevation="0">
+                    <div class="d-flex justify-space-between align-start mb-2">
+                        <MudText Typo="Typo.subtitle1" Class="fw-bold">@cmd.Nombre</MudText>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="command-value-chip">@cmd.CommandValue</MudChip>
+                    </div>
+                    
+                    <MudText Typo="Typo.caption" Class="text-muted mb-4 d-block">
+                        Confirmación: @(cmd.RequiereConfirmacion ? "Sí" : "No") &middot; Estilo: @cmd.Estilo
+                    </MudText>
+                    
+                    <div class="mt-auto d-flex align-center gap-3">
+                        <MudButton Variant="Variant.Outlined" 
+                                   StartIcon="@Icons.Material.Filled.PlayArrow" 
+                                   Size="Size.Small" 
+                                   Class="exec-btn"
+                                   OnClick="@(() => ExecuteCommand(cmd))">
+                            Ejecutar
+                        </MudButton>
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Class="text-muted icon-btn" OnClick="@(() => OpenEditCommandDialog(cmd))" />
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" Class="icon-btn-error" OnClick="@(() => DeleteCommand(cmd))" />
+                    </div>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+
+    <MudPaper Class="log-panel mt-6" Elevation="0">
+        <div class="pa-4 border-bottom border-dark">
+            <MudText Typo="Typo.subtitle1" Class="fw-bold">Log de Ejecución</MudText>
+        </div>
+        <div class="pa-4 log-content">
+            @if (!_events.Any())
+            {
+                <MudText Typo="Typo.body2" Class="text-muted">Sin eventos</MudText>
+            }
+            else
+            {
+                @foreach(var ev in _events)
+                {
+                    <div class="log-entry mb-2">
+                        <span class="log-time text-muted mr-2">[@ev.Fecha.ToString("HH:mm:ss")]</span>
+                        <span class="log-msg">@ev.Mensaje</span>
+                        @if(!string.IsNullOrEmpty(ev.Estado))
+                        {
+                            <span class="log-status ml-2" style="color: @(ev.Estado == "OK" ? "#4caf50" : "#f44336")">[@ev.Estado]</span>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </MudPaper>
+}
+
+<style>
+    .command-card {
+        background-color: #1a222c;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+    }
+    .command-card:hover {
+        border-color: rgba(255,255,255,0.1);
+    }
+    .command-value-chip {
+        border-color: rgba(255,255,255,0.1) !important;
+        color: #e2e8f0 !important;
+        background-color: #111827 !important;
+        font-family: monospace;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .exec-btn {
+        text-transform: none;
+        color: #e2e8f0;
+        border-color: rgba(255,255,255,0.1);
+        border-radius: 4px;
+    }
+    .icon-btn {
+        color: #94a3b8 !important;
+    }
+    .icon-btn:hover {
+        color: #e2e8f0 !important;
+    }
+    .icon-btn-error:hover {
+        background-color: rgba(244, 67, 54, 0.1) !important;
+    }
+    
+    .log-panel {
+        background-color: #1a222c;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+        min-height: 200px;
+    }
+    .border-dark {
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    .log-content {
+        font-family: monospace;
+        font-size: 13px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .log-msg {
+        color: #e2e8f0;
+    }
+</style>
+
+@code {
+    private List<ScadaCommand> _commands = new();
+    private List<EventMessage> _events = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        _commands = await DataService.GetCommandsAsync();
+        _events = await DataService.GetEventsAsync();
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenNewCommandDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CommandDialog>("Nuevo Comando", options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Comando creado correctamente", Severity.Success);
+        }
+    }
+
+    private async Task OpenEditCommandDialog(ScadaCommand command)
+    {
+        var parameters = new DialogParameters { ["Command"] = command };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CommandDialog>("Editar Comando", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await LoadData();
+            Snackbar.Add("Comando modificado", Severity.Info);
+        }
+    }
+
+    private async Task DeleteCommand(ScadaCommand command)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Eliminar", 
+            $"¿Eliminar el comando '{command.Nombre}'?", 
+            yesText: "Eliminar", cancelText: "Cancelar");
+            
+        if (result == true)
+        {
+            await DataService.DeleteCommandAsync(command.Id);
+            await LoadData();
+        }
+    }
+
+    private async Task ExecuteCommand(ScadaCommand command)
+    {
+        if (command.RequiereConfirmacion)
+        {
+            var result = await DialogService.ShowMessageBoxAsync(
+                "Confirmar Envío",
+                $"¿Estás seguro de que deseas enviar: {command.Nombre}?",
+                yesText: "Ejecutar", cancelText: "Cancelar"
+            );
+
+            if (result != true) return;
+        }
+
+        // Logic to execute would go here. For now, log it.
+        var ev = new EventMessage 
+        { 
+            Fecha = DateTime.Now, 
+            Mensaje = $"Ejecutado comando: {command.Nombre} [{command.CommandValue}]",
+            Estado = "OK" 
+        };
+        await DataService.AddEventAsync(ev);
+        
+        Snackbar.Add($"Comando '{command.Nombre}' ejecutado.", Severity.Success);
+        
+        // Refresh logs
+        _events = await DataService.GetEventsAsync();
+        StateHasChanged();
+    }
+}

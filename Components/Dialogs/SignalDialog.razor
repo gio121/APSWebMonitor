@@ -126,12 +126,7 @@
                                          FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12">
-                        <MudPaper Class="pa-4 formula-card" Elevation="0">
-                            <MudText Typo="Typo.caption" Class="text-muted d-block mb-1">Fórmula:</MudText>
-                            <code style="color: #94a3b8; font-family: monospace;">
-                                valor = (raw &times; @Signal.Escala) + @Signal.Offset
-                            </code>
-                        </MudPaper>
+                        <MudCheckBox @bind-Value="Signal.IsAscii" Label="Lectura ASCII" Color="Color.Info" Dense="true" />
                     </MudItem>
                 </MudGrid>
             </MudTabPanel>

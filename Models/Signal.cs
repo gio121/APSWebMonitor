@@ -20,6 +20,7 @@ public class Signal
     public int BytePosicion { get; set; } = 0;
     public double Escala { get; set; } = 1;
     public double Offset { get; set; } = 0;
+    public bool IsAscii { get; set; } = false;
 
     // Bits Tab – active/inactive text per bit (0..15)
     public string?[] BitTextoActivo   { get; set; } = new string?[16];

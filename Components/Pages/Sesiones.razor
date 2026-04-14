@@ -275,7 +275,11 @@ else
                 && Math.Abs(prev - value) > 0.00001;
 
             string formattedValue;
-            if (signal.BitCount > 1 && signal.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
+            if (signal.IsAscii)
+            {
+                formattedValue = ((char)Math.Max(0, Math.Min(255, value))).ToString();
+            }
+            else if (signal.BitCount > 1 && signal.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
             {
                 var activeBits = new List<string>();
                 int intVal = (int)value;
@@ -324,6 +328,7 @@ else
         public string FormattedValue { get; set; } = "";
         public double RawValue { get; set; }
         public bool HasChanged { get; set; }
+        public bool IsAscii { get; set; }
         public int NodoNumero { get; set; }
         public string NodoDescripcion { get; set; } = "";
     }

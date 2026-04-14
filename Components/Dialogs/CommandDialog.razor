@@ -1,0 +1,85 @@
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+
+<MudDialog Class="command-dialog">
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Command.Nombre"
+                              Label="Nombre del Comando *"
+                              Required="true"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              FullWidth="true"
+                              Placeholder="Ej: Arrancar Inversor" />
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Command.CommandValue"
+                              Label="Valor de Comando/Trama *"
+                              Required="true"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              FullWidth="true"
+                              Placeholder="Ej: CMD_START_INV" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string" @bind-Value="Command.Estilo"
+                           Label="Estilo Visual"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           FullWidth="true">
+                    <MudSelectItem Value="@("success")">Success (Verde)</MudSelectItem>
+                    <MudSelectItem Value="@("warning")">Warning (Naranja)</MudSelectItem>
+                    <MudSelectItem Value="@("destructive")">Destructive (Rojo)</MudSelectItem>
+                    <MudSelectItem Value="@("default")">Default (Gris/Azul)</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" Class="d-flex align-center">
+                <MudCheckBox @bind-Value="Command.RequiereConfirmacion" Label="Requiere confirmación" Color="Color.Info" Dense="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="mr-2">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .command-dialog .mud-dialog-title {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 12px;
+    }
+    .command-dialog .mud-dialog-actions {
+        border-top: 1px solid rgba(255,255,255,0.05);
+        padding: 16px;
+    }
+</style>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public ScadaCommand Command { get; set; } = new ScadaCommand();
+
+    private bool IsEditMode => Command.Id > 0;
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Command.Nombre) || string.IsNullOrWhiteSpace(Command.CommandValue))
+        {
+            return; // required
+        }
+
+        if (IsEditMode)
+            await DataService.UpdateCommandAsync(Command);
+        else
+            await DataService.AddCommandAsync(Command);
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

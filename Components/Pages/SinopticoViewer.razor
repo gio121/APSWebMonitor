@@ -42,6 +42,12 @@
                                 </span>
                             </div>
                         }
+                        else if (el.Type == "Comando")
+                        {
+                            <div class="element-content command-content d-flex align-center justify-center">
+                                @el.Text
+                            </div>
+                        }
                         else
                         {
                             <div class="element-content icon-content">
@@ -125,6 +131,17 @@
         align-items: center;
         justify-content: center;
     }
+    .command-content {
+        background-color: #0d1a10;
+        border: 1px solid #2e7d32;
+        border-radius: 6px;
+        color: #4caf50;
+        font-weight: 500;
+        font-size: 14px;
+        text-align: center;
+        padding: 4px;
+        cursor: pointer;
+    }
 </style>
 
 @code {
@@ -168,6 +185,10 @@
             var sig = SessionState.Signals.FirstOrDefault(s => s.Id == signalId.Value);
             if (sig != null)
             {
+                if (sig.IsAscii)
+                {
+                    return ((char)Math.Max(0, Math.Min(255, val))).ToString();
+                }
                 // Si tiene lógica binaria y textos activos
                 if (sig.BitCount > 1 && sig.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
                 {
