@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <Platforms>AnyCPU;ARM32</Platforms>
+    <PublishAot>False</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

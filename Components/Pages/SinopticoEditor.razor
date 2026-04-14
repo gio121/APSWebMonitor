@@ -5,6 +5,8 @@
 @inject ApsDataService DataService
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
+@inject SessionStateService SessionState
+@implements IDisposable
 @rendermode InteractiveServer
 
 <div class="sinoptico-wrapper ml-n4 mr-n8 mt-n8">
@@ -23,6 +25,11 @@
 <div class="editor-container d-flex">
     <!-- LEFT PANEL: ELEMENTS -->
     <div class="sidebar left-sidebar d-flex flex-column pa-2">
+        <div class="d-flex gap-2 mb-4 px-2">
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="DuplicateSelected" Disabled="@(_selectedElement == null)" Class="flex-grow-1">Duplicar</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="DeleteSelected" Disabled="@(_selectedElement == null)" Class="flex-grow-1">Eliminar</MudButton>
+        </div>
+
         <MudText Typo="Typo.caption" Class="text-muted fw-bold mb-2 px-2 text-uppercase">Elementos</MudText>
         <div class="elements-list">
             @foreach (var type in elementTypes)
@@ -33,11 +40,6 @@
                 </div>
             }
         </div>
-        
-        <MudDivider Class="my-4 op-10" />
-        
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ContentCopy" FullWidth="true" Class="justify-start mb-1" OnClick="DuplicateSelected" Disabled="@(_selectedElement == null)">Duplicar</MudButton>
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" FullWidth="true" Class="justify-start" OnClick="DeleteSelected" Disabled="@(_selectedElement == null)">Eliminar</MudButton>
     </div>
 
     <!-- CENTER PANEL: CANVAS -->
@@ -64,7 +66,9 @@
                     {
                         <div class="element-content signal-content d-flex flex-column">
                             <span class="signal-name">@el.Text</span>
-                            <span class="signal-value fw-bold">--</span>
+                            <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
+                                @GetSignalValueText(el.SignalId)
+                            </span>
                         </div>
                     }
                     else
@@ -274,6 +278,49 @@
                 _elements = new();
             }
         }
+        
+        SessionState.OnStateChanged += SyncValues;
+    }
+
+    private void SyncValues()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetSignalValueText(int? signalId)
+    {
+        if (!SessionState.IsLoaded || !signalId.HasValue) return "--";
+
+        var values = SessionState.GetCurrentValues();
+        if (values.TryGetValue(signalId.Value, out double val))
+        {
+            var sig = SessionState.Signals.FirstOrDefault(s => s.Id == signalId.Value);
+            if (sig != null)
+            {
+                if (sig.BitCount > 1 && sig.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
+                {
+                    var activeBits = new List<string>();
+                    int intVal = (int)val;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        if ((intVal & (1 << i)) != 0 && !string.IsNullOrEmpty(sig.BitTextoActivo[i]))
+                        {
+                            activeBits.Add(sig.BitTextoActivo[i]!);
+                        }
+                    }
+                    return activeBits.Count > 0 ? string.Join(", ", activeBits) : "0 (Todo OK)";
+                }
+                
+                return val.ToString(sig.Formato) + (string.IsNullOrWhiteSpace(sig.Unidad) ? "" : $" {sig.Unidad}");
+            }
+            return val.ToString("0.00");
+        }
+        return "--";
+    }
+
+    public void Dispose()
+    {
+        SessionState.OnStateChanged -= SyncValues;
     }
 
     private string GetIconForType(string type)

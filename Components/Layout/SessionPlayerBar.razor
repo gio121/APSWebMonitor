@@ -8,19 +8,21 @@
     <div class="session-player-global-bar">
         <MudPaper Elevation="25" Class="pa-2 px-4 d-flex align-center gap-4">
             <!-- Info y Controles -->
-            <div class="d-flex align-center gap-2" style="min-width: 280px;">
-                <MudIconButton Icon="@Icons.Material.Filled.SkipPrevious" Size="Size.Small" OnClick="SessionState.GoToStart" />
+            <div class="d-flex align-center gap-2" style="min-width: 320px;">
+                <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" OnClick="SessionState.GoToStart" Title="Ir al inicio" />
+                <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" OnClick="SessionState.PreviousFrame" Title="Trama anterior" />
                 
                 @if (SessionState.IsPlaying)
                 {
-                    <MudIconButton Icon="@Icons.Material.Filled.Pause" Color="Color.Warning" Size="Size.Medium" OnClick="SessionState.Pause" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Pause" Color="Color.Warning" Size="Size.Medium" OnClick="SessionState.Pause" Title="Pausar" />
                 }
                 else
                 {
-                    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Medium" OnClick="SessionState.Play" />
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Medium" OnClick="SessionState.Play" Title="Reproducir" />
                 }
                 
-                <MudIconButton Icon="@Icons.Material.Filled.SkipNext" Size="Size.Small" OnClick="SessionState.GoToEnd" />
+                <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" OnClick="SessionState.NextFrame" Title="Siguiente trama" />
+                <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" OnClick="SessionState.GoToEnd" Title="Ir al final" />
                 
                 <MudDivider Vertical="true" Class="mx-2" Style="height:24px;" />
                 

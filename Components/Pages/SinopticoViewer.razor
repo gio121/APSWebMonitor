@@ -4,6 +4,8 @@
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject NavigationManager NavigationManager
+@inject SessionStateService SessionState
+@implements IDisposable
 @rendermode InteractiveServer
 
 <div class="sinoptico-wrapper ml-n4 mr-n8 mt-n8">
@@ -35,8 +37,9 @@
                         {
                             <div class="element-content signal-content d-flex flex-column">
                                 <span class="signal-name">@el.Text</span>
-                                <!-- Valor estático para visualización, los datos reales de la red requerirían un servicio RT -->
-                                <span class="signal-value fw-bold">--</span>
+                                <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
+                                    @GetSignalValueText(el.SignalId)
+                                </span>
                             </div>
                         }
                         else
@@ -146,6 +149,50 @@
                 _elements = new();
             }
         }
+        
+        SessionState.OnStateChanged += SyncValues;
+    }
+
+    private void SyncValues()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetSignalValueText(int? signalId)
+    {
+        if (!SessionState.IsLoaded || !signalId.HasValue) return "--";
+
+        var values = SessionState.GetCurrentValues();
+        if (values.TryGetValue(signalId.Value, out double val))
+        {
+            var sig = SessionState.Signals.FirstOrDefault(s => s.Id == signalId.Value);
+            if (sig != null)
+            {
+                // Si tiene lógica binaria y textos activos
+                if (sig.BitCount > 1 && sig.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
+                {
+                    var activeBits = new List<string>();
+                    int intVal = (int)val;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        if ((intVal & (1 << i)) != 0 && !string.IsNullOrEmpty(sig.BitTextoActivo[i]))
+                        {
+                            activeBits.Add(sig.BitTextoActivo[i]!);
+                        }
+                    }
+                    return activeBits.Count > 0 ? string.Join(", ", activeBits) : "0 (Todo OK)";
+                }
+                
+                return val.ToString(sig.Formato) + (string.IsNullOrWhiteSpace(sig.Unidad) ? "" : $" {sig.Unidad}");
+            }
+            return val.ToString("0.00");
+        }
+        return "--";
+    }
+
+    public void Dispose()
+    {
+        SessionState.OnStateChanged -= SyncValues;
     }
 
     private string GetIconForType(string type)

@@ -31,7 +31,18 @@ public class SessionParserService
         }
 
         var lines = fileContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-        
+
+        // Calcular el tamaño mapeado de cada nodo para diferenciar tramas
+        var nodeSizes = new Dictionary<int, int>();
+        foreach (var signal in signals)
+        {
+            int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
+            if (!nodeSizes.ContainsKey(signal.NodoNumero) || end > nodeSizes[signal.NodoNumero])
+            {
+                nodeSizes[signal.NodoNumero] = end;
+            }
+        }
+
         var currentValues = new Dictionary<int, double>();
         DateTime? startTime = null;
         int frameIndex = 0;
@@ -70,10 +81,31 @@ public class SessionParserService
             byte[] payload = new byte[payloadLength];
             Array.Copy(frameData, 6, payload, 0, payloadLength);
 
-            // Extraemos todas las señales que entren en la longitud del payload de la respuesta actual.
+            // Buscar qué nodo coincide mejor con el tamaño de este payload
+            int? matchingNode = null;
+            int minDifference = int.MaxValue;
+            foreach (var kvp in nodeSizes)
+            {
+                // El tamaño del payload puede ser exacto o ligeramente mayor (padding)
+                if (payload.Length >= kvp.Value)
+                {
+                    int diff = payload.Length - kvp.Value;
+                    if (diff < minDifference)
+                    {
+                        minDifference = diff;
+                        matchingNode = kvp.Key;
+                    }
+                }
+            }
+
+            if (matchingNode == null) continue;
+
+            // Extraemos solo las señales del nodo que corresponde a esta trama
             bool anyChange = false;
             foreach (var signal in signals)
             {
+                if (signal.NodoNumero != matchingNode.Value) continue;
+
                 int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
                 if (end <= payload.Length)
                 {

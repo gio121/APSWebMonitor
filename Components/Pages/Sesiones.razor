@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
+@using System.Text
 @inject SessionStateService SessionState
 @inject ApsDataService DataService
 @inject ISnackbar Snackbar
@@ -47,8 +48,8 @@ else
                         <MudText Typo="Typo.body2">@SessionState.Frames?.Count.ToString("N0")</MudText>
                     </div>
                     <div class="d-flex justify-space-between">
-                        <MudText Typo="Typo.body2">Duración:</MudText>
-                        <MudText Typo="Typo.body2">@FormatTime(SessionState.TotalDuration)</MudText>
+                        <MudText Typo="Typo.body2">Hora Fin:</MudText>
+                        <MudText Typo="Typo.body2">@FormatAbsoluteTime(SessionState.Frames!.Last())</MudText>
                     </div>
                 </div>
             </MudPaper>
@@ -58,7 +59,7 @@ else
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">POSICIÓN ACTUAL</MudText>
                 <div class="d-flex align-center gap-4">
                     <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.Frames![SessionState.CurrentFrame])</MudText>
-                    <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatTime(SessionState.TotalDuration)</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatAbsoluteTime(SessionState.Frames!.Last())</MudText>
                     <MudSpacer />
                     <MudChip T="string" Color="Color.Info" Variant="Variant.Text">Trama @(SessionState.CurrentFrame + 1)</MudChip>
                 </div>
@@ -101,21 +102,21 @@ else
                     <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #1a222c;">
                         <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
-                                <PropertyColumn Property="x => x.Tag" Title="Tag" />
-                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" />
-                                <TemplateColumn Title="Valor">
+                                <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
+                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
+                                <TemplateColumn Title="Valor" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
                                     <CellTemplate>
-                                        <span class="@(context.Item.HasChanged ? "value-changed" : "")">
+                                        <div class="@(context.Item.HasChanged ? "value-changed" : "")" style="width: 230px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                             @context.Item.FormattedValue
-                                        </span>
+                                        </div>
                                     </CellTemplate>
                                 </TemplateColumn>
                                 <PropertyColumn Property="x => x.Unidad" Title="Unidad" Width="80px" />
-                                <TemplateColumn Title="Trend" Width="120px">
+                                <TemplateColumn Title="Raw Value" CellStyle="width: 120px;" HeaderStyle="width: 120px;">
                                     <CellTemplate>
-                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@(context.Item.HasChanged ? Color.Success : Color.Default)">
-                                            @(context.Item.HasChanged ? "Variando" : "Estable")
-                                        </MudChip>
+                                        <div style="font-variant-numeric: tabular-nums;">
+                                            @context.Item.RawValue
+                                        </div>
                                     </CellTemplate>
                                 </TemplateColumn>
                             </Columns>
@@ -152,7 +153,6 @@ else
     }
     .value-changed {
         color: #3b82f6 !important;
-        font-weight: bold;
         text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
     }
     .mud-table-root .mud-table-head .mud-table-cell {
@@ -245,10 +245,30 @@ else
         if (!SessionState.IsLoaded) return;
 
         var values = SessionState.GetCurrentValues();
-        var newValues = new List<SignalValue>();
 
-        foreach (var signal in SessionState.Signals)
+        if (_currentValues.Count != SessionState.Signals.Count)
         {
+            _currentValues.Clear();
+            foreach (var signal in SessionState.Signals)
+            {
+                _currentValues.Add(new SignalValue
+                {
+                    Id = signal.Id,
+                    Tag = signal.Tag,
+                    Nombre = signal.Nombre,
+                    TipoVariable = signal.TipoVariable,
+                    Unidad = signal.Unidad ?? "",
+                    NodoNumero = signal.NodoNumero,
+                    NodoDescripcion = signal.NodoDescripcion
+                });
+            }
+        }
+
+        foreach (var cv in _currentValues)
+        {
+            var signal = SessionState.Signals.FirstOrDefault(s => s.Id == cv.Id);
+            if (signal == null) continue;
+
             double value = values.TryGetValue(signal.Id, out var v) ? v : 0;
             bool changed = _previousValues != null 
                 && _previousValues.TryGetValue(signal.Id, out var prev) 
@@ -273,22 +293,12 @@ else
                 formattedValue = value.ToString(signal.Formato) + (string.IsNullOrEmpty(signal.Unidad) ? "" : " " + signal.Unidad);
             }
 
-            newValues.Add(new SignalValue
-            {
-                Tag = signal.Tag,
-                Nombre = signal.Nombre,
-                TipoVariable = signal.TipoVariable,
-                Unidad = signal.Unidad ?? "",
-                FormattedValue = formattedValue,
-                RawValue = value,
-                HasChanged = changed,
-                NodoNumero = signal.NodoNumero,
-                NodoDescripcion = signal.NodoDescripcion
-            });
+            cv.FormattedValue = formattedValue;
+            cv.RawValue = value;
+            cv.HasChanged = changed;
         }
 
         _previousValues = new Dictionary<int, double>(values);
-        _currentValues = newValues;
     }
 
     private string FormatTime(TimeSpan ts) => ts.ToString(@"mm\:ss\.ff");
@@ -306,6 +316,7 @@ else
 
     private class SignalValue
     {
+        public int Id { get; set; }
         public string Tag { get; set; } = "";
         public string Nombre { get; set; } = "";
         public string TipoVariable { get; set; } = "";
