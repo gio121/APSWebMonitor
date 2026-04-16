@@ -135,12 +135,13 @@
                                          Label="Señal vinculada" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.SignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
                                          ValueChanged="@(s => OnSignalSelected(s?.Id))"
                                          Variant="Variant.Outlined" 
                                          Margin="Margin.Dense" 
                                          Dense="true"
                                          Clearable="true"
+                                         MaxItems="1000"
                                          Placeholder="Buscar señal..." />
                     </MudItem>
                 }
@@ -154,9 +155,9 @@
                                          Label="Señal de Estado" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.StateSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
                                          ValueChanged="@(s => _selectedElement.StateSignalId = s?.Id)"
-                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" />
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Estado" @bind-Value="_selectedElement.StateSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
                             <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
                             @for (int i = 0; i < 16; i++)
@@ -174,9 +175,9 @@
                                          Label="Señal de Comando" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.CommandSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
                                          ValueChanged="@(s => _selectedElement.CommandSignalId = s?.Id)"
-                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" />
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Comando" @bind-Value="_selectedElement.CommandSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
                             <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
                             @for (int i = 0; i < 16; i++)
@@ -445,15 +446,9 @@
             var signal = _availableSignals.FirstOrDefault(s => s.Id == signalId.Value);
             if (signal != null)
             {
-                // Si es una etiqueta y el texto es el por defecto, lo actualizamos con el nombre de la señal
                 if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal")
                 {
-                    if (string.IsNullOrWhiteSpace(_selectedElement.Text) || 
-                        _selectedElement.Text == "Etiqueta" || 
-                        _selectedElement.Text == "Señal")
-                    {
-                        _selectedElement.Text = signal.Nombre;
-                    }
+                    _selectedElement.Text = signal.Nombre;
                 }
             }
         }
@@ -481,7 +476,9 @@
 
         return _availableSignals.Where(x => 
             x.Nombre.Contains(value, StringComparison.InvariantCultureIgnoreCase) || 
-            x.Tag.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+            x.Tag.Contains(value, StringComparison.InvariantCultureIgnoreCase) ||
+            x.NodoNumero.ToString() == value ||
+            (x.NodoDescripcion?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
     }
     
     private void ClearSelection() => _selectedElement = null;

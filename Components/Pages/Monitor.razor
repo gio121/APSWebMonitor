@@ -1,0 +1,276 @@
+@page "/monitor"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<div class="d-flex justify-space-between align-center mb-4 mt-n2">
+    <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
+    <MudChip T="string" Color="@(_isConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+        @(_isConnected ? "Conectado" : "Desconectado")
+    </MudChip>
+</div>
+
+<MudGrid>
+    <!-- Configuración Card -->
+    <MudItem xs="12" md="4">
+        <MudPaper Class="pa-4 h-100 configuration-panel" Elevation="0">
+            <MudText Typo="Typo.subtitle2" Class="text-muted mb-4 d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.SettingsEthernet" Size="Size.Small" Class="mr-2" />
+                CONFIGURACIÓN DE RED
+            </MudText>
+
+            <MudTextField @bind-Value="_ipAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" />
+            <MudTextField @bind-Value="_port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 80 / /api/send" />
+
+            <MudButton Variant="Variant.Filled" Color="@(_isConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@_isConnecting">
+                @if (_isConnecting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Conectando...</span>
+                }
+                else if (_isConnected)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.PowerOff" Class="mr-2" />
+                    <span>Desconectar</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Power" Class="mr-2" />
+                    <span>Conectar</span>
+                }
+            </MudButton>
+
+            <MudDivider Class="my-4 custom-divider" />
+
+            <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">Acciones de Prueba</MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!_isConnected || _isSending" Class="mb-2">
+                @if (_isSending)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Enviando...</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Send" Class="mr-2" />
+                    <span>Enviar Trama de Prueba</span>
+                }
+            </MudButton>
+        </MudPaper>
+    </MudItem>
+
+    <!-- Consola de Monitorización -->
+    <MudItem xs="12" md="8">
+        <MudPaper Class="pa-4 h-100 console-panel d-flex flex-column" Elevation="0">
+            <div class="d-flex justify-space-between align-center mb-2">
+                <MudText Typo="Typo.subtitle2" Class="text-muted d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Class="mr-2" />
+                    TRÁFICO DE RED
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.ClearAll" Size="Size.Small" Color="Color.Default" OnClick="ClearLogs" Title="Limpiar Consola" />
+            </div>
+
+            <div class="console-output flex-grow-1 p-3">
+                @if (_logs.Count == 0)
+                {
+                    <div class="d-flex flex-column align-center justify-center h-100 text-muted">
+                        <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" Size="Size.Large" Class="mb-2" Style="opacity: 0.5;" />
+                        <MudText Typo="Typo.body2">Esperando tráfico de red...</MudText>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var log in _logs)
+                    {
+                        <div class="log-entry @(log.IsError ? "log-error" : (log.IsSent ? "log-tx" : "log-rx")) mb-1">
+                            <span class="log-time">@log.Timestamp.ToString("HH:mm:ss.fff")</span>
+                            <span class="log-dir">@(log.IsSent ? "TX" : (log.IsError ? "ER" : "RX"))</span>
+                            <span class="log-msg">@log.Message</span>
+                        </div>
+                    }
+                }
+            </div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<style>
+    .configuration-panel {
+        background-color: #1a222c; 
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .console-panel {
+        background-color: #1a222c; 
+        border: 1px solid rgba(255,255,255,0.05);
+        min-height: 400px;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .custom-input .mud-input {
+        background-color: rgba(0,0,0,0.2) !important;
+    }
+    .custom-divider {
+        border-color: rgba(255,255,255,0.05) !important;
+    }
+    .console-output {
+        background-color: #0f172a;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.5);
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.85rem;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+    .log-entry {
+        display: flex;
+        gap: 8px;
+        padding: 2px 4px;
+        border-radius: 2px;
+    }
+    .log-entry:hover {
+        background-color: rgba(255,255,255,0.05);
+    }
+    .log-time {
+        color: #64748b;
+        min-width: 90px;
+    }
+    .log-dir {
+        font-weight: bold;
+        min-width: 20px;
+    }
+    .log-tx .log-dir {
+        color: #3b82f6; /* Blue for Sent */
+    }
+    .log-tx .log-msg {
+        color: #93c5fd;
+    }
+    .log-rx .log-dir {
+        color: #10b981; /* Green for Received */
+    }
+    .log-rx .log-msg {
+        color: #6ee7b7;
+    }
+    .log-error .log-dir {
+        color: #ef4444; /* Red for Error */
+    }
+    .log-error .log-msg {
+        color: #fca5a5;
+    }
+    .log-msg {
+        word-break: break-all;
+    }
+</style>
+
+@code {
+    private string _ipAddress = "192.168.1.100";
+    private string _port = "80";
+    private bool _isConnected = false;
+    private bool _isConnecting = false;
+    private bool _isSending = false;
+    private List<LogEntry> _logs = new();
+    private static readonly HttpClient _httpClient = new HttpClient();
+
+    private async Task ToggleConnection()
+    {
+        if (_isConnected)
+        {
+            _isConnected = false;
+            LogMsg("Sistema", "Desconectado. Deteniendo monitorización.", false, false);
+            Snackbar.Add("Monitorización detenida", Severity.Info);
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(_ipAddress))
+            {
+                Snackbar.Add("Introduce una dirección IP válida", Severity.Warning);
+                return;
+            }
+
+            _isConnecting = true;
+            StateHasChanged();
+            
+            // Simulate connection delay
+            await Task.Delay(500);
+            
+            _isConnected = true;
+            _isConnecting = false;
+            
+            var baseUrl = $"http://{_ipAddress}:{_port}";
+            LogMsg("Sistema", $"Conectado a {baseUrl}. Listo para enviar/recibir.", false, false);
+            Snackbar.Add("Conectado a la tarjeta de comunicaciones", Severity.Success);
+        }
+    }
+
+    private async Task TestSendPayload()
+    {
+        if (!_isConnected) return;
+        
+        _isSending = true;
+        StateHasChanged();
+
+        try
+        {
+            var targetUrl = $"http://{_ipAddress}:{_port}/api/send";
+            var payloadArray = new int[] { 85, 15, 0, 2, 1, 26, 0, 0, 0, 0, 0, 0, 0, 131 };
+            
+            var requestContent = new { payload = payloadArray };
+            
+            LogMsg("Trama", $"Enviando POST a {targetUrl} con payload: [{string.Join(", ", payloadArray)}]", true, false);
+
+            var response = await _httpClient.PostAsJsonAsync(targetUrl, requestContent);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseStr = await response.Content.ReadAsStringAsync();
+                LogMsg("Respuesta", $"Código {response.StatusCode}. Contenido: {responseStr}", false, false);
+            }
+            else
+            {
+                LogMsg("Error", $"Fallo en la petición. Código: {response.StatusCode}", false, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogMsg("Excepción", ex.Message, false, true);
+            Snackbar.Add($"Error al enviar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private void LogMsg(string prefix, string message, bool isSent, bool isError)
+    {
+        _logs.Add(new LogEntry
+        {
+            Timestamp = DateTime.Now,
+            Message = $"[{prefix}] {message}",
+            IsSent = isSent,
+            IsError = isError
+        });
+        
+        // Keep only last 100 logs
+        if (_logs.Count > 100)
+        {
+            _logs.RemoveAt(0);
+        }
+        
+        // Use JS interop later to auto-scroll to bottom if needed. For now simple enough.
+    }
+
+    private void ClearLogs()
+    {
+        _logs.Clear();
+    }
+
+    private class LogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Message { get; set; } = "";
+        public bool IsSent { get; set; }
+        public bool IsError { get; set; }
+    }
+}
