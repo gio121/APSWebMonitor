@@ -157,6 +157,12 @@
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           Class="flex-1" />
+                            <MudCheckBox T="bool" Value="@Signal.BitEsAlarma[bitIndex]"
+                                         ValueChanged="@((bool v) => Signal.BitEsAlarma[bitIndex] = v)"
+                                         Color="Color.Error"
+                                         Dense="true"
+                                         Class="ml-2"
+                                         Label="Alarma" />
                         </div>
                     }
                 </div>
@@ -212,6 +218,10 @@
         
         var inactivo = Signal.BitTextoInactivo;
         if (inactivo.Length < 16) { Array.Resize(ref inactivo, 16); Signal.BitTextoInactivo = inactivo; }
+
+        Signal.BitEsAlarma ??= new bool[16];
+        var alarma = Signal.BitEsAlarma;
+        if (alarma.Length < 16) { Array.Resize(ref alarma, 16); Signal.BitEsAlarma = alarma; }
     }
 
     private async Task OnNodeNumberChanged(int newNumber)

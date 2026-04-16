@@ -60,11 +60,11 @@
                     
                     @if (el.Type == "Etiqueta")
                     {
-                        <div class="element-content label-content">@el.Text</div>
+                        <div class="element-content label-content" style="color: @el.Color;">@el.Text</div>
                     }
                     else if (el.Type == "Señal")
                     {
-                        <div class="element-content signal-content d-flex flex-column">
+                        <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
                             <span class="signal-name">@el.Text</span>
                             <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
                                 @GetSignalValueText(el.SignalId)
@@ -73,14 +73,18 @@
                     }
                     else if (el.Type == "Comando")
                     {
-                        <div class="element-content command-content d-flex align-center justify-center">
+                        <div class="element-content command-content d-flex align-center justify-center" style="border-color: @el.Color; color: @el.Color;">
                             @el.Text
                         </div>
+                    }
+                    else if (el.Type == "Linea H" || el.Type == "Linea V")
+                    {
+                        <div class="element-content line-content" style="background-color: @el.Color;"></div>
                     }
                     else
                     {
                         <div class="element-content icon-content">
-                            <MudIcon Icon="@GetIconForType(el.Type)" Color="Color.Warning" />
+                            <MudIcon Icon="@GetIconForType(el.Type)" Style="@($"color: {el.Color};")" />
                         </div>
                     }
                 </div>
@@ -112,19 +116,73 @@
                 <MudItem xs="12">
                     <MudNumericField @bind-Value="_selectedElement.Rotation" Label="Rotación" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
+                <MudItem xs="12">
+                    <MudColorPicker Label="Color" @bind-Text="_selectedElement.Color" Style="@($"color: {_selectedElement.Color};")" Variant="Variant.Outlined" Margin="Margin.Dense" DisableAlpha="true" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Class="text-muted fw-bold d-block text-uppercase mb-2">Organizar</MudText>
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.VerticalAlignTop" Size="Size.Small" OnClick="BringToFront" Class="flex-grow-1">Traer al frente</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.VerticalAlignBottom" Size="Size.Small" OnClick="SendToBack" Class="flex-grow-1">Enviar al fondo</MudButton>
+                    </div>
+                </MudItem>
                 
                 @if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal")
                 {
                     <MudItem xs="12">
-                        <MudSelect T="int?" Value="@_selectedElement.SignalId" 
-                                   Label="Señal vinculada" 
-                                   Variant="Variant.Outlined" 
-                                   Margin="Margin.Dense" 
-                                   Clearable="true"
-                                   ValueChanged="@OnSignalSelected">
-                            @foreach (var sig in _availableSignals)
+                        <MudAutocomplete T="Signal" 
+                                         Label="Señal vinculada" 
+                                         Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.SignalId))"
+                                         SearchFunc="@SearchSignals"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ValueChanged="@(s => OnSignalSelected(s?.Id))"
+                                         Variant="Variant.Outlined" 
+                                         Margin="Margin.Dense" 
+                                         Dense="true"
+                                         Clearable="true"
+                                         Placeholder="Buscar señal..." />
+                    </MudItem>
+                }
+
+                @if (_selectedElement.Type == "Contactor" || _selectedElement.Type == "Contactor V")
+                {
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.caption" Class="text-muted fw-bold d-block text-uppercase mb-2">Estado</MudText>
+                        <MudAutocomplete T="Signal" 
+                                         Label="Señal de Estado" 
+                                         Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.StateSignalId))"
+                                         SearchFunc="@SearchSignals"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ValueChanged="@(s => _selectedElement.StateSignalId = s?.Id)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" />
+                        <MudSelect T="int?" Label="Bit de Estado" @bind-Value="_selectedElement.StateSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
+                            <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
+                            @for (int i = 0; i < 16; i++)
                             {
-                                <MudSelectItem Value="@((int?)sig.Id)">@sig.Nombre [@sig.Tag]</MudSelectItem>
+                                int bit = i;
+                                <MudSelectItem Value="@((int?)bit)">Bit @bit</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.caption" Class="text-muted fw-bold d-block text-uppercase mb-2">Comando</MudText>
+                        <MudAutocomplete T="Signal" 
+                                         Label="Señal de Comando" 
+                                         Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.CommandSignalId))"
+                                         SearchFunc="@SearchSignals"
+                                         ToStringFunc="@(s => s == null ? null : $"{s.Nombre} [{s.Tag}]")"
+                                         ValueChanged="@(s => _selectedElement.CommandSignalId = s?.Id)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" />
+                        <MudSelect T="int?" Label="Bit de Comando" @bind-Value="_selectedElement.CommandSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
+                            <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
+                            @for (int i = 0; i < 16; i++)
+                            {
+                                int bit = i;
+                                <MudSelectItem Value="@((int?)bit)">Bit @bit</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
@@ -140,7 +198,16 @@
                 @if (_selectedElement.Type == "Comando")
                 {
                     <MudItem xs="12">
-                        <MudTextField @bind-Value="_selectedElement.CommandValue" Label="Comando a enviar" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="Ej: START_INV" />
+                        <MudSelect T="string" Label="Comando a enviar" 
+                                   Value="@_selectedElement.CommandValue" 
+                                   ValueChanged="OnCommandSelected"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Dense="true">
+                            @foreach (var cmd in _availableCommands)
+                            {
+                                <MudSelectItem Value="@cmd.CommandValue">@cmd.Nombre (@cmd.Tipo)</MudSelectItem>
+                            }
+                        </MudSelect>
                     </MudItem>
                 }
             </MudGrid>
@@ -250,7 +317,18 @@
     .icon-content {
         display: flex;
         align-items: center;
-        justify-center: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+    .icon-content svg {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .line-content {
+        background-color: var(--mud-palette-warning);
+        width: 100%;
+        height: 100%;
     }
     .command-content {
         background-color: #0d1a10;
@@ -271,12 +349,13 @@
     
     private Window? _window;
     private List<Signal> _availableSignals = new();
+    private List<ScadaCommand> _availableCommands = new();
     private List<SinopticoElement> _elements = new();
     private SinopticoElement? _selectedElement;
     
     private bool _showGrid = true;
     
-    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Borne" };
+    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne" };
     
     // Drag state
     private string _draggedType = "";
@@ -289,6 +368,7 @@
         var allWindows = await DataService.GetWindowsAsync();
         _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
         _availableSignals = await DataService.GetSignalsAsync();
+        _availableCommands = await DataService.GetCommandsAsync();
         
         if (_window != null && !string.IsNullOrWhiteSpace(_window.ContentJson))
         {
@@ -350,24 +430,7 @@
         SessionState.OnStateChanged -= SyncValues;
     }
 
-    private string GetIconForType(string type)
-    {
-        return type switch
-        {
-            "Etiqueta" => Icons.Material.Filled.TextFormat,
-            "Señal" => Icons.Material.Filled.Sensors,
-            "Comando" => Icons.Material.Filled.ToggleOn,
-            "Linea H" => Icons.Material.Filled.Remove,
-            "Linea V" => Icons.Material.Filled.MoreVert,
-            "Diodo" => Icons.Material.Filled.PlayArrow,
-            "Resistencia" => Icons.Material.Filled.Timeline,
-            "Transformador" => Icons.Material.Filled.SyncAlt,
-            "Fusible" => Icons.Material.Filled.PowerInput,
-            "Interruptor" => Icons.Material.Filled.ToggleOff,
-            "Borne" => Icons.Material.Filled.RadioButtonUnchecked,
-            _ => Icons.Material.Filled.SettingsInputComponent
-        };
-    }
+    private string GetIconForType(string type) => SinopticoIconProvider.GetIcon(type);
 
     private void ToggleGrid() => _showGrid = !_showGrid;
 
@@ -394,6 +457,31 @@
                 }
             }
         }
+    }
+
+    private async Task OnCommandSelected(string commandValue)
+    {
+        if (_selectedElement == null) return;
+        _selectedElement.CommandValue = commandValue;
+        
+        var cmd = _availableCommands.FirstOrDefault(c => c.CommandValue == commandValue);
+        if (cmd != null)
+        {
+            if (_selectedElement.Text == "Comando" || string.IsNullOrWhiteSpace(_selectedElement.Text))
+            {
+                _selectedElement.Text = cmd.Nombre;
+            }
+        }
+    }
+
+    private async Task<IEnumerable<Signal>> SearchSignals(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return _availableSignals;
+
+        return _availableSignals.Where(x => 
+            x.Nombre.Contains(value, StringComparison.InvariantCultureIgnoreCase) || 
+            x.Tag.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
     
     private void ClearSelection() => _selectedElement = null;
@@ -438,6 +526,7 @@
             // Default sizes based on type
             if (_draggedType == "Señal") { newEl.Width = 160; newEl.Height = 60; }
             else if (_draggedType.Contains("Linea")) { newEl.Width = (_draggedType == "Linea H") ? 100 : 4; newEl.Height = (_draggedType == "Linea V") ? 100 : 4; }
+            else if (_draggedType == "Contactor V") { newEl.Width = 30; newEl.Height = 60; }
             else { newEl.Width = 60; newEl.Height = 30; }
 
             _elements.Add(newEl);
@@ -469,10 +558,36 @@
                 Height = _selectedElement.Height,
                 Rotation = _selectedElement.Rotation,
                 Text = _selectedElement.Text,
-                SignalId = _selectedElement.SignalId
+                SignalId = _selectedElement.SignalId,
+                Color = _selectedElement.Color,
+                CommandValue = _selectedElement.CommandValue,
+                CommandSignalId = _selectedElement.CommandSignalId,
+                CommandSignalBit = _selectedElement.CommandSignalBit,
+                StateSignalId = _selectedElement.StateSignalId,
+                StateSignalBit = _selectedElement.StateSignalBit
             };
             _elements.Add(dupe);
             _selectedElement = dupe;
+        }
+    }
+
+    private void BringToFront()
+    {
+        if (_selectedElement != null)
+        {
+            _elements.Remove(_selectedElement);
+            _elements.Add(_selectedElement);
+            StateHasChanged();
+        }
+    }
+
+    private void SendToBack()
+    {
+        if (_selectedElement != null)
+        {
+            _elements.Remove(_selectedElement);
+            _elements.Insert(0, _selectedElement);
+            StateHasChanged();
         }
     }
 

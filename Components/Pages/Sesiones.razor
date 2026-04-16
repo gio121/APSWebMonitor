@@ -245,6 +245,7 @@ else
         if (!SessionState.IsLoaded) return;
 
         var values = SessionState.GetCurrentValues();
+        var rawValues = SessionState.GetRawValues();
 
         if (_currentValues.Count != SessionState.Signals.Count)
         {
@@ -270,6 +271,8 @@ else
             if (signal == null) continue;
 
             double value = values.TryGetValue(signal.Id, out var v) ? v : 0;
+            double rawValue = rawValues.TryGetValue(signal.Id, out var rv) ? rv : 0;
+
             bool changed = _previousValues != null 
                 && _previousValues.TryGetValue(signal.Id, out var prev) 
                 && Math.Abs(prev - value) > 0.00001;
@@ -298,7 +301,7 @@ else
             }
 
             cv.FormattedValue = formattedValue;
-            cv.RawValue = value;
+            cv.RawValue = rawValue;
             cv.HasChanged = changed;
         }
 

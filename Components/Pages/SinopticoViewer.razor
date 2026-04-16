@@ -31,11 +31,11 @@
                         
                         @if (el.Type == "Etiqueta")
                         {
-                            <div class="element-content label-content">@el.Text</div>
+                            <div class="element-content label-content" style="color: @el.Color;">@el.Text</div>
                         }
                         else if (el.Type == "Señal")
                         {
-                            <div class="element-content signal-content d-flex flex-column">
+                            <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
                                 <span class="signal-name">@el.Text</span>
                                 <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
                                     @GetSignalValueText(el.SignalId)
@@ -44,14 +44,25 @@
                         }
                         else if (el.Type == "Comando")
                         {
-                            <div class="element-content command-content d-flex align-center justify-center">
+                            <div class="element-content command-content d-flex align-center justify-center" style="border-color: @el.Color; color: @el.Color;">
                                 @el.Text
+                            </div>
+                        }
+                        else if (el.Type == "Linea H" || el.Type == "Linea V")
+                        {
+                            <div class="element-content line-content" style="background-color: @el.Color;"></div>
+                        }
+                        else if (el.Type == "Contactor" || el.Type == "Contactor V")
+                        {
+                            var state = GetContactorState(el);
+                            <div class="element-content icon-content">
+                                <MudIcon Icon="@state.Icon" Style="@($"color: {state.Color};")" />
                             </div>
                         }
                         else
                         {
                             <div class="element-content icon-content">
-                                <MudIcon Icon="@GetIconForType(el.Type)" Color="Color.Warning" />
+                                <MudIcon Icon="@GetIconForType(el.Type)" Style="@($"color: {el.Color};")" />
                             </div>
                         }
                     </div>
@@ -130,6 +141,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+    .icon-content svg {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .line-content {
+        background-color: var(--mud-palette-warning);
+        width: 100%;
+        height: 100%;
     }
     .command-content {
         background-color: #0d1a10;
@@ -216,22 +238,40 @@
         SessionState.OnStateChanged -= SyncValues;
     }
 
-    private string GetIconForType(string type)
+    private string GetIconForType(string type) => SinopticoIconProvider.GetIcon(type);
+
+    private (string Icon, string Color) GetContactorState(SinopticoElement el)
     {
-        return type switch
+        bool stateActive = false;
+        bool commandActive = false;
+
+        var values = SessionState.GetCurrentValues();
+
+        // Check State Bit
+        if (el.StateSignalId.HasValue && el.StateSignalBit.HasValue)
         {
-            "Etiqueta" => Icons.Material.Filled.TextFormat,
-            "Señal" => Icons.Material.Filled.Sensors,
-            "Comando" => Icons.Material.Filled.ToggleOn,
-            "Linea H" => Icons.Material.Filled.Remove,
-            "Linea V" => Icons.Material.Filled.MoreVert,
-            "Diodo" => Icons.Material.Filled.PlayArrow,
-            "Resistencia" => Icons.Material.Filled.Timeline,
-            "Transformador" => Icons.Material.Filled.SyncAlt,
-            "Fusible" => Icons.Material.Filled.PowerInput,
-            "Interruptor" => Icons.Material.Filled.ToggleOff,
-            "Borne" => Icons.Material.Filled.RadioButtonUnchecked,
-            _ => Icons.Material.Filled.SettingsInputComponent
-        };
+            if (values.TryGetValue(el.StateSignalId.Value, out double val))
+            {
+                stateActive = ((int)val & (1 << el.StateSignalBit.Value)) != 0;
+            }
+        }
+
+        // Check Command Bit
+        if (el.CommandSignalId.HasValue && el.CommandSignalBit.HasValue)
+        {
+            if (values.TryGetValue(el.CommandSignalId.Value, out double val))
+            {
+                commandActive = ((int)val & (1 << el.CommandSignalBit.Value)) != 0;
+            }
+        }
+
+        // Determine Icon (based on State)
+        string iconName = el.Type == "Contactor V" ? (stateActive ? "Contactor V" : "Contactor V_Closed") : (stateActive ? "Contactor" : "Contactor_Closed");
+        string icon = SinopticoIconProvider.GetIcon(iconName);
+
+        // Determine Color (based on Discrepancy)
+        string color = stateActive != commandActive ? "#f44336" : el.Color;
+
+        return (icon, color);
     }
 }

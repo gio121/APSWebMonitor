@@ -7,4 +7,5 @@ public class ScadaCommand
     public string CommandValue { get; set; } = string.Empty;
     public bool RequiereConfirmacion { get; set; } = true;
     public string Estilo { get; set; } = "default"; // success, destructive, warning, default
+    public string Tipo { get; set; } = "Interna"; // Interna, Modificación de Variables
 }

@@ -1,4 +1,6 @@
 using ApsMonitor.Models;
+using System.Buffers;
+using System.Text;
 
 namespace ApsMonitor.Services;
 
@@ -44,6 +46,7 @@ public class SessionParserService
         }
 
         var currentValues = new Dictionary<int, double>();
+        var currentRawValues = new Dictionary<int, double>();
         DateTime? startTime = null;
         int frameIndex = 0;
 
@@ -112,6 +115,7 @@ public class SessionParserService
                     double rawValue = ReadValue(payload, signal.BytePosicion, signal.TipoVariable);
                     double physicalValue = ApsCalculationUtils.CalculatePhysical(rawValue, signal.Escala, signal.Offset);
                     currentValues[signal.Id] = physicalValue;
+                    currentRawValues[signal.Id] = rawValue;
                     anyChange = true;
                 }
             }
@@ -123,7 +127,8 @@ public class SessionParserService
                     Index = frameIndex++,
                     Timestamp = timestamp - startTime.Value,
                     AbsoluteTimestamp = timestamp,
-                    Values = new Dictionary<int, double>(currentValues)
+                    Values = new Dictionary<int, double>(currentValues),
+                    RawValues = new Dictionary<int, double>(currentRawValues)
                 };
                 frames.Add(frame);
             }

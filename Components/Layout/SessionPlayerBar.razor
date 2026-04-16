@@ -36,7 +36,7 @@
                            ValueChanged="OnSliderChanged" 
                            Min="0" Max="@(SessionState.Frames.Count - 1)" 
                            Step="1" Color="Color.Primary" Class="ma-0" />
-                <MudText Typo="Typo.caption" Style="min-width:60px; text-align:right;">@FormatDuration(SessionState.TotalDuration)</MudText>
+                <MudText Typo="Typo.caption" Style="min-width:60px; text-align:right;">@FormatTime(SessionState.Frames!.Last())</MudText>
             </div>
 
             <!-- Velocidad -->
@@ -51,8 +51,8 @@
                 }
             </div>
 
-            <!-- Botón Cerrar Sesión -->
-            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="SessionState.Stop" Title="Cerrar sesión" />
+                <!-- Botón Cerrar Sesión -->
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="CloseSession" Title="Cerrar sesión" />
         </MudPaper>
     </div>
 }
@@ -87,6 +87,11 @@
     private void OnSliderChanged(int val)
     {
         SessionState.SeekTo(val);
+    }
+
+    private void CloseSession()
+    {
+        SessionState.CloseSession();
     }
 
     private string FormatTime(SessionFrame? frame)

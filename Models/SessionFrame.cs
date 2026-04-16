@@ -10,4 +10,5 @@ public class SessionFrame
     public TimeSpan Timestamp { get; set; }
     public DateTime AbsoluteTimestamp { get; set; }
     public Dictionary<int, double> Values { get; set; } = new();
+    public Dictionary<int, double> RawValues { get; set; } = new();
 }

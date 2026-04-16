@@ -25,6 +25,17 @@
                               Placeholder="Ej: CMD_START_INV" />
             </MudItem>
 
+            <MudItem xs="12">
+                <MudSelect T="string" @bind-Value="Command.Tipo"
+                           Label="Tipo de Comando"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           FullWidth="true">
+                    <MudSelectItem Value="@("Interna")">Comando Interno</MudSelectItem>
+                    <MudSelectItem Value="@("Modificación de Variables")">Modificación de Variables</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
             <MudItem xs="12" sm="6">
                 <MudSelect T="string" @bind-Value="Command.Estilo"
                            Label="Estilo Visual"

@@ -91,6 +91,23 @@ public class SessionStateService : IDisposable
         NotifyStateChanged();
     }
 
+    /// <summary>
+    /// Cierra la sesión cargada liberando los datos asociados.
+    /// </summary>
+    public void CloseSession()
+    {
+        // Detener cualquier reproducción activa
+        Stop();
+
+        // Liberar datos de la sesión
+        Frames = null;
+        Signals = new List<Signal>();
+        FileName = string.Empty;
+        CurrentFrame = 0;
+
+        NotifyStateChanged();
+    }
+
     public void NextFrame()
     {
         if (!IsLoaded || CurrentFrame >= Frames!.Count - 1) return;
@@ -136,6 +153,13 @@ public class SessionStateService : IDisposable
         if (!IsLoaded || CurrentFrame >= Frames!.Count)
             return new Dictionary<int, double>();
         return Frames[CurrentFrame].Values;
+    }
+
+    public Dictionary<int, double> GetRawValues()
+    {
+        if (!IsLoaded || CurrentFrame >= Frames!.Count)
+            return new Dictionary<int, double>();
+        return Frames[CurrentFrame].RawValues;
     }
 
     private void NotifyStateChanged()

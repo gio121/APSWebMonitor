@@ -16,4 +16,11 @@ public class SinopticoElement
     public string Text { get; set; } = "Texto";
     public int? SignalId { get; set; } // Nullable, bound to Signal if it's a "Señal"
     public string CommandValue { get; set; } = string.Empty; // The actual command to execute
+    public string Color { get; set; } = "#ff9800"; // Default Warning color
+    
+    // Contactor Specific Properties
+    public int? CommandSignalId { get; set; }
+    public int? CommandSignalBit { get; set; }
+    public int? StateSignalId { get; set; }
+    public int? StateSignalBit { get; set; }
 }

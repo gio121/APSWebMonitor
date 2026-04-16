@@ -25,6 +25,7 @@ public class Signal
     // Bits Tab – active/inactive text per bit (0..15)
     public string?[] BitTextoActivo   { get; set; } = new string?[16];
     public string?[] BitTextoInactivo { get; set; } = new string?[16];
+    public bool[] BitEsAlarma { get; set; } = new bool[16];
 
     // Current State (Mocked)
     public double ValorActual { get; set; } = 0;

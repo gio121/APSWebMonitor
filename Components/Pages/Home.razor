@@ -48,7 +48,7 @@ else
                     <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Color="Color.Error" Class="mr-2" />
                     <MudText Typo="Typo.body2" Class="text-muted">Alarmas</MudText>
                 </div>
-                <MudText Typo="Typo.h4" Class="fw-bold text-error">1</MudText>
+                <MudText Typo="Typo.h4" Class="fw-bold text-error">@_activeAlarmCount</MudText>
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -170,7 +170,9 @@ else
         _events = await DataService.GetEventsAsync();
         _isLoading = false;
 
-        SessionState.OnStateChanged += () => InvokeAsync(StateHasChanged);
+        // Use a stored delegate so we can unsubscribe the exact same handler on dispose.
+        _onStateChangedHandler = () => InvokeAsync(StateHasChanged);
+        SessionState.OnStateChanged += _onStateChangedHandler;
     }
 
     private double GetCurrentValue(Signal signal)
@@ -188,8 +190,32 @@ else
         return value.ToString(signal.Formato) + (string.IsNullOrWhiteSpace(signal.Unidad) ? "" : $" {signal.Unidad}");
     }
 
+    private int _activeAlarmCount => GetActiveAlarmCount();
+
+    private int GetActiveAlarmCount()
+    {
+        int count = 0;
+        foreach (var signal in _signals)
+        {
+            if (signal.BitEsAlarma == null) continue;
+            double rawValue = GetCurrentValue(signal);
+            int intVal = (int)rawValue;
+            for (int i = 0; i < signal.BitCount && i < signal.BitEsAlarma.Length; i++)
+            {
+                if (signal.BitEsAlarma[i] && ((intVal >> i) & 1) == 1)
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    private Action? _onStateChangedHandler;
+
     public void Dispose()
     {
-        SessionState.OnStateChanged -= StateHasChanged;
+        if (_onStateChangedHandler != null)
+            SessionState.OnStateChanged -= _onStateChangedHandler;
     }
 }
