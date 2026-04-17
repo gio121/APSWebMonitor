@@ -23,4 +23,6 @@ public class SinopticoElement
     public int? CommandSignalBit { get; set; }
     public int? StateSignalId { get; set; }
     public int? StateSignalBit { get; set; }
+    public string ErrorColor { get; set; } = "#f44336"; // Default error/discrepancy color
+    public bool ProportionalScale { get; set; } = true;
 }

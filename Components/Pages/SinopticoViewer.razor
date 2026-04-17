@@ -52,17 +52,10 @@
                         {
                             <div class="element-content line-content" style="background-color: @el.Color;"></div>
                         }
-                        else if (el.Type == "Contactor" || el.Type == "Contactor V")
-                        {
-                            var state = GetContactorState(el);
-                            <div class="element-content icon-content">
-                                <MudIcon Icon="@state.Icon" Style="@($"color: {state.Color};")" />
-                            </div>
-                        }
                         else
                         {
                             <div class="element-content icon-content">
-                                <MudIcon Icon="@GetIconForType(el.Type)" Style="@($"color: {el.Color};")" />
+                                @((MarkupString)GetIconMarkup(el))
                             </div>
                         }
                     </div>
@@ -266,12 +259,48 @@
         }
 
         // Determine Icon (based on State)
-        string iconName = el.Type == "Contactor V" ? (stateActive ? "Contactor V" : "Contactor V_Closed") : (stateActive ? "Contactor" : "Contactor_Closed");
+        string iconName = el.Type == "Contactor V" ? (stateActive ? "Contactor" : "Contactor_Closed") : (stateActive ? "Contactor" : "Contactor_Closed");
+        // Wait, the logic for V or H was slightly different before, let me check SinopticoIconProvider
+        // Actually I'll use the logic I had before
+        if (el.Type == "Contactor V") 
+            iconName = stateActive ? "Contactor V" : "Contactor V_Closed";
+        else
+            iconName = stateActive ? "Contactor" : "Contactor_Closed";
+
         string icon = SinopticoIconProvider.GetIcon(iconName);
 
         // Determine Color (based on Discrepancy)
-        string color = stateActive != commandActive ? "#f44336" : el.Color;
+        string color = stateActive != commandActive ? el.ErrorColor : el.Color;
 
         return (icon, color);
+    }
+
+    private string GetIconMarkup(SinopticoElement el)
+    {
+        var icon = SinopticoIconProvider.GetIcon(el.Type);
+        var color = el.Color;
+        
+        if (el.Type == "Contactor" || el.Type == "Contactor V")
+        {
+            var state = GetContactorState(el);
+            icon = state.Icon;
+            color = state.Color;
+        }
+
+        if (string.IsNullOrEmpty(icon)) return "";
+
+        if (icon.StartsWith("<svg"))
+        {
+            var svg = icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display: block;'");
+            return svg.Replace("currentColor", color).Replace("#000000", color);
+        }
+        else if (icon.StartsWith("<path"))
+        {
+            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><g fill='{color}'>{icon}</g></svg>";
+        }
+        else
+        {
+            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><path d='{icon}' fill='{color}' /></svg>";
+        }
     }
 }

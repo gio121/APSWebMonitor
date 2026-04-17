@@ -9,23 +9,23 @@ public class SessionStateService : IDisposable
 {
     private System.Threading.Timer? _playTimer;
 
-    public List<SessionFrame>? Frames { get; private set; }
+    public SessionDataset? Dataset { get; private set; }
     public List<Signal> Signals { get; private set; } = new();
     public string FileName { get; private set; } = "";
     public int CurrentFrame { get; set; } = 0;
     public bool IsPlaying { get; private set; } = false;
-    public bool IsLoaded => Frames != null && Frames.Count > 0;
-    public TimeSpan TotalDuration => IsLoaded ? Frames!.Last().Timestamp : TimeSpan.Zero;
+    public bool IsLoaded => Dataset != null && Dataset.FrameCount > 0;
+    public TimeSpan TotalDuration => IsLoaded ? Dataset!.Timestamps[Dataset.FrameCount - 1] : TimeSpan.Zero;
 
     public double VelocidadActual { get; set; } = 1;
     public readonly double[] Velocidades = { 0.1, 0.25, 0.5, 1, 2, 5, 10 };
 
     public event Action? OnStateChanged;
 
-    public void LoadSession(List<SessionFrame> frames, List<Signal> signals, string fileName)
+    public void LoadSession(SessionDataset dataset, List<Signal> signals, string fileName)
     {
         Stop();
-        Frames = frames;
+        Dataset = dataset;
         Signals = signals;
         FileName = fileName;
         CurrentFrame = 0;
@@ -38,11 +38,11 @@ public class SessionStateService : IDisposable
     public void Play()
     {
         if (!IsLoaded) return;
-        if (CurrentFrame >= Frames!.Count - 1) CurrentFrame = 0;
+        if (CurrentFrame >= Dataset!.FrameCount - 1) CurrentFrame = 0;
 
         IsPlaying = true;
         _playRealStartTime = DateTime.UtcNow;
-        _playStartOffset = Frames![CurrentFrame].Timestamp;
+        _playStartOffset = Dataset!.Timestamps[CurrentFrame];
 
         // Tasa de actualización de UI
         int tickMs = 50;
@@ -56,14 +56,14 @@ public class SessionStateService : IDisposable
             var targetTime = _playStartOffset + TimeSpan.FromMilliseconds(elapsedRealTime.TotalMilliseconds * VelocidadActual);
 
             int newFrame = CurrentFrame;
-            while (newFrame < Frames.Count - 1 && Frames[newFrame + 1].Timestamp <= targetTime)
+            while (newFrame < Dataset.FrameCount - 1 && Dataset.Timestamps[newFrame + 1] <= targetTime)
             {
                 newFrame++;
             }
 
-            if (newFrame >= Frames.Count - 1)
+            if (newFrame >= Dataset.FrameCount - 1)
             {
-                CurrentFrame = Frames.Count - 1;
+                CurrentFrame = Dataset.FrameCount - 1;
                 IsPlaying = false;
                 _playTimer?.Dispose();
             }
@@ -91,26 +91,19 @@ public class SessionStateService : IDisposable
         NotifyStateChanged();
     }
 
-    /// <summary>
-    /// Cierra la sesión cargada liberando los datos asociados.
-    /// </summary>
     public void CloseSession()
     {
-        // Detener cualquier reproducción activa
         Stop();
-
-        // Liberar datos de la sesión
-        Frames = null;
+        Dataset = null;
         Signals = new List<Signal>();
         FileName = string.Empty;
         CurrentFrame = 0;
-
         NotifyStateChanged();
     }
 
     public void NextFrame()
     {
-        if (!IsLoaded || CurrentFrame >= Frames!.Count - 1) return;
+        if (!IsLoaded || CurrentFrame >= Dataset!.FrameCount - 1) return;
         CurrentFrame++;
         NotifyStateChanged();
     }
@@ -131,35 +124,48 @@ public class SessionStateService : IDisposable
     public void GoToEnd()
     {
         if (!IsLoaded) return;
-        CurrentFrame = Frames!.Count - 1;
+        CurrentFrame = Dataset!.FrameCount - 1;
         NotifyStateChanged();
     }
 
     public void SeekTo(int frame)
     {
         if (!IsLoaded) return;
-        CurrentFrame = Math.Clamp(frame, 0, Frames!.Count - 1);
+        CurrentFrame = Math.Clamp(frame, 0, Dataset!.FrameCount - 1);
         if (IsPlaying)
         {
-            // Reset start time so it plays from the new seek position without jumping back
             _playRealStartTime = DateTime.UtcNow;
-            _playStartOffset = Frames![CurrentFrame].Timestamp;
+            _playStartOffset = Dataset!.Timestamps[CurrentFrame];
         }
         NotifyStateChanged();
     }
 
     public Dictionary<int, double> GetCurrentValues()
     {
-        if (!IsLoaded || CurrentFrame >= Frames!.Count)
+        if (!IsLoaded || CurrentFrame >= Dataset!.FrameCount)
             return new Dictionary<int, double>();
-        return Frames[CurrentFrame].Values;
+
+        // Reconstrucción dinámica (solo para el frame actual)
+        // Esto mantiene la compatibilidad con la UI sin saturar la RAM
+        var dict = new Dictionary<int, double>();
+        for (int s = 0; s < Dataset.SignalCount; s++)
+        {
+            dict[Dataset.SignalIds[s]] = Dataset.Values[CurrentFrame, s];
+        }
+        return dict;
     }
 
     public Dictionary<int, double> GetRawValues()
     {
-        if (!IsLoaded || CurrentFrame >= Frames!.Count)
+        if (!IsLoaded || CurrentFrame >= Dataset!.FrameCount)
             return new Dictionary<int, double>();
-        return Frames[CurrentFrame].RawValues;
+
+        var dict = new Dictionary<int, double>();
+        for (int s = 0; s < Dataset.SignalCount; s++)
+        {
+            dict[Dataset.SignalIds[s]] = Dataset.RawValues[CurrentFrame, s];
+        }
+        return dict;
     }
 
     private void NotifyStateChanged()

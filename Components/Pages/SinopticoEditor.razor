@@ -43,21 +43,32 @@
     </div>
 
     <!-- CENTER PANEL: CANVAS -->
-    <div class="main-canvas-area flex-grow-1" @ondrop="OnCanvasDrop" @ondragover="OnDragOver" @ondragover:preventDefault>
+    <div class="main-canvas-area flex-grow-1">
         @if (_showGrid)
         {
             <div class="grid-background"></div>
         }
-        <div class="canvas mx-auto mt-4" @onclick="ClearSelection">
+        <div class="canvas mx-auto mt-4" 
+             @onclick="ClearSelection" 
+             @onmousemove="OnMouseMoveCanvas" 
+             @onmouseup="OnMouseUpCanvas" 
+             @onmouseleave="EndAction"
+             @ondrop="OnCanvasDrop" 
+             @ondragover="OnDragOver" 
+             @ondragover:preventDefault>
             @foreach (var el in _elements)
             {
                 <div class="canvas-element @(el == _selectedElement ? "selected" : "")" 
                      style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);"
-                     draggable="true" 
+                     @onmousedown="@(e => StartMove(e, el))"
                      @onclick="@(e => SelectElement(e, el))" 
-                     @onclick:stopPropagation
-                     @ondragstart="@(e => OnDragStartCanvas(e, el))">
+                     @onclick:stopPropagation>
                     
+                    @if (el == _selectedElement)
+                    {
+                        <div class="resize-handle" @onmousedown="@(e => StartResize(e, el))" @onmousedown:stopPropagation></div>
+                    }
+
                     @if (el.Type == "Etiqueta")
                     {
                         <div class="element-content label-content" style="color: @el.Color;">@el.Text</div>
@@ -84,7 +95,7 @@
                     else
                     {
                         <div class="element-content icon-content">
-                            <MudIcon Icon="@GetIconForType(el.Type)" Style="@($"color: {el.Color};")" />
+                            @((MarkupString)GetIconMarkup(el))
                         </div>
                     }
                 </div>
@@ -112,6 +123,9 @@
                 </MudItem>
                 <MudItem xs="6">
                     <MudNumericField @bind-Value="_selectedElement.Height" Label="Alto" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudCheckBox @bind-Value="_selectedElement.ProportionalScale" Label="Escala Proporcional" Color="Color.Primary" Dense="true" />
                 </MudItem>
                 <MudItem xs="12">
                     <MudNumericField @bind-Value="_selectedElement.Rotation" Label="Rotación" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -160,7 +174,11 @@
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Estado" @bind-Value="_selectedElement.StateSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
                             <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
-                            @for (int i = 0; i < 16; i++)
+                            @{
+                                var stateSig = _availableSignals.FirstOrDefault(s => s.Id == _selectedElement.StateSignalId);
+                                int stateBits = stateSig?.BitCount ?? 16;
+                            }
+                            @for (int i = 0; i < stateBits; i++)
                             {
                                 int bit = i;
                                 <MudSelectItem Value="@((int?)bit)">Bit @bit</MudSelectItem>
@@ -180,12 +198,21 @@
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Comando" @bind-Value="_selectedElement.CommandSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
                             <MudSelectItem Value="@((int?)null)">Ninguno</MudSelectItem>
-                            @for (int i = 0; i < 16; i++)
+                            @{
+                                var cmdSig = _availableSignals.FirstOrDefault(s => s.Id == _selectedElement.CommandSignalId);
+                                int cmdBits = cmdSig?.BitCount ?? 16;
+                            }
+                            @for (int i = 0; i < cmdBits; i++)
                             {
                                 int bit = i;
                                 <MudSelectItem Value="@((int?)bit)">Bit @bit</MudSelectItem>
                             }
                         </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                        <MudColorPicker Label="Color de Discrepancia" @bind-Text="_selectedElement.ErrorColor" Style="@($"color: {_selectedElement.ErrorColor};")" Variant="Variant.Outlined" Margin="Margin.Dense" DisableAlpha="true" />
                     </MudItem>
                 }
                 
@@ -227,6 +254,23 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
+    }
+    .resize-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background-color: #594ae2;
+        bottom: -6px;
+        right: -6px;
+        cursor: nwse-resize;
+        z-index: 100;
+        border: 2px solid #fff;
+        border-radius: 2px;
+        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    }
+    .resize-handle:hover {
+        background-color: #7e6fff;
+        transform: scale(1.2);
     }
     .editor-header {
         border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -356,9 +400,18 @@
     
     private bool _showGrid = true;
     
-    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne" };
+    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne", "Rectificador", "Inversor", "Convertidor", "Trifasico", "Ventilador", "Condensador" };
     
-    // Drag state
+    // Resize/Move state
+    private bool _isResizing;
+    private bool _isMoving;
+    private SinopticoElement? _activeElement;
+    private double _startX, _startY;
+    private double _startWidth, _startHeight;
+    private double _startElX, _startElY;
+    private double _startAspectRatio;
+
+    // Drag state (Palette)
     private string _draggedType = "";
     private SinopticoElement? _draggedElement;
     private double _dragOffsetX;
@@ -488,16 +541,6 @@
     private void OnDragStartPalette(string type)
     {
         _draggedType = type;
-        _draggedElement = null;
-    }
-
-    private void OnDragStartCanvas(DragEventArgs e, SinopticoElement el)
-    {
-        _draggedElement = el;
-        _draggedType = "";
-        _dragOffsetX = e.OffsetX;
-        _dragOffsetY = e.OffsetY;
-        _selectedElement = el;
     }
     
     private void OnDragOver(DragEventArgs e) { } // Needed to allow drop
@@ -530,15 +573,100 @@
             _selectedElement = newEl;
             _draggedType = "";
         }
-        else if (_draggedElement != null)
+    }
+
+    private void StartMove(MouseEventArgs e, SinopticoElement el)
+    {
+        _isMoving = true;
+        _activeElement = el;
+        _startX = e.ClientX;
+        _startY = e.ClientY;
+        _startElX = el.X;
+        _startElY = el.Y;
+        _selectedElement = el;
+    }
+
+    private void StartResize(MouseEventArgs e, SinopticoElement el)
+    {
+        _isResizing = true;
+        _activeElement = el;
+        _startX = e.ClientX;
+        _startY = e.ClientY;
+        _startWidth = el.Width;
+        _startHeight = el.Height;
+        _startAspectRatio = el.Height > 0 ? el.Width / el.Height : 1;
+    }
+
+    private void OnMouseMoveCanvas(MouseEventArgs e)
+    {
+        if (_activeElement == null) return;
+        
+        double snap = 20;
+        double deltaX = e.ClientX - _startX;
+        double deltaY = e.ClientY - _startY;
+
+        if (_isResizing)
         {
-            // Move existing element
-            // We adjust by offset relative to element top-left to avoid jumping
-            double adjX = e.OffsetX - _dragOffsetX;
-            double adjY = e.OffsetY - _dragOffsetY;
-            _draggedElement.X = Math.Round(adjX / snap) * snap;
-            _draggedElement.Y = Math.Round(adjY / snap) * snap;
-            _draggedElement = null;
+            double newWidth = _startWidth + deltaX;
+            double newHeight = _startHeight + deltaY;
+            
+            if (_activeElement.ProportionalScale)
+            {
+                // Prioritize Width for delta calculation
+                newWidth = Math.Max(10, Math.Round(newWidth / snap) * snap);
+                newHeight = newWidth / _startAspectRatio;
+            }
+            else
+            {
+                newWidth = Math.Max(10, Math.Round(newWidth / snap) * snap);
+                newHeight = Math.Max(10, Math.Round(newHeight / snap) * snap);
+            }
+
+            _activeElement.Width = newWidth;
+            _activeElement.Height = newHeight;
+            StateHasChanged();
+        }
+        else if (_isMoving)
+        {
+            double newX = _startElX + deltaX;
+            double newY = _startElY + deltaY;
+            _activeElement.X = Math.Round(newX / snap) * snap;
+            _activeElement.Y = Math.Round(newY / snap) * snap;
+            StateHasChanged();
+        }
+    }
+
+    private void OnMouseUpCanvas(MouseEventArgs e)
+    {
+        EndAction();
+    }
+
+    private void EndAction()
+    {
+        _isResizing = false;
+        _isMoving = false;
+        _activeElement = null;
+    }
+
+    private string GetIconMarkup(SinopticoElement el)
+    {
+        var icon = SinopticoIconProvider.GetIcon(el.Type);
+        var color = el.Color;
+        
+        if (string.IsNullOrEmpty(icon)) return "";
+
+        if (icon.StartsWith("<svg"))
+        {
+            var svg = icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display: block;'");
+            return svg.Replace("currentColor", color).Replace("#000000", color);
+        }
+        else if (icon.StartsWith("<path"))
+        {
+            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><g fill='{color}'>{icon}</g></svg>";
+        }
+        else
+        {
+            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><path d='{icon}' fill='{color}' /></svg>";
         }
     }
 
@@ -561,7 +689,8 @@
                 CommandSignalId = _selectedElement.CommandSignalId,
                 CommandSignalBit = _selectedElement.CommandSignalBit,
                 StateSignalId = _selectedElement.StateSignalId,
-                StateSignalBit = _selectedElement.StateSignalBit
+                StateSignalBit = _selectedElement.StateSignalBit,
+                ErrorColor = _selectedElement.ErrorColor
             };
             _elements.Add(dupe);
             _selectedElement = dupe;

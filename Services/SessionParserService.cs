@@ -16,131 +16,196 @@ public class SessionParserService
     /// <summary>
     /// Decodifica todas las tramas del stream .dat que viene en formato texto con timestamps.
     /// </summary>
-    public List<SessionFrame> Parse(byte[] fileData, List<Signal> signals)
+    /// <summary>
+    /// Decodifica todas las tramas del stream .dat de forma altamente eficiente.
+    /// </summary>
+    public SessionDataset? Parse(byte[] fileData, List<Signal> signals)
     {
-        var frames = new List<SessionFrame>();
         if (signals == null || signals.Count == 0 || fileData == null || fileData.Length == 0)
-            return frames;
+            return null;
 
-        string fileContent;
-        try
-        {
-            fileContent = System.Text.Encoding.UTF8.GetString(fileData);
-        }
-        catch
-        {
-            return frames;
-        }
+        // 1. Pre-agrupar señales por nodo para optimizar la búsqueda
+        var signalsByNode = signals
+            .GroupBy(s => s.NodoNumero)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
-        var lines = fileContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        // 2. Calcular tamaños mapeados por cada nodo (para identificar tramas por tamaño)
+        var nodeSizes = signalsByNode.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Max(s => s.BytePosicion + GetByteSize(s.TipoVariable))
+        );
 
-        // Calcular el tamaño mapeado de cada nodo para diferenciar tramas
-        var nodeSizes = new Dictionary<int, int>();
-        foreach (var signal in signals)
-        {
-            int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
-            if (!nodeSizes.ContainsKey(signal.NodoNumero) || end > nodeSizes[signal.NodoNumero])
-            {
-                nodeSizes[signal.NodoNumero] = end;
-            }
-        }
+        // 3. Estimar número de tramas (contando saltos de línea) para pre-alegación
+        int frameCount = 0;
+        foreach (byte b in fileData) if (b == '\n') frameCount++;
+        // Si no termina en \n, sumamos uno más
+        if (fileData[^1] != '\n') frameCount++;
 
-        var currentValues = new Dictionary<int, double>();
-        var currentRawValues = new Dictionary<int, double>();
+        var dataset = new SessionDataset(frameCount, signals.Select(s => s.Id).ToList());
+        
+        ReadOnlySpan<byte> span = fileData;
+        int currentFramePos = 0;
         DateTime? startTime = null;
-        int frameIndex = 0;
 
-        foreach (var line in lines)
+        // Mantener los últimos valores conocidos para propagar el snapshot
+        double[] currentValues = new double[signals.Count];
+        double[] currentRawValues = new double[signals.Count];
+
+        int processedFrames = 0;
+
+        int lineStart = 0;
+        for (int i = 0; i <= span.Length; i++)
         {
-            var parts = line.Split(';');
-            if (parts.Length < 2) continue;
-
-            if (!DateTime.TryParse(parts[0], out var timestamp))
-                continue;
-
-            if (startTime == null) startTime = timestamp;
-
-            string hexString = parts[1].Trim();
-            var hexParts = hexString.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var frameData = new byte[hexParts.Length];
-            for (int i = 0; i < hexParts.Length; i++)
+            // Detectar fin de línea
+            if (i == span.Length || span[i] == '\n' || span[i] == '\r')
             {
-                if (byte.TryParse(hexParts[i], System.Globalization.NumberStyles.HexNumber, null, out byte b))
-                    frameData[i] = b;
-            }
-
-            if (frameData.Length < 6) continue;
-
-            // Identificar si es petición o respuesta. 
-            // Las peticiones (1D para control, 1A para comms) son tramas cortas.
-            if (frameData.Length < 30)
-                continue;
-
-            // Es una trama de respuesta (Control o Comms).
-            // Separamos solo los datos reales: omitimos los primeros 6 bytes (Cabecera) y el último byte (Checksum).
-            int payloadLength = frameData.Length - 7;
-            if (payloadLength <= 0) continue;
-
-            byte[] payload = new byte[payloadLength];
-            Array.Copy(frameData, 6, payload, 0, payloadLength);
-
-            // Buscar qué nodo coincide mejor con el tamaño de este payload
-            int? matchingNode = null;
-            int minDifference = int.MaxValue;
-            foreach (var kvp in nodeSizes)
-            {
-                // El tamaño del payload puede ser exacto o ligeramente mayor (padding)
-                if (payload.Length >= kvp.Value)
+                if (i > lineStart)
                 {
-                    int diff = payload.Length - kvp.Value;
-                    if (diff < minDifference)
+                    var line = span.Slice(lineStart, i - lineStart);
+                    
+                    // Procesar la línea: Timestamp;HEX HEX HEX
+                    int semiColonIndex = line.IndexOf((byte)';');
+                    if (semiColonIndex > 0)
                     {
-                        minDifference = diff;
-                        matchingNode = kvp.Key;
+                        var timestampPart = line.Slice(0, semiColonIndex);
+                        var hexPart = line.Slice(semiColonIndex + 1);
+
+                        // 4. Parsear Timestamp rápido (ej: 2023-10-27 10:00:00.123)
+                        string tsStr = Encoding.UTF8.GetString(timestampPart);
+                        if (DateTime.TryParse(tsStr, out var timestamp))
+                        {
+                            if (startTime == null) startTime = timestamp;
+
+                            // 5. Convertir Hex a Bytes rápidamente sin Split
+                            byte[] frameData = ParseHex(hexPart);
+
+                            if (frameData.Length >= 30) // Trama de respuesta (Control/Comms)
+                            {
+                                int payloadLength = frameData.Length - 7;
+                                if (payloadLength > 0)
+                                {
+                                    // Identificar Nodo por tamaño de payload
+                                    int? matchingNode = null;
+                                    int minDiff = int.MaxValue;
+                                    foreach (var kvp in nodeSizes)
+                                    {
+                                        if (payloadLength >= kvp.Value)
+                                        {
+                                            int diff = payloadLength - kvp.Value;
+                                            if (diff < minDiff) { minDiff = diff; matchingNode = kvp.Key; }
+                                        }
+                                    }
+
+                                    if (matchingNode.HasValue && signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
+                                    {
+                                        // Extraer datos usando el buffer de 6 bytes de cabecera omitidos
+                                        bool changed = false;
+                                        foreach (var sig in nodeSignals)
+                                        {
+                                            int offset = sig.BytePosicion + 6;
+                                            if (offset + GetByteSize(sig.TipoVariable) <= frameData.Length)
+                                            {
+                                                double rawValue = ReadValue(frameData, offset, sig.TipoVariable);
+                                                double physValue = ApsCalculationUtils.CalculatePhysical(rawValue, sig.Escala, sig.Offset);
+                                                
+                                                int sigIdx = dataset.SignalIdToIndex[sig.Id];
+                                                currentValues[sigIdx] = physValue;
+                                                currentRawValues[sigIdx] = rawValue;
+                                                changed = true;
+                                            }
+                                        }
+
+                                        if (changed)
+                                        {
+                                            // Guardar snapshot actual en el dataset
+                                            dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
+                                            dataset.AbsoluteTimestamps[processedFrames] = timestamp;
+                                            
+                                            for (int s = 0; s < dataset.SignalCount; s++)
+                                            {
+                                                dataset.Values[processedFrames, s] = currentValues[s];
+                                                dataset.RawValues[processedFrames, s] = currentRawValues[s];
+                                            }
+                                            processedFrames++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-
-            if (matchingNode == null) continue;
-
-            // Extraemos solo las señales del nodo que corresponde a esta trama
-            bool anyChange = false;
-            foreach (var signal in signals)
-            {
-                if (signal.NodoNumero != matchingNode.Value) continue;
-
-                int end = signal.BytePosicion + GetByteSize(signal.TipoVariable);
-                if (end <= payload.Length)
-                {
-                    double rawValue = ReadValue(payload, signal.BytePosicion, signal.TipoVariable);
-                    double physicalValue = ApsCalculationUtils.CalculatePhysical(rawValue, signal.Escala, signal.Offset);
-                    currentValues[signal.Id] = physicalValue;
-                    currentRawValues[signal.Id] = rawValue;
-                    anyChange = true;
-                }
-            }
-
-            if (anyChange)
-            {
-                var frame = new SessionFrame
-                {
-                    Index = frameIndex++,
-                    Timestamp = timestamp - startTime.Value,
-                    AbsoluteTimestamp = timestamp,
-                    Values = new Dictionary<int, double>(currentValues),
-                    RawValues = new Dictionary<int, double>(currentRawValues)
-                };
-                frames.Add(frame);
+                
+                // Saltar caracteres de nueva línea múltiples (\r\n)
+                if (i < span.Length && span[i] == '\r' && (i + 1 < span.Length) && span[i + 1] == '\n') i++;
+                lineStart = i + 1;
             }
         }
 
-        return frames;
+        // Si procesamos menos frames de los estimados, devolvemos un dataset ajustado
+        if (processedFrames < frameCount)
+        {
+            return TrimDataset(dataset, processedFrames);
+        }
+
+        return dataset;
     }
 
-    /// <summary>
-    /// Lee un valor del buffer según el tipo de variable (Little Endian).
-    /// Adaptado para comportarse igual que el parser del MainForm.
-    /// </summary>
+    private byte[] ParseHex(ReadOnlySpan<byte> hexSpan)
+    {
+        // El formato es "XX XX XX" o "XXXXXX"
+        // Estimamos tamaño: cada byte son 2 chars + posible espacio
+        int count = 0;
+        for (int i = 0; i < hexSpan.Length; i++)
+        {
+            if (IsHexChar(hexSpan[i]))
+            {
+                count++;
+                i++; // Saltar el segundo char del byte
+                while (i + 1 < hexSpan.Length && hexSpan[i + 1] == ' ') i++; // Saltar espacios
+            }
+        }
+
+        byte[] result = new byte[count];
+        int resIdx = 0;
+        for (int i = 0; i < hexSpan.Length; i++)
+        {
+            if (IsHexChar(hexSpan[i]))
+            {
+                result[resIdx++] = (byte)((HexVal(hexSpan[i]) << 4) | HexVal(hexSpan[i+1]));
+                i += 2;
+                while (i < hexSpan.Length && hexSpan[i] == ' ') i++;
+                i--; // El bucle for hará el i++
+            }
+        }
+        return result;
+    }
+
+    private static bool IsHexChar(byte b) => (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F');
+    private static int HexVal(byte b) => b switch {
+        >= (byte)'0' and <= (byte)'9' => b - '0',
+        >= (byte)'a' and <= (byte)'f' => b - 'a' + 10,
+        >= (byte)'A' and <= (byte)'F' => b - 'A' + 10,
+        _ => 0
+    };
+
+    private SessionDataset TrimDataset(SessionDataset old, int count)
+    {
+        var @new = new SessionDataset(count, old.SignalIds);
+        Array.Copy(old.Timestamps, @new.Timestamps, count);
+        Array.Copy(old.AbsoluteTimestamps, @new.AbsoluteTimestamps, count);
+        
+        // Copiar matrices es más pesado, pero necesario si queremos liberar la RAM sobrante
+        for (int f = 0; f < count; f++)
+        {
+            for (int s = 0; s < old.SignalCount; s++)
+            {
+                @new.Values[f, s] = old.Values[f, s];
+                @new.RawValues[f, s] = old.RawValues[f, s];
+            }
+        }
+        return @new;
+    }
+
     private static double ReadValue(byte[] data, int offset, string tipoVariable)
     {
         try
@@ -149,47 +214,20 @@ public class SessionParserService
 
             return tipoVariable.ToUpper() switch
             {
-                // 1 byte
-                "UINT8" or "ASCII_BYTE" or "UNSIGNED_BYTE" or "BYTE" => data[offset],
-                "INT8" or "SIGNED_BYTE" or "SBYTE" => (sbyte)data[offset],
-
-                // BCD (como en el otro parser)
+                "UINT8" or "BYTE" => data[offset],
+                "INT8" or "SBYTE" => (sbyte)data[offset],
                 "BCD_BYTE" => (data[offset] >> 4) * 10 + (data[offset] & 0x0F),
-
-                // 2 bytes
-                "UINT16" or "UNSIGNED_WORD" or "UINT" => offset + 1 < data.Length
-                    ? BitConverter.ToUInt16(data, offset)
-                    : 0,
-
-                "INT16" or "SIGNED_WORD" or "INT" => offset + 1 < data.Length
-                    ? BitConverter.ToInt16(data, offset)
-                    : 0,
-
-                // 4 bytes
-                "UINT32" or "UNSIGNED_DWORD" or "ULONG" => offset + 3 < data.Length
-                    ? BitConverter.ToUInt32(data, offset)
-                    : 0,
-
-                "INT32" or "SIGNED_DWORD" => offset + 3 < data.Length
-                    ? BitConverter.ToInt32(data, offset)
-                    : 0,
-
-                "FLOAT" or "FLOAT32" => offset + 3 < data.Length
-                    ? BitConverter.ToSingle(data, offset)
-                    : 0,
-
+                "UINT16" or "UINT" => offset + 1 < data.Length ? BitConverter.ToUInt16(data, offset) : 0,
+                "INT16" or "INT" => offset + 1 < data.Length ? BitConverter.ToInt16(data, offset) : 0,
+                "UINT32" or "ULONG" => offset + 3 < data.Length ? BitConverter.ToUInt32(data, offset) : 0,
+                "INT32" => offset + 3 < data.Length ? BitConverter.ToInt32(data, offset) : 0,
+                "FLOAT" or "FLOAT32" => offset + 3 < data.Length ? BitConverter.ToSingle(data, offset) : 0,
                 _ => data[offset]
             };
         }
-        catch
-        {
-            return 0;
-        }
+        catch { return 0; }
     }
 
-    /// <summary>
-    /// Devuelve el tamaño en bytes de un tipo de variable.
-    /// </summary>
     private static int GetByteSize(string tipoVariable)
     {
         return tipoVariable.ToUpper() switch

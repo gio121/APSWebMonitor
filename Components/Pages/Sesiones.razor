@@ -45,11 +45,11 @@ else
                     </div>
                     <div class="d-flex justify-space-between">
                         <MudText Typo="Typo.body2">Tramas:</MudText>
-                        <MudText Typo="Typo.body2">@SessionState.Frames?.Count.ToString("N0")</MudText>
+                        <MudText Typo="Typo.body2">@SessionState.Dataset?.FrameCount.ToString("N0")</MudText>
                     </div>
                     <div class="d-flex justify-space-between">
                         <MudText Typo="Typo.body2">Hora Fin:</MudText>
-                        <MudText Typo="Typo.body2">@FormatAbsoluteTime(SessionState.Frames!.Last())</MudText>
+                        <MudText Typo="Typo.body2">@FormatAbsoluteTime(SessionState.Dataset!.FrameCount - 1)</MudText>
                     </div>
                 </div>
             </MudPaper>
@@ -58,8 +58,8 @@ else
             <MudPaper Class="pa-4 h-100 d-flex flex-column justify-center" Elevation="0" Style="background-color: #1a222c; border: 1px solid rgba(255,255,255,0.05);">
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">POSICIÓN ACTUAL</MudText>
                 <div class="d-flex align-center gap-4">
-                    <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.Frames![SessionState.CurrentFrame])</MudText>
-                    <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatAbsoluteTime(SessionState.Frames!.Last())</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.CurrentFrame)</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatAbsoluteTime(SessionState.Dataset!.FrameCount - 1)</MudText>
                     <MudSpacer />
                     <MudChip T="string" Color="Color.Info" Variant="Variant.Text">Trama @(SessionState.CurrentFrame + 1)</MudChip>
                 </div>
@@ -218,15 +218,15 @@ else
             using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
             
-            var frames = _parser.Parse(ms.ToArray(), signals);
+            var dataset = _parser.Parse(ms.ToArray(), signals);
 
-            if (frames.Count == 0)
+            if (dataset == null)
             {
                 Snackbar.Add("El archivo no contiene tramas válidas.", Severity.Warning);
                 return;
             }
 
-            SessionState.LoadSession(frames, signals, file.Name);
+            SessionState.LoadSession(dataset, signals, file.Name);
             Snackbar.Add($"Sesión cargada correctamente.", Severity.Success);
         }
         catch (Exception ex)
@@ -310,10 +310,11 @@ else
 
     private string FormatTime(TimeSpan ts) => ts.ToString(@"mm\:ss\.ff");
 
-    private string FormatAbsoluteTime(SessionFrame? frame)
+    private string FormatAbsoluteTime(int frameIndex)
     {
-        if (frame == null) return "00:00:00.000";
-        return frame.AbsoluteTimestamp.ToString("HH:mm:ss.fff");
+        if (SessionState.Dataset == null || frameIndex < 0 || frameIndex >= SessionState.Dataset.FrameCount) 
+            return "00:00:00.000";
+        return SessionState.Dataset.AbsoluteTimestamps[frameIndex].ToString("HH:mm:ss.fff");
     }
 
     public void Dispose()
