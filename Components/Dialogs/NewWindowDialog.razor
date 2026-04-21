@@ -1,20 +1,27 @@
-@using MudBlazor
-
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="WindowName" Label="Nombre de la Ventana" Required="true" Variant="Variant.Outlined" AutoFocus="true" Immediate="true" />
+        <MudTextField @bind-Value="WindowName" Label="Nombre de la Ventana" Required="true" Variant="Variant.Outlined" AutoFocus="true" Immediate="true" Class="mb-4" />
+        <MudTextField @bind-Value="WindowDescription" Label="Descripción" Variant="Variant.Outlined" Lines="3" Immediate="true" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancelar</MudButton>
-        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(WindowName)">Crear</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(WindowName)">@SubmitButtonText</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
-    public string WindowName { get; set; } = "Nuevo Sinóptico";
+    [Parameter] public string WindowName { get; set; } = "Nuevo Sinóptico";
+    [Parameter] public string WindowDescription { get; set; } = "";
+    [Parameter] public string SubmitButtonText { get; set; } = "Crear";
 
-    void Submit() => MudDialog.Close(DialogResult.Ok(WindowName));
+    public class WindowResult
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(new WindowResult { Name = WindowName, Description = WindowDescription }));
     void Cancel() => MudDialog.Cancel();
 }

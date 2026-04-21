@@ -3,7 +3,7 @@ namespace ApsMonitor.Models;
 public class SinopticoElement
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Type { get; set; } = "Etiqueta"; // Etiqueta, Señal, Comando, LineaH, LineaV, Diodo, Resistencia, Transformador, Fusible, Interruptor, Borne
+    public string Type { get; set; } = "Etiqueta"; // Etiqueta, Señal, Comando, Caja, LineaH, LineaV, Diodo, Resistencia, Bobina, Descargador, Transformador, Fusible, Interruptor, Borne
     
     // Canvas dimensions
     public double X { get; set; } = 100;
@@ -17,6 +17,7 @@ public class SinopticoElement
     public int? SignalId { get; set; } // Nullable, bound to Signal if it's a "Señal"
     public string CommandValue { get; set; } = string.Empty; // The actual command to execute
     public string Color { get; set; } = "#ff9800"; // Default Warning color
+    public double FontSize { get; set; } = 14; // Default font size
     
     // Contactor Specific Properties
     public int? CommandSignalId { get; set; }

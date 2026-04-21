@@ -31,13 +31,16 @@
                         
                         @if (el.Type == "Etiqueta")
                         {
-                            <div class="element-content label-content" style="color: @el.Color;">@el.Text</div>
+                            <div class="element-content label-content d-flex align-center justify-center p-1" 
+                                 style="color: @el.Color; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @el.Text
+                            </div>
                         }
                         else if (el.Type == "Señal")
                         {
                             <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
-                                <span class="signal-name">@el.Text</span>
-                                <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
+                                <span class="signal-name" style="font-size: @(Math.Round(el.FontSize * 0.7))px;">@el.Text</span>
+                                <span class="signal-value fw-bold" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums;">
                                     @GetSignalValueText(el.SignalId)
                                 </span>
                             </div>
@@ -45,6 +48,13 @@
                         else if (el.Type == "Comando")
                         {
                             <div class="element-content command-content d-flex align-center justify-center" style="border-color: @el.Color; color: @el.Color;">
+                                @el.Text
+                            </div>
+                        }
+                        else if (el.Type == "Caja")
+                        {
+                            <div class="element-content box-content d-flex align-center justify-center shadow-sm" 
+                                 style="border-color: @el.Color; color: #111827; background-color: #f0f4f8; font-weight: 500;">
                                 @el.Text
                             </div>
                         }
@@ -113,8 +123,8 @@
     }
     .label-content {
         color: #e2e8f0;
-        font-size: 14px;
-        white-space: nowrap;
+        text-align: center;
+        line-height: 1;
     }
     .signal-content {
         background-color: rgba(255,255,255,0.05);
@@ -156,6 +166,16 @@
         text-align: center;
         padding: 4px;
         cursor: pointer;
+    }
+    .box-content {
+        background-color: #f0f4f8;
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 4px;
+        color: #111827;
+        font-size: 14px;
+        text-align: center;
+        padding: 4px;
+        overflow: hidden;
     }
 </style>
 
@@ -235,8 +255,8 @@
 
     private (string Icon, string Color) GetContactorState(SinopticoElement el)
     {
-        bool stateActive = false;
-        bool commandActive = false;
+        bool? stateActive = null;
+        bool? commandActive = null;
 
         var values = SessionState.GetCurrentValues();
 
@@ -258,19 +278,35 @@
             }
         }
 
-        // Determine Icon (based on State)
-        string iconName = el.Type == "Contactor V" ? (stateActive ? "Contactor" : "Contactor_Closed") : (stateActive ? "Contactor" : "Contactor_Closed");
-        // Wait, the logic for V or H was slightly different before, let me check SinopticoIconProvider
-        // Actually I'll use the logic I had before
+        // Determine true state and discrepancy
+        bool finalActive = false;
+        bool hasDiscrepancy = false;
+
+        if (stateActive.HasValue && commandActive.HasValue)
+        {
+            finalActive = stateActive.Value;
+            hasDiscrepancy = stateActive.Value != commandActive.Value;
+        }
+        else if (stateActive.HasValue)
+        {
+            finalActive = stateActive.Value;
+        }
+        else if (commandActive.HasValue)
+        {
+            finalActive = commandActive.Value;
+        }
+
+        // Determine Icon (based on finalActive: false = Open, true = Closed)
+        string iconName;
         if (el.Type == "Contactor V") 
-            iconName = stateActive ? "Contactor V" : "Contactor V_Closed";
+            iconName = finalActive ? "Contactor V_Closed" : "Contactor V";
         else
-            iconName = stateActive ? "Contactor" : "Contactor_Closed";
+            iconName = finalActive ? "Contactor_Closed" : "Contactor";
 
         string icon = SinopticoIconProvider.GetIcon(iconName);
 
         // Determine Color (based on Discrepancy)
-        string color = stateActive != commandActive ? el.ErrorColor : el.Color;
+        string color = hasDiscrepancy ? el.ErrorColor : el.Color;
 
         return (icon, color);
     }

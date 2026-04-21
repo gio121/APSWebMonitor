@@ -44,10 +44,6 @@
 
     <!-- CENTER PANEL: CANVAS -->
     <div class="main-canvas-area flex-grow-1">
-        @if (_showGrid)
-        {
-            <div class="grid-background"></div>
-        }
         <div class="canvas mx-auto mt-4" 
              @onclick="ClearSelection" 
              @onmousemove="OnMouseMoveCanvas" 
@@ -56,6 +52,10 @@
              @ondrop="OnCanvasDrop" 
              @ondragover="OnDragOver" 
              @ondragover:preventDefault>
+            @if (_showGrid)
+            {
+                <div class="grid-background"></div>
+            }
             @foreach (var el in _elements)
             {
                 <div class="canvas-element @(el == _selectedElement ? "selected" : "")" 
@@ -71,13 +71,16 @@
 
                     @if (el.Type == "Etiqueta")
                     {
-                        <div class="element-content label-content" style="color: @el.Color;">@el.Text</div>
+                        <div class="element-content label-content d-flex align-center justify-center p-1" 
+                             style="color: @el.Color; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            @el.Text
+                        </div>
                     }
                     else if (el.Type == "Señal")
                     {
                         <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
-                            <span class="signal-name">@el.Text</span>
-                            <span class="signal-value fw-bold" style="font-variant-numeric: tabular-nums;">
+                            <span class="signal-name" style="font-size: @(Math.Round(el.FontSize * 0.7))px;">@el.Text</span>
+                            <span class="signal-value fw-bold" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums;">
                                 @GetSignalValueText(el.SignalId)
                             </span>
                         </div>
@@ -85,6 +88,13 @@
                     else if (el.Type == "Comando")
                     {
                         <div class="element-content command-content d-flex align-center justify-center" style="border-color: @el.Color; color: @el.Color;">
+                            @el.Text
+                        </div>
+                    }
+                    else if (el.Type == "Caja")
+                    {
+                        <div class="element-content box-content d-flex align-center justify-center shadow-sm" 
+                             style="border-color: @el.Color; color: #111827; background-color: #f0f4f8; font-weight: 500;">
                             @el.Text
                         </div>
                     }
@@ -212,14 +222,17 @@
 
                     <MudItem xs="12">
                         <MudDivider Class="my-2" />
-                        <MudColorPicker Label="Color de Discrepancia" @bind-Text="_selectedElement.ErrorColor" Style="@($"color: {_selectedElement.ErrorColor};")" Variant="Variant.Outlined" Margin="Margin.Dense" DisableAlpha="true" />
+                        <MudColorPicker Label="Color de Fallo" @bind-Text="_selectedElement.ErrorColor" Style="@($"color: {_selectedElement.ErrorColor};")" Variant="Variant.Outlined" Margin="Margin.Dense" DisableAlpha="true" />
                     </MudItem>
                 }
                 
-                @if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal" || _selectedElement.Type == "Comando")
+                @if (_selectedElement.Type == "Etiqueta" || _selectedElement.Type == "Señal" || _selectedElement.Type == "Comando" || _selectedElement.Type == "Caja")
                 {
                     <MudItem xs="12">
                         <MudTextField @bind-Value="_selectedElement.Text" Label="Etiqueta" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="_selectedElement.FontSize" Label="Tamaño de Fuente" Variant="Variant.Outlined" Margin="Margin.Dense" Min="6" Max="100" />
                     </MudItem>
                 }
                 
@@ -298,8 +311,8 @@
         overflow: auto;
     }
     .canvas {
-        min-width: 100%;
-        min-height: 100%;
+        min-width: 150%;
+        min-height: 150%;
         background-color: transparent;
         position: relative;
     }
@@ -342,8 +355,8 @@
     }
     .label-content {
         color: #e2e8f0;
-        font-size: 14px;
-        white-space: nowrap;
+        text-align: center;
+        line-height: 1;
     }
     .signal-content {
         background-color: rgba(255,255,255,0.05);
@@ -385,6 +398,16 @@
         text-align: center;
         padding: 4px;
     }
+    .box-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 4px;
+        color: #e2e8f0;
+        font-size: 14px;
+        text-align: center;
+        padding: 4px;
+        overflow: hidden;
+    }
     
     .op-10 { opacity: 0.1; }
 </style>
@@ -400,7 +423,7 @@
     
     private bool _showGrid = true;
     
-    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Linea H", "Linea V", "Diodo", "Resistencia", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne", "Rectificador", "Inversor", "Convertidor", "Trifasico", "Ventilador", "Condensador" };
+    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Caja", "Linea H", "Linea V", "Diodo", "Dotline", "Resistencia", "Bobina", "Descargador", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne", "Rectificador", "Inversor", "Convertidor", "Trifasico", "Ventilador", "Condensador" };
     
     // Resize/Move state
     private bool _isResizing;
@@ -601,7 +624,7 @@
     {
         if (_activeElement == null) return;
         
-        double snap = 20;
+        double snap = 1;
         double deltaX = e.ClientX - _startX;
         double deltaY = e.ClientY - _startY;
 
@@ -630,8 +653,10 @@
         {
             double newX = _startElX + deltaX;
             double newY = _startElY + deltaY;
+            
             _activeElement.X = Math.Round(newX / snap) * snap;
             _activeElement.Y = Math.Round(newY / snap) * snap;
+            
             StateHasChanged();
         }
     }
@@ -683,6 +708,7 @@
                 Height = _selectedElement.Height,
                 Rotation = _selectedElement.Rotation,
                 Text = _selectedElement.Text,
+                FontSize = _selectedElement.FontSize,
                 SignalId = _selectedElement.SignalId,
                 Color = _selectedElement.Color,
                 CommandValue = _selectedElement.CommandValue,

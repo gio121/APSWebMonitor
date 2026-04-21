@@ -11,7 +11,8 @@ public static class SinopticoIconProvider
         { "Comando", Icons.Material.Filled.ToggleOn },
         { "Linea H", Icons.Material.Filled.Remove },
         { "Linea V", Icons.Material.Filled.MoreVert },
-        { "Diodo", Icons.Material.Filled.PlayArrow },
+        { "Diodo", "<svg viewBox='0 0 129 100'><g transform='translate(0,100) scale(0.1,-0.1)' fill='currentColor'><path d='M160 921 c-6 -12 -10 -93 -10 -195 l0 -176 -75 0 -75 0 0 -45 0 -45 75 0 75 0 0 -190 c0 -177 1 -191 20 -210 11 -11 25 -20 30 -20 6 0 177 83 380 185 204 102 370 184 371 183 0 -2 1 -79 2 -171 2 -154 4 -170 21 -183 25 -18 37 -18 62 0 17 13 19 30 22 210 l4 196 114 0 114 0 0 45 0 44 -116 3 -116 3 -1 176 c-2 188 -7 209 -52 209 -44 0 -50 -22 -51 -192 -1 -87 -4 -161 -7 -164 -2 -3 -167 76 -366 175 -198 100 -372 181 -386 181 -14 0 -29 -8 -35 -19z m420 -270 l315 -158 -313 -157 c-171 -86 -316 -156 -322 -156 -6 0 -10 110 -10 315 0 173 3 315 8 314 4 0 149 -71 322 -158z'/></g></svg>" },
+        { "Dotline", "<svg viewBox='0 0 28 68'><g transform='translate(0,68) scale(0.1,-0.1)' fill='currentColor'><path d='M39 631 c-37 -37 -39 -42 -39 -102 0 -61 1 -63 45 -105 l45 -41 0 -192 0 -191 45 0 45 0 0 194 0 195 31 18 c67 40 90 132 48 200 -27 44 -66 63 -130 63 -46 0 -55 -4 -90 -39z'/></g></svg>" },
         { "Resistencia", Icons.Material.Filled.Timeline },
         { "Transformador", Icons.Material.Filled.SyncAlt },
         { "Fusible", Icons.Material.Filled.PowerInput },
@@ -41,7 +42,10 @@ public static class SinopticoIconProvider
             "Ventilador", 
             "<svg viewBox='0 0 128 128' fill='currentColor'><g transform='translate(0,128) scale(0.1,-0.1)'><path d='M480 1254 c-214 -56 -401 -244 -455 -459 -19 -76 -19 -234 0 -310 56 -220 240 -404 460 -460 76 -19 234 -19 310 0 217 55 405 243 460 460 19 76 19 234 0 310 -55 217 -243 405 -460 460 -75 19 -241 19 -315 -1z m300 -69 c195 -52 353 -210 405 -405 19 -70 19 -210 0 -280 -26 -98 -74 -180 -150 -255 -75 -76 -157 -124 -255 -150 -70 -19 -210 -19 -280 0 -196 52 -353 209 -405 405 -19 70 -19 210 0 280 51 192 209 352 401 405 66 18 216 18 284 0z'/><path d='M375 1100 c-27 -11 -67 -34 -89 -52 -38 -31 -38 -32 -33 -88 11 -127 112 -250 231 -282 42 -11 46 -15 46 -43 0 -16 4 -37 9 -44 31 -48 -102 -107 -159 -71 -33 21 -100 -88 -100 -165 0 -80 64 -167 157 -214 66 -33 94 -28 148 24 93 91 131 233 93 351 -4 13 66 74 85 74 48 0 95 -46 107 -104 5 -29 7 -30 60 -29 48 1 51 0 20 -7 l-35 -7 35 -2 c62 -2 113 19 155 63 48 49 67 106 67 193 -1 114 -34 138 -192 138 -94 0 -110 -3 -155 -27 -27 -14 -63 -40 -79 -57 -23 -24 -32 -28 -43 -20 -7 7 -28 15 -45 18 -60 12 -64 104 -7 161 29 28 30 32 19 66 -16 46 -75 113 -117 131 -45 18 -119 15 -178 -7z m600 -465 c150 -38 162 -47 130 -89 -13 -17 -22 -18 -102 -11 -48 4 -100 9 -114 10 -15 1 -39 12 -55 24 -16 12 -41 25 -56 28 -24 5 -28 10 -28 40 l0 35 68 -7 c37 -4 108 -18 157 -30z'/></g></svg>" 
         },
-        { "Condensador", "<path d=\"M11,2h2v8h-2z M4,10h16v2H4z M4,14h16v2H4z M11,16h2v6h-2z\"/>" }
+        { "Condensador", "<path d=\"M11,2h2v8h-2z M4,10h16v2H4z M4,14h16v2H4z M11,16h2v6h-2z\"/>" },
+        { "Bobina", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 15 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0' /></svg>" },
+        { "Descargador", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12 h7 l1.5 -7 l3 14 l1.5 -7 h7' /></svg>" },
+        { "Caja", Icons.Material.Filled.CheckBoxOutlineBlank }
     };
 
     public static string GetIcon(string type)

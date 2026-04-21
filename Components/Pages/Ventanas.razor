@@ -27,8 +27,11 @@ else
             <MudItem xs="12" sm="6" md="4" lg="6"> <!-- lg=6 because in screenshot there are two cards per row -->
                 <MudPaper Class="pa-4 window-card h-100 d-flex flex-column" Elevation="0">
                     <div class="d-flex justify-space-between align-start mb-2">
-                        <div>
-                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@window.Nombre</MudText>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-center gap-1">
+                                <MudText Typo="Typo.subtitle1" Class="fw-bold">@window.Nombre</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Inherit" Class="pa-1 op-7" OnClick="@(() => EditarPropiedades(window))" />
+                            </div>
                             <MudText Typo="Typo.body2" Class="text-muted mb-1">@window.Descripcion</MudText>
                             <MudText Typo="Typo.caption" Class="text-muted">Categoría: @window.Categoria</MudText>
                         </div>
@@ -88,6 +91,12 @@ else
     .search-input .mud-input {
         border-radius: 6px;
     }
+    .op-7 {
+        opacity: 0.7;
+    }
+    .op-7:hover {
+        opacity: 1;
+    }
 </style>
 
 @code {
@@ -118,12 +127,12 @@ else
         var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Nueva Ventana", options);
         var result = await dialog.Result;
 
-        if (result != null && !result.Canceled && result.Data is string nombre)
+        if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
         {
             var nuevaVentana = new Window
             {
-                Nombre = nombre,
-                Descripcion = "Descripción sin asignar",
+                Nombre = windowData.Name,
+                Descripcion = string.IsNullOrWhiteSpace(windowData.Description) ? "Sin descripción" : windowData.Description,
                 Categoria = "General",
                 Tipo = "Sinóptico",
                 IsActive = false,
@@ -136,6 +145,30 @@ else
                 // Redirigir inmediatamente al editor del sinóptico creado
                 NavigationManager.NavigateTo($"/sinoptico/{creada.Id}", forceLoad: false);
             }
+        }
+    }
+
+    private async Task EditarPropiedades(Window window)
+    {
+        var parameters = new DialogParameters<ApsMonitor.Components.Dialogs.NewWindowDialog>
+        {
+            { x => x.WindowName, window.Nombre },
+            { x => x.WindowDescription, window.Descripcion },
+            { x => x.SubmitButtonText, "Guardar" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Editar Detalles", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
+        {
+            window.Nombre = windowData.Name;
+            window.Descripcion = windowData.Description;
+            
+            await DataService.UpdateWindowAsync(window);
+            Snackbar.Add("Ventana actualizada correctamente", Severity.Success);
+            StateHasChanged();
         }
     }
 
