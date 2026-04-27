@@ -26,6 +26,24 @@ using (var scope = app.Services.CreateScope())
     var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApsDbContext>>();
     using var context = contextFactory.CreateDbContext();
     context.Database.EnsureCreated();
+
+    // Migración manual de columnas
+    try
+    {
+        using var connection = context.Database.GetDbConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA table_info(Windows)";
+        using var reader = command.ExecuteReader();
+        bool hasColumn = false;
+        while (reader.Read()) { if (reader.GetString(1) == "FailuresConfigJson") { hasColumn = true; break; } }
+        reader.Close();
+        if (!hasColumn) { command.CommandText = "ALTER TABLE Windows ADD COLUMN FailuresConfigJson TEXT NOT NULL DEFAULT '[]'"; command.ExecuteNonQuery(); }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Error al migrar DB manual: " + ex.Message);
+    }
 }
 
 // Configure the HTTP request pipeline.

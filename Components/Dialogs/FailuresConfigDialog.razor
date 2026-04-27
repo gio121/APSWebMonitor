@@ -1,0 +1,220 @@
+@using System.Text.Json
+@using ApsMonitor.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4 text-muted">Configura las categorías de fallos que aparecerán en el diálogo de estado. Agrega las señales correspondientes a cada categoría.</MudText>
+        
+        @if (Categories.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">No hay categorías configuradas. Presiona "Añadir Categoría" para empezar.</MudAlert>
+        }
+
+        <div style="max-height: 50vh; overflow-y: auto; padding-right: 8px;">
+            @foreach (var category in Categories)
+            {
+                <MudPaper @key="category.Id" Class="pa-4 mb-4" Elevation="0" Outlined="true" Style="background-color: rgba(255,255,255,0.02)">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudTextField @bind-Value="category.Name" Label="Nombre de Categoría" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1 mr-4" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveCategory(category))" />
+                    </div>
+
+                    <div class="mt-4">
+                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">Señal de Contador (Badge)</MudText>
+                        <MudAutocomplete T="Signal" 
+                                         Label="Opcional: Señal para el conteo total..." 
+                                         Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.CountSignalId))"
+                                         SearchFunc="@SearchSignals"
+                                         ToStringFunc="@(s => s == null ? "Ninguna (usar suma de bits)" : $"{s.Tag} - {s.Nombre}")"
+                                         ValueChanged="@((s) => category.CountSignalId = s?.Id)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
+                    </div>
+
+                    <MudText Typo="Typo.caption" Class="fw-bold text-uppercase mt-4 d-block">Señales de Detalle (Descriptivas)</MudText>
+                    
+                    @if (category.SignalIds.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-1 my-2 pa-2 rounded" style="background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
+                            @foreach (var sigId in category.SignalIds.ToList())
+                            {
+                                var sig = AvailableSignals.FirstOrDefault(s => s.Id == sigId);
+                                <MudChip T="int" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small" OnClose="@(() => category.SignalIds.Remove(sigId))" Class="ma-0">
+                                    @(sig?.Tag ?? $"ID:{sigId}")
+                                </MudChip>
+                            }
+                        </div>
+                    }
+
+                    <div class="mt-4">
+                        <MudExpansionPanels Elevation="0">
+                            <MudExpansionPanel Text="Gestionar señales de detalle..." Style="background: transparent; border: 1px solid rgba(255,255,255,0.05);">
+                                <TitleContent>
+                                    <div class="d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2" />
+                                        <MudText Typo="Typo.body2">Añadir / Filtrar señales de detalle</MudText>
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>
+                                    <div class="pa-2">
+                                        <MudTextField @bind-Value="_searchTerms[category.Id]" 
+                                                     Label="Filtrar señales para añadir..." 
+                                                     Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.FilterList"
+                                                     Placeholder="Escribe para buscar..." 
+                                                     Immediate="true" />
+                                        
+                                        <div class="mt-2 rounded border border-solid border-white-5" style="height: 250px; overflow-y: auto; background: #1a1a1a;">
+                                            @{
+                                                var term = _searchTerms.GetValueOrDefault(category.Id) ?? "";
+                                                var filtered = AvailableSignals.Where(s => 
+                                                    string.IsNullOrEmpty(term) || 
+                                                    (s.Tag?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) || 
+                                                    (s.Nombre?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+                                            }
+                                            <MudVirtualize Items="@filtered.ToList()" Context="sig">
+                                                <div class="d-flex align-center px-2 py-1 border-b border-solid border-white-5 hover:bg-white-5">
+                                                    <div class="flex-grow-1 overflow-hidden">
+                                                        <MudText Typo="Typo.caption" Class="fw-bold">@sig.Tag</MudText>
+                                                        <MudText Typo="Typo.caption" Class="d-block text-truncate" Style="opacity: 0.6">@sig.Nombre</MudText>
+                                                    </div>
+                                                    @if (category.SignalIds.Contains(sig.Id))
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudIconButton Icon="@Icons.Material.Filled.AddCircle" Color="Color.Primary" Size="Size.Small" OnClick="@(() => AddSignalToCategory(category, sig))" />
+                                                    }
+                                                </div>
+                                            </MudVirtualize>
+                                            @if (!filtered.Any())
+                                            {
+                                                <div class="pa-4 text-center">
+                                                    <MudText Typo="Typo.caption" Class="text-muted">No se encontraron señales</MudText>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                    </div>
+                </MudPaper>
+            }
+        </div>
+
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" Class="mt-2 w-100" OnClick="AddCategory">Añadir Categoría</MudButton>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string ConfigJson { get; set; } = "[]";
+    [Parameter] public List<Signal> AvailableSignals { get; set; } = new();
+
+    private List<FailureCategoryConfig> Categories { get; set; } = new();
+    private Dictionary<string, string> _searchTerms = new();
+
+    protected override void OnInitialized()
+    {
+        LoadConfig();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Categories.Count == 0 && string.IsNullOrWhiteSpace(ConfigJson))
+        {
+            LoadConfig();
+        }
+    }
+
+    private void LoadConfig()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(ConfigJson))
+            {
+                Categories = JsonSerializer.Deserialize<List<FailureCategoryConfig>>(ConfigJson) ?? new();
+            }
+        }
+        catch
+        {
+            Categories = new();
+        }
+        
+        if (Categories.Count == 0)
+        {
+            var inversor = new FailureCategoryConfig { Name = "Inversor" };
+            var lvps = new FailureCategoryConfig { Name = "LVPS" };
+            var chopper = new FailureCategoryConfig { Name = "Chopper" };
+
+            // Intentar mapear automáticamente nfails si existen (Mapeo solicitado por usuario: Inv=AC, Chop=IN)
+            inversor.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            chopper.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            lvps.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+
+            // Dejamos las listas de señales de detalle vacías para que el usuario elija
+            inversor.SignalIds = new List<int>();
+            lvps.SignalIds = new List<int>();
+            chopper.SignalIds = new List<int>();
+
+            Categories.Add(inversor);
+            Categories.Add(lvps);
+            Categories.Add(chopper);
+        }
+
+        // Asegurar que todas las categorías tengan una entrada en el diccionario de búsqueda
+        foreach (var cat in Categories)
+        {
+            if (!_searchTerms.ContainsKey(cat.Id))
+                _searchTerms[cat.Id] = "";
+        }
+    }
+
+    private void AddCategory()
+    {
+        var newCat = new FailureCategoryConfig { Name = "Nueva Categoría" };
+        _searchTerms[newCat.Id] = "";
+        Categories.Add(newCat);
+        StateHasChanged();
+    }
+
+    private void RemoveCategory(FailureCategoryConfig category)
+    {
+        Categories.Remove(category);
+        StateHasChanged();
+    }
+
+    private void AddSignalToCategory(FailureCategoryConfig category, Signal? signal)
+    {
+        if (signal != null && !category.SignalIds.Contains(signal.Id))
+        {
+            category.SignalIds.Add(signal.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task<IEnumerable<Signal>> SearchSignals(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return AvailableSignals;
+
+        return AvailableSignals.Where(x => 
+            (x.Nombre?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false) || 
+            (x.Tag?.Contains(value, StringComparison.InvariantCultureIgnoreCase) ?? false));
+    }
+
+    private void Submit()
+    {
+        var finalJson = JsonSerializer.Serialize(Categories);
+        MudDialog.Close(DialogResult.Ok(finalJson));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

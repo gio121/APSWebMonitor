@@ -25,5 +25,14 @@ public class SinopticoElement
     public int? StateSignalId { get; set; }
     public int? StateSignalBit { get; set; }
     public string ErrorColor { get; set; } = "#f44336"; // Default error/discrepancy color
+    public string ActiveColor { get; set; } = "#4caf50"; // Default active color
+    public List<ColorRule> BoxColorRules { get; set; } = new(); // Multiple color rules
     public bool ProportionalScale { get; set; } = true;
+}
+
+public class ColorRule
+{
+    public int? SignalId { get; set; }
+    public int? SignalBit { get; set; }
+    public string Color { get; set; } = "#4caf50";
 }

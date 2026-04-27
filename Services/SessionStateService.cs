@@ -32,8 +32,7 @@ public class SessionStateService : IDisposable
         NotifyStateChanged();
     }
 
-    private DateTime _playRealStartTime;
-    private TimeSpan _playStartOffset;
+
 
     public void Play()
     {
@@ -41,40 +40,55 @@ public class SessionStateService : IDisposable
         if (CurrentFrame >= Dataset!.FrameCount - 1) CurrentFrame = 0;
 
         IsPlaying = true;
-        _playRealStartTime = DateTime.UtcNow;
-        _playStartOffset = Dataset!.Timestamps[CurrentFrame];
 
-        // Tasa de actualización de UI
-        int tickMs = 50;
+        _playTimer?.Dispose();
+        ScheduleNextFrame();
+    }
+
+    private void ScheduleNextFrame()
+    {
+        if (!IsPlaying || !IsLoaded || CurrentFrame >= Dataset!.FrameCount - 1)
+        {
+            if (CurrentFrame >= Dataset!.FrameCount - 1)
+            {
+                IsPlaying = false;
+                NotifyStateChanged();
+            }
+            return;
+        }
+
+        // Calcular el delay real entre el frame actual y el siguiente
+        var currentTs = Dataset.Timestamps[CurrentFrame];
+        var nextTs = Dataset.Timestamps[CurrentFrame + 1];
+        double delayMs = (nextTs - currentTs).TotalMilliseconds / VelocidadActual;
+
+        // Mínimo 1ms para no bloquear, máximo razonable para no congelar la UI
+        int tickMs = Math.Clamp((int)delayMs, 1, 1000);
 
         _playTimer?.Dispose();
         _playTimer = new System.Threading.Timer(_ =>
         {
             if (!IsPlaying) return;
 
-            var elapsedRealTime = DateTime.UtcNow - _playRealStartTime;
-            var targetTime = _playStartOffset + TimeSpan.FromMilliseconds(elapsedRealTime.TotalMilliseconds * VelocidadActual);
+            CurrentFrame++;
 
-            int newFrame = CurrentFrame;
-            while (newFrame < Dataset.FrameCount - 1 && Dataset.Timestamps[newFrame + 1] <= targetTime)
-            {
-                newFrame++;
-            }
-
-            if (newFrame >= Dataset.FrameCount - 1)
+            if (CurrentFrame >= Dataset.FrameCount - 1)
             {
                 CurrentFrame = Dataset.FrameCount - 1;
                 IsPlaying = false;
                 _playTimer?.Dispose();
             }
-            else
-            {
-                CurrentFrame = newFrame;
-            }
 
             NotifyStateChanged();
-        }, null, 0, tickMs);
+
+            // Programar el siguiente frame si seguimos reproduciendo
+            if (IsPlaying)
+            {
+                ScheduleNextFrame();
+            }
+        }, null, tickMs, Timeout.Infinite);
     }
+
 
     public void Pause()
     {
@@ -134,8 +148,8 @@ public class SessionStateService : IDisposable
         CurrentFrame = Math.Clamp(frame, 0, Dataset!.FrameCount - 1);
         if (IsPlaying)
         {
-            _playRealStartTime = DateTime.UtcNow;
-            _playStartOffset = Dataset!.Timestamps[CurrentFrame];
+            _playTimer?.Dispose();
+            ScheduleNextFrame();
         }
         NotifyStateChanged();
     }

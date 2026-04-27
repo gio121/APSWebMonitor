@@ -99,7 +99,6 @@ public class SessionParserService
                                     if (matchingNode.HasValue && signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
                                     {
                                         // Extraer datos usando el buffer de 6 bytes de cabecera omitidos
-                                        bool changed = false;
                                         foreach (var sig in nodeSignals)
                                         {
                                             int offset = sig.BytePosicion + 6;
@@ -111,23 +110,19 @@ public class SessionParserService
                                                 int sigIdx = dataset.SignalIdToIndex[sig.Id];
                                                 currentValues[sigIdx] = physValue;
                                                 currentRawValues[sigIdx] = rawValue;
-                                                changed = true;
                                             }
                                         }
 
-                                        if (changed)
+                                        // Guardar snapshot actual en el dataset (todas las tramas)
+                                        dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
+                                        dataset.AbsoluteTimestamps[processedFrames] = timestamp;
+                                        
+                                        for (int s = 0; s < dataset.SignalCount; s++)
                                         {
-                                            // Guardar snapshot actual en el dataset
-                                            dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
-                                            dataset.AbsoluteTimestamps[processedFrames] = timestamp;
-                                            
-                                            for (int s = 0; s < dataset.SignalCount; s++)
-                                            {
-                                                dataset.Values[processedFrames, s] = currentValues[s];
-                                                dataset.RawValues[processedFrames, s] = currentRawValues[s];
-                                            }
-                                            processedFrames++;
+                                            dataset.Values[processedFrames, s] = currentValues[s];
+                                            dataset.RawValues[processedFrames, s] = currentRawValues[s];
                                         }
+                                        processedFrames++;
                                     }
                                 }
                             }
@@ -141,13 +136,41 @@ public class SessionParserService
             }
         }
 
-        // Si procesamos menos frames de los estimados, devolvemos un dataset ajustado
-        if (processedFrames < frameCount)
+        // Ordenar y ajustar el dataset para que sea cronológico y no tenga huecos
+        return SortAndTrimDataset(dataset, processedFrames);
+    }
+
+    private SessionDataset SortAndTrimDataset(SessionDataset old, int count)
+    {
+        if (count == 0) return new SessionDataset(0, old.SignalIds);
+
+        // 1. Crear un array de índices y ordenarlos por AbsoluteTimestamp
+        int[] indices = new int[count];
+        for (int i = 0; i < count; i++) indices[i] = i;
+
+        Array.Sort(indices, (a, b) => old.AbsoluteTimestamps[a].CompareTo(old.AbsoluteTimestamps[b]));
+
+        // 2. Crear el nuevo dataset
+        var @new = new SessionDataset(count, old.SignalIds);
+        DateTime minTime = old.AbsoluteTimestamps[indices[0]];
+
+        for (int i = 0; i < count; i++)
         {
-            return TrimDataset(dataset, processedFrames);
+            int oldIdx = indices[i];
+
+            // Tiempos
+            @new.AbsoluteTimestamps[i] = old.AbsoluteTimestamps[oldIdx];
+            @new.Timestamps[i] = @new.AbsoluteTimestamps[i] - minTime;
+
+            // Valores de todas las señales
+            for (int s = 0; s < old.SignalCount; s++)
+            {
+                @new.Values[i, s] = old.Values[oldIdx, s];
+                @new.RawValues[i, s] = old.RawValues[oldIdx, s];
+            }
         }
 
-        return dataset;
+        return @new;
     }
 
     private byte[] ParseHex(ReadOnlySpan<byte> hexSpan)
@@ -188,23 +211,6 @@ public class SessionParserService
         _ => 0
     };
 
-    private SessionDataset TrimDataset(SessionDataset old, int count)
-    {
-        var @new = new SessionDataset(count, old.SignalIds);
-        Array.Copy(old.Timestamps, @new.Timestamps, count);
-        Array.Copy(old.AbsoluteTimestamps, @new.AbsoluteTimestamps, count);
-        
-        // Copiar matrices es más pesado, pero necesario si queremos liberar la RAM sobrante
-        for (int f = 0; f < count; f++)
-        {
-            for (int s = 0; s < old.SignalCount; s++)
-            {
-                @new.Values[f, s] = old.Values[f, s];
-                @new.RawValues[f, s] = old.RawValues[f, s];
-            }
-        }
-        return @new;
-    }
 
     private static double ReadValue(byte[] data, int offset, string tipoVariable)
     {

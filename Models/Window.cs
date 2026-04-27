@@ -13,5 +13,16 @@ public class Window
 
     // Synoptic Content (JSON serialized elements)
     public string ContentJson { get; set; } = "[]";
+
+    // Failure configuration (JSON serialized List<FailureCategoryConfig>)
+    public string FailuresConfigJson { get; set; } = "[]";
+}
+
+public class FailureCategoryConfig
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public int? CountSignalId { get; set; }
+    public List<int> SignalIds { get; set; } = new();
 }
 
