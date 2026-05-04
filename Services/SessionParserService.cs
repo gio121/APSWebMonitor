@@ -90,7 +90,7 @@ public class SessionParserService
                                     foreach (var kvp in nodeSizes)
                                     {
                                         if (payloadLength >= kvp.Value)
-                                        {
+                                        { 
                                             int diff = payloadLength - kvp.Value;
                                             if (diff < minDiff) { minDiff = diff; matchingNode = kvp.Key; }
                                         }

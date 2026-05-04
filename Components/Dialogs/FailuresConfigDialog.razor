@@ -21,6 +21,17 @@
                     </div>
 
                     <div class="mt-4">
+                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">Señal de Estado (Bits de Color)</MudText>
+                        <MudAutocomplete T="Signal" 
+                                         Label="Opcional: Señal de estado (status_ac, status_dc, etc)..." 
+                                         Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.StatusSignalId))"
+                                         SearchFunc="@SearchSignals"
+                                         ToStringFunc="@(s => s == null ? "Ninguna" : $"{s.Tag} - {s.Nombre}")"
+                                         ValueChanged="@((s) => category.StatusSignalId = s?.Id)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
+                    </div>
+
+                    <div class="mt-4">
                         <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">Señal de Contador (Badge)</MudText>
                         <MudAutocomplete T="Signal" 
                                          Label="Opcional: Señal para el conteo total..." 
@@ -154,10 +165,14 @@
             var lvps = new FailureCategoryConfig { Name = "LVPS" };
             var chopper = new FailureCategoryConfig { Name = "Chopper" };
 
-            // Intentar mapear automáticamente nfails si existen (Mapeo solicitado por usuario: Inv=AC, Chop=IN)
+            // Intentar mapear automáticamente nfails y status si existen (Mapeo solicitado por usuario: Inv=AC, Chop=IN)
             inversor.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
             chopper.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
             lvps.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+
+            inversor.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            chopper.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            lvps.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
 
             // Dejamos las listas de señales de detalle vacías para que el usuario elija
             inversor.SignalIds = new List<int>();

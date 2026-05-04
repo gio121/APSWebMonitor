@@ -21,10 +21,14 @@
         <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Warning" OnClick="ConfigurarFallos">Configurar Fallos</MudButton>
         <MudButton Variant="@(_showGrid ? Variant.Filled : Variant.Outlined)" Color="Color.Info" StartIcon="@Icons.Material.Filled.GridOn" OnClick="ToggleGrid">Rejilla</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Save" OnClick="SaveSinoptico">Guardar</MudButton>
+        <MudIconButton Icon="@(SessionState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                       Color="Color.Inherit" 
+                       OnClick="@SessionState.ToggleDarkMode" 
+                       Title="@(SessionState.IsDarkMode ? "Modo Claro" : "Modo Oscuro")" />
     </div>
 </div>
 
-<div class="editor-container d-flex">
+<div class="editor-container d-flex @(SessionState.IsDarkMode ? "dark-theme" : "light-theme")">
     <!-- LEFT PANEL: ELEMENTS -->
     <div class="sidebar left-sidebar d-flex flex-column pa-2">
         <div class="d-flex gap-2 mb-4 px-2">
@@ -78,14 +82,36 @@
 
                     @if (el.Type == "Etiqueta")
                     {
+                        var textColor = el.Color;
+                        if (SessionState.IsDarkMode)
+                        {
+                            if (textColor.ToLower() == "#000000" || textColor.ToLower() == "black" || textColor.ToLower() == "#ff9800")
+                                textColor = "#ffffff";
+                        }
+                        else
+                        {
+                            if (textColor.ToLower() == "#ffffff" || textColor.ToLower() == "white" || textColor.ToLower() == "#ff9800")
+                                textColor = "#000000";
+                        }
                         <div class="element-content label-content d-flex align-center justify-center p-1" 
-                             style="color: @el.Color; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                             style="color: @textColor; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             @el.Text
                         </div>
                     }
                     else if (el.Type == "Señal")
                     {
-                        <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
+                        var sigColor = el.Color;
+                        if (SessionState.IsDarkMode)
+                        {
+                            if (sigColor.ToLower() == "#000000" || sigColor.ToLower() == "black" || sigColor.ToLower() == "#ff9800")
+                                sigColor = "#ffffff";
+                        }
+                        else
+                        {
+                            if (sigColor.ToLower() == "#ffffff" || sigColor.ToLower() == "white" || sigColor.ToLower() == "#ff9800")
+                                sigColor = "#000000";
+                        }
+                        <div class="element-content signal-content d-flex flex-column" style="border-color: @(sigColor + "44"); color: @sigColor;">
                             <span class="signal-name" style="font-size: @(Math.Round(el.FontSize * 0.7))px;">@el.Text</span>
                             <span class="signal-value fw-bold" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums;">
                                 @GetSignalValueText(el.SignalId, currentValues)
@@ -109,7 +135,18 @@
                     }
                     else if (el.Type == "Linea H" || el.Type == "Linea V")
                     {
-                        <div class="element-content line-content" style="background-color: @el.Color;"></div>
+                        var lineColor = el.Color;
+                        if (SessionState.IsDarkMode)
+                        {
+                            if (lineColor.ToLower() == "#000000" || lineColor.ToLower() == "black" || lineColor.ToLower() == "#ff9800")
+                                lineColor = "#ffffff";
+                        }
+                        else
+                        {
+                            if (lineColor.ToLower() == "#ffffff" || lineColor.ToLower() == "white" || lineColor.ToLower() == "#ff9800")
+                                lineColor = "#000000";
+                        }
+                        <div class="element-content line-content" style="background-color: @lineColor;"></div>
                     }
                     else
                     {
@@ -352,7 +389,12 @@
         height: 60px;
         flex-shrink: 0;
     }
-    .editor-container {
+    .editor-container.light-theme {
+        flex-grow: 1;
+        background-color: #ffffff;
+        overflow: hidden;
+    }
+    .editor-container.dark-theme {
         flex-grow: 1;
         background-color: #0f1218;
         overflow: hidden;
@@ -382,6 +424,13 @@
         top: 0; left: 0; right: 0; bottom: 0;
         pointer-events: none;
         background-size: 20px 20px;
+    }
+    .light-theme .grid-background {
+        background-image: 
+            linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+    }
+    .dark-theme .grid-background {
         background-image: 
             linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
@@ -415,21 +464,33 @@
         height: 100%;
     }
     .label-content {
-        color: #e2e8f0;
         text-align: center;
         line-height: 1;
     }
+    .light-theme .label-content { color: #111827; }
+    .dark-theme .label-content { color: #e2e8f0; }
+
     .signal-content {
-        background-color: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
         border-radius: 4px;
         padding: 8px;
+    }
+    .light-theme .signal-content {
+        background-color: rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.1);
+        color: #111827;
+    }
+    .dark-theme .signal-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
         color: #e2e8f0;
     }
+
     .signal-name {
         font-size: 10px;
-        color: #94a3b8;
     }
+    .light-theme .signal-name { color: #4b5563; }
+    .dark-theme .signal-name { color: #94a3b8; }
+
     .signal-value {
         font-size: 16px;
     }
@@ -460,14 +521,21 @@
         padding: 4px;
     }
     .box-content {
-        background-color: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.2);
         border-radius: 4px;
-        color: #e2e8f0;
         font-size: 14px;
         text-align: center;
         padding: 4px;
         overflow: hidden;
+    }
+    .light-theme .box-content {
+        background-color: rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.2);
+        color: #111827;
+    }
+    .dark-theme .box-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #e2e8f0;
     }
     
     .op-10 { opacity: 0.1; }
@@ -484,7 +552,7 @@
     
     private bool _showGrid = true;
     
-    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Caja", "Linea H", "Linea V", "Diodo", "Dotline", "Resistencia", "Bobina", "Descargador", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne", "Rectificador", "Inversor", "Convertidor", "Trifasico", "Ventilador", "Condensador", "ACpresence" };
+    private string[] elementTypes = { "Etiqueta", "Señal", "Comando", "Caja", "Linea H", "Linea V", "Diodo", "Dotline", "Resistencia", "Bobina", "Descargador", "Transformador", "Fusible", "Interruptor", "Seccionador", "Contactor", "Contactor V", "Borne", "Rectificador", "Inversor", "Convertidor", "Trifasico", "Ventilador", "Condensador", "ACpresence", "Box" };
     
     // Resize/Move state
     private bool _isResizing;
@@ -816,12 +884,25 @@
         var icon = SinopticoIconProvider.GetIcon(el.Type);
         var color = el.Color;
         
+        // Lógica de tema: si el color es el "por defecto" (blanco/negro/naranja), lo ajustamos al tema
+        if (SessionState.IsDarkMode)
+        {
+            if (color.ToLower() == "#000000" || color.ToLower() == "black" || color.ToLower() == "#ff9800")
+                color = "#ffffff";
+        }
+        else
+        {
+            if (color.ToLower() == "#ffffff" || color.ToLower() == "white" || color.ToLower() == "#ff9800")
+                color = "#000000";
+        }
+
         if (string.IsNullOrEmpty(icon)) return "";
 
         if (icon.StartsWith("<svg"))
         {
             var svg = icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display: block;'");
-            return svg.Replace("currentColor", color).Replace("#000000", color);
+            // Reemplazamos tanto currentColor como posibles blancos/negros hardcoded para que usen el color deseado
+            return svg.Replace("currentColor", color).Replace("#000000", color).Replace("#ffffff", color).Replace("white", color);
         }
         else if (icon.StartsWith("<path"))
         {

@@ -7,7 +7,7 @@
 {
     @if (_minimized)
     {
-        <div class="session-player-minimized" style="bottom: @(_barBottomPx)px;">
+        <div class="session-player-minimized" style="bottom: @(_barBottomPx + 20)px;">
             <MudIconButton Icon="@Icons.Material.Filled.PlayCircle" Color="Color.Primary" Size="Size.Large" 
                            OnClick="@(() => _minimized = false)" Title="Mostrar reproductor" />
         </div>
@@ -16,10 +16,7 @@
     {
         <div class="session-player-global-bar" style="bottom: @(_barBottomPx)px;">
             <MudPaper Elevation="25" Class="pa-2 px-4 d-flex align-center gap-4">
-                <!-- Drag Handle -->
-                <div class="drag-handle" @onmousedown="StartDrag" title="Arrastrar para mover">
-                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" Style="color: #64748b;" />
-                </div>
+                
 
                 <!-- Info y Controles -->
                 <div class="d-flex align-center gap-2" style="min-width: 320px;">

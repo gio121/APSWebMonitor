@@ -30,6 +30,12 @@
             <MudIconButton Icon="@(_showFailures ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" 
                            Color="Color.Inherit" 
                            OnClick="() => _showFailures = !_showFailures" />
+            
+            <MudIconButton Icon="@(SessionState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                           Color="Color.Inherit" 
+                           OnClick="@SessionState.ToggleDarkMode" 
+                           Class="ml-2"
+                           Title="@(SessionState.IsDarkMode ? "Modo Claro" : "Modo Oscuro")" />
         </div>
 
         <!-- Panel de Fallos Superior Plegable -->
@@ -39,33 +45,117 @@
                     @foreach (var category in _failureCategories)
                     {
                         var catFailures = dialogFailures.ContainsKey(category.Name) ? dialogFailures[category.Name] : new List<ActiveFailure>();
-                        
-                        // Lógica para obtener el contador real de la señal nfails si existe
                         var displayCount = 0;
                         if (category.CountSignalId.HasValue && currentValues.TryGetValue(category.CountSignalId.Value, out var sigVal))
                             displayCount = (int)sigVal;
                         else
                             displayCount = catFailures.Count;
 
-                        <div class="category-card-top @(displayCount > 0 ? "has-errors" : "is-ok")">
-                            <div class="cat-header">
-                                <span class="cat-name">@category.Name.ToUpper()</span>
-                                <span class="cat-badge">@displayCount</span>
+                        var lastStop = _lastStopPerCategory.GetValueOrDefault(category.Name, "");
+                        var failuresList = string.Join(", ", catFailures.Select(f => f.Description));
+                        var maxFails = 100;
+                        var pct = maxFails > 0 ? Math.Max(0, (int)(((maxFails - displayCount) / (double)maxFails) * 100)) : 100;
+
+                        // Estado por defecto: IDLE (sin información). Solo los bits de la señal determinan RUN/STOP.
+                        string statusText = "IDLE";
+                        string statusCss = "status-off";
+                        string statusBtnCss = "btn-off";
+                        string statusIcon = Icons.Material.Filled.MoreHoriz;
+
+                        if (category.StatusSignalId.HasValue && currentValues.TryGetValue(category.StatusSignalId.Value, out var statusVal))
+                        {
+                            long longVal = (long)Math.Truncate(statusVal);
+                            bool IsBitActive(int bit) => (longVal & (1L << bit)) != 0;
+
+                            // Bit 5 = RUN (mayor prioridad positiva)
+                            // Bit 2 o 3 = STOP
+                            // Bit 1 o 6 = WARNING
+                            // Bit 0 o 4 = OFF
+                            if (IsBitActive(5))
+                            {
+                                statusText = "RUN";
+                                statusCss = "status-run";
+                                statusBtnCss = "btn-run";
+                                statusIcon = Icons.Material.Filled.PlayArrow;
+                            }
+                            else if (IsBitActive(2) || IsBitActive(3))
+                            {
+                                statusText = "STOP";
+                                statusCss = "status-stop";
+                                statusBtnCss = "btn-stop";
+                                statusIcon = Icons.Material.Filled.Stop;
+                            }
+                            else if (IsBitActive(1) || IsBitActive(6))
+                            {
+                                statusText = "WARNING";
+                                statusCss = "status-warn";
+                                statusBtnCss = "btn-warn";
+                                statusIcon = Icons.Material.Filled.Warning;
+                            }
+                            else if (IsBitActive(0) || IsBitActive(4))
+                            {
+                                statusText = "OFF";
+                                statusCss = "status-off";
+                                statusBtnCss = "btn-off";
+                                statusIcon = Icons.Material.Filled.PowerOff;
+                            }
+                            else
+                            {
+                                statusText = "IDLE";
+                                statusCss = "status-off";
+                                statusBtnCss = "btn-off";
+                                statusIcon = Icons.Material.Filled.MoreHoriz;
+                            }
+                        }
+
+                        <div class="ind-card">
+                            <!-- Header -->
+                            <div class="ind-card-header">
+                                <span class="ind-card-title">@category.Name.ToUpper()</span>
+                                <span class="ind-card-badge">@displayCount</span>
                             </div>
-                            <div class="cat-body">
-                                @if (catFailures.Any())
+
+                            <!-- Status Row -->
+                            <div class="ind-row">
+                                <span class="ind-label">Status</span>
+                                <div class="ind-field @statusCss">
+                                    @statusText
+                                </div>
+                                <div class="ind-status-text-btn @statusBtnCss">
+                                    <MudIcon Icon="@(statusText == "STOP" ? Icons.Material.Filled.Stop : Icons.Material.Filled.PlayArrow)" Size="Size.Small" />
+                                </div>
+                            </div>
+
+                            <!-- Last Stop Row -->
+                            <div class="ind-row">
+                                <span class="ind-label">Last Stop:</span>
+                                <div class="ind-field ind-field-laststop">@(string.IsNullOrEmpty(lastStop) ? "—" : lastStop)</div>
+                            </div>
+
+                            <!-- Failures Row -->
+                            <div class="ind-row">
+                                <span class="ind-label">Failures:</span>
+                                <div class="ind-field">@(string.IsNullOrEmpty(failuresList) ? "" : failuresList)</div>
+                            </div>
+
+                            <!-- Failures Counter Row -->
+                            <div class="ind-row">
+                                <span class="ind-label">Failures Counter:</span>
+                                <div class="ind-counter-box">@displayCount</div>
+                                @if (displayCount >= 5)
                                 {
-                                    @foreach (var fail in catFailures)
-                                    {
-                                        <div class="mini-failure">
-                                            <span class="mini-tag">@fail.Tag</span>
-                                            <span class="mini-desc">@fail.Description</span>
-                                        </div>
-                                    }
+                                    <button class="ind-btn-reset">Reset</button>
                                 }
-                                else
+                            </div>
+
+                            <!-- Scrollable Detail Area -->
+                            <div class="ind-detail-scroll">
+                                @foreach (var fail in catFailures)
                                 {
-                                    <div class="cat-ok">✅ Sistema OK</div>
+                                    <div class="ind-detail-entry">
+                                        <span class="mini-tag">@fail.Tag</span>
+                                        <span class="mini-desc">@fail.Description</span>
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -74,7 +164,7 @@
             </div>
         </div>
 
-        <div class="editor-container">
+        <div class="editor-container @(SessionState.IsDarkMode ? "dark-theme" : "light-theme")" style="min-width: 100%; width: fit-content;">
             <div class="main-canvas-area">
                 <div class="canvas mx-auto" style="width: @(_elements.Any() ? _elements.Max(e => e.X + e.Width) + 100 : 800)px; height: @(_elements.Any() ? _elements.Max(e => e.Y + e.Height) + 100 : 600)px;">
                     @foreach (var el in _elements)
@@ -84,16 +174,39 @@
                         <div class="canvas-element" style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
                             @if (el.Type == "Etiqueta")
                             {
+                                var textColor = el.Color;
+                                if (SessionState.IsDarkMode)
+                                {
+                                    if (textColor.ToLower() == "#000000" || textColor.ToLower() == "black" || textColor.ToLower() == "#ff9800")
+                                        textColor = "#ffffff";
+                                }
+                                else
+                                {
+                                    if (textColor.ToLower() == "#ffffff" || textColor.ToLower() == "white" || textColor.ToLower() == "#ff9800")
+                                        textColor = "#000000";
+                                }
                                 <div class="element-content label-content d-flex align-center justify-center p-1" 
-                                     style="color: @el.Color; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                     style="color: @textColor; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     @el.Text
                                 </div>
                             }
                             else if (el.Type == "Señal")
                             {
-                                <div class="element-content signal-content d-flex flex-column" style="border-color: @(el.Color + "44"); color: @el.Color;">
-                                    <span class="signal-name" style="font-size: @(Math.Round(el.FontSize * 0.7))px;">@el.Text</span>
-                                    <span class="signal-value fw-bold" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums;">
+                                var sigColor = el.Color;
+                                if (SessionState.IsDarkMode)
+                                {
+                                    if (sigColor.ToLower() == "#000000" || sigColor.ToLower() == "black" || sigColor.ToLower() == "#ff9800")
+                                        sigColor = "#ffffff";
+                                }
+                                else
+                                {
+                                    if (sigColor.ToLower() == "#ffffff" || sigColor.ToLower() == "white" || sigColor.ToLower() == "#ff9800")
+                                        sigColor = "#000000";
+                                }
+                                <div class="element-content signal-content d-flex flex-row flex-wrap align-center justify-center p-1" 
+                                     style="border-color: @(sigColor + "44"); color: @sigColor; gap: 4px; overflow: hidden;">
+                                    <span class="signal-name text-truncate" style="font-size: @(Math.Round(el.FontSize * 0.7))px; max-width: 100%; line-height: 1;">@el.Text</span>
+                                    <span class="signal-value fw-bold text-truncate" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums; line-height: 1;">
                                         @GetSignalValueText(el.SignalId, currentValues)
                                     </span>
                                 </div>
@@ -107,7 +220,18 @@
                             }
                             else if (el.Type == "Linea H" || el.Type == "Linea V")
                             {
-                                <div class="element-content line-content" style="background-color: @el.Color;"></div>
+                                var lineColor = el.Color;
+                                if (SessionState.IsDarkMode)
+                                {
+                                    if (lineColor.ToLower() == "#000000" || lineColor.ToLower() == "black" || lineColor.ToLower() == "#ff9800")
+                                        lineColor = "#ffffff";
+                                }
+                                else
+                                {
+                                    if (lineColor.ToLower() == "#ffffff" || lineColor.ToLower() == "white" || lineColor.ToLower() == "#ff9800")
+                                        lineColor = "#000000";
+                                }
+                                <div class="element-content line-content" style="background-color: @lineColor;"></div>
                             }
                             else
                             {
@@ -130,15 +254,14 @@
         min-height: calc(100vh - 96px);
         display: flex;
         flex-direction: column;
-        overflow-y: auto; /* Scroll global para permitir empuje */
+        overflow: auto; /* Permitir scroll tanto vertical como horizontal */
         background-color: #0d1117;
+        margin-top: -65px;
     }
 
     .main-view {
-        flex: 1;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
     /* ESTILOS DEL PANEL SUPERIOR */
@@ -157,7 +280,7 @@
     }
 
     .failures-top-panel.expanded {
-        max-height: 450px; /* Aumentado para ver más fallos */
+        max-height: 600px;
         opacity: 1;
     }
 
@@ -165,56 +288,224 @@
         overflow-x: auto;
     }
 
-    .category-card-top {
-        min-width: 320px;
-        max-height: 380px; /* Limitar alto de tarjeta individual */
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 12px;
+    /* ===== INDUSTRIAL CARD ===== */
+    .ind-card {
+        width: 360px;
+        min-width: 360px;
+        max-width: 360px;
+        height: 320px;
+        background: #1a1f2b;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px;
         display: flex;
         flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        flex-shrink: 0;
+        overflow: hidden;
     }
 
-    .cat-body {
-        flex: 1;
-        overflow-y: auto; /* Scroll interno si hay MSI de fallos */
-        padding-right: 4px;
-    }
-
-    .category-card-top.has-errors {
+    .ind-card.has-errors {
         border-left: 4px solid #f44336;
     }
 
-    .category-card-top.is-ok {
+    .ind-card.is-ok {
         border-left: 4px solid #4caf50;
-        opacity: 0.7;
     }
 
-    .cat-header {
+    .ind-card-header {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        padding-bottom: 4px;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .cat-name { font-size: 11px; font-weight: 800; color: #8b949e; }
-    .cat-badge { font-size: 11px; font-weight: 800; color: #fff; background: #30363d; padding: 2px 6px; border-radius: 10px; }
-    
-    .has-errors .cat-badge { background: #f44336; }
+    .ind-card-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #e6edf3;
+        letter-spacing: 1px;
+    }
 
-    .mini-failure {
+    .ind-card-badge {
+        font-size: 13px;
+        font-weight: 800;
+        color: #fff;
+        background: #30363d;
+        padding: 2px 10px;
+        border-radius: 12px;
+        min-width: 28px;
+        text-align: center;
+    }
+
+    .has-errors .ind-card-badge { background: #f44336; }
+
+    /* Row layout */
+    .ind-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ind-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #58a6ff;
+        min-width: 120px;
+        flex-shrink: 0;
+    }
+
+    .ind-field {
+        flex: 1;
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: #c9d1d9;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-height: 28px;
+    }
+
+    .ind-field.status-run {
+        color: #4caf50;
+        font-weight: bold;
+    }
+
+    .ind-field.status-stop {
+        color: #f44336;
+        font-weight: bold;
+    }
+
+    .ind-field.status-warn {
+        color: #fbc02d;
+        font-weight: bold;
+    }
+
+    .ind-field.status-off {
+        color: #8b949e;
+        font-weight: bold;
+    }
+
+    .ind-field-laststop {
+        text-align: left;
+        max-width: 260px;
+        background: #2d333b;
+    }
+
+    /* Buttons */
+    .ind-btn-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        opacity: 0.8;
+    }
+
+    .ind-status-text-btn {
+        min-width: 85px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 11px;
+        padding: 0 8px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .btn-run { color: #4caf50; border-color: rgba(76, 175, 80, 0.2); }
+    .btn-stop { color: #f44336; border-color: rgba(244, 67, 54, 0.2); }
+    .btn-warn { color: #fbc02d; border-color: rgba(251, 192, 45, 0.2); }
+    .btn-off { color: #8b949e; border-color: rgba(139, 148, 158, 0.2); }
+
+    .ind-btn-reset {
+        padding: 4px 16px;
+        background: #f44336;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s;
+    }
+
+    .ind-btn-reset:hover {
+        background: #d32f2f;
+    }
+
+    /* Counter */
+    .ind-counter-box {
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #e6edf3;
+        text-align: center;
+        min-width: 40px;
+        flex-shrink: 0;
+    }
+
+    .ind-pct {
+        font-size: 12px;
+        font-weight: bold;
+        color: #c9d1d9;
+        min-width: 50px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .ind-progress {
+        flex: 1;
+        height: 10px;
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .ind-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #4caf50, #81c784);
+        border-radius: 5px;
+        transition: width 0.3s ease;
+    }
+
+    /* Scrollable detail area */
+    .ind-detail-scroll {
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        min-height: 60px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 8px;
+    }
+
+    .ind-detail-entry {
         display: flex;
         gap: 8px;
         font-size: 11px;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .mini-tag { color: #58a6ff; font-family: monospace; font-weight: bold; }
     .mini-desc { color: #e6edf3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .cat-ok { color: #4caf50; font-size: 11px; text-align: center; padding: 5px; }
 
     /* ESTILOS HEADER */
     .header-status-badge {
@@ -251,22 +542,52 @@
         color: #e6edf3;
     }
 
-    .editor-container {
-        position: relative;
-        padding: 20px 40px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background-image: 
-            radial-gradient(circle at 2px 2px, rgba(255,255,255,0.02) 1px, transparent 0);
+    /* TEMA CLARO / OSCURO DINAMICO */
+    .editor-container.light-theme {
+        background-color: #ffffff;
+        background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0.1) 1px, transparent 0);
         background-size: 32px 32px;
+    }
+    .editor-container.dark-theme {
+        background-color: #0d1117;
+        background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+        background-size: 32px 32px;
+    }
+
+    .editor-container.light-theme .label-content { color: #111827; }
+    .editor-container.dark-theme .label-content { color: #e2e8f0; }
+
+    .editor-container.light-theme .signal-content {
+        background-color: rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.1);
+        color: #111827;
+    }
+    .editor-container.dark-theme .signal-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #e2e8f0;
+    }
+
+    .editor-container.light-theme .signal-name { color: #4b5563; }
+    .editor-container.dark-theme .signal-name { color: #94a3b8; }
+    
+    .editor-container.light-theme .box-content {
+        background-color: rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.1);
+        color: #111827;
+    }
+    .editor-container.dark-theme .box-content {
+        background-color: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #e2e8f0;
     }
 
     .main-canvas-area {
         width: 100%;
+        min-width: fit-content;
         display: flex;
-        justify-content: center;
-        padding-top: 10px;
+        justify-content: flex-start; /* Cambiado a flex-start para evitar recortes en el scroll */
+        padding: 40px; /* Más margen para que no quede pegado a los bordes */
     }
     .canvas {
         min-width: 100%;
@@ -288,20 +609,20 @@
         height: 100%;
     }
     .label-content {
-        color: #e2e8f0;
+        color: #111827; /* Dark text for light theme */
         text-align: center;
         line-height: 1;
     }
     .signal-content {
-        background-color: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        background-color: rgba(0,0,0,0.05); /* Darker background for light theme */
+        border: 1px solid rgba(0,0,0,0.1);
         border-radius: 4px;
         padding: 8px;
-        color: #e2e8f0;
+        color: #111827;
     }
     .signal-name {
         font-size: 10px;
-        color: #94a3b8;
+        color: #4b5563;
     }
     .signal-value {
         font-size: 16px;
@@ -519,6 +840,9 @@
     private List<SinopticoElement> _elements = new();
     private List<FailureCategoryConfig> _failureCategories = new();
     private bool _showFailures = true;
+    private Dictionary<string, string> _lastStopPerCategory = new();
+    private HashSet<string> _previousFailureKeys = new();
+    private bool _statusMapped = false;
 
     private struct ActiveFailure
     {
@@ -548,6 +872,20 @@
                 if (!string.IsNullOrWhiteSpace(_window.FailuresConfigJson) && _window.FailuresConfigJson != "[]")
                 {
                     _failureCategories = JsonSerializer.Deserialize<List<FailureCategoryConfig>>(_window.FailuresConfigJson) ?? GetDefaultCategories();
+                    
+                    // Auto-mapear StatusSignalId si está null (para configuraciones antiguas)
+                    foreach (var cat in _failureCategories)
+                    {
+                        if (!cat.StatusSignalId.HasValue && SessionState.Signals.Any())
+                        {
+                            if (cat.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+                            else if (cat.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+                            else if (cat.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+                        }
+                    }
                 }
                 else
                 {
@@ -575,6 +913,10 @@
             inversor.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
             chopper.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
             lvps.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+
+            inversor.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            chopper.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            lvps.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
 
             // Dejamos las listas de señales de detalle VACÍAS por defecto para que el usuario elija exactamente cuáles quiere
             inversor.SignalIds = new List<int>();
@@ -620,6 +962,47 @@
 
     private void SyncValues()
     {
+        // Lazy auto-mapping: si la sesión se cargó después de OnInitializedAsync, mapear StatusSignalId ahora
+        if (!_statusMapped && SessionState.Signals.Any())
+        {
+            _statusMapped = true;
+            foreach (var cat in _failureCategories)
+            {
+                if (!cat.StatusSignalId.HasValue)
+                {
+                    if (cat.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+                    else if (cat.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+                    else if (cat.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+                }
+            }
+        }
+
+        // Detect new failures for Last Stop tracking
+        try
+        {
+            var values = SessionState.GetCurrentValues();
+            var currentFailures = GetActiveFailures(values);
+            var currentKeys = new HashSet<string>();
+            foreach (var kvp in currentFailures)
+            {
+                foreach (var f in kvp.Value)
+                {
+                    var key = $"{kvp.Key}|{f.Tag}|{f.BitIndex}";
+                    currentKeys.Add(key);
+                    if (!_previousFailureKeys.Contains(key))
+                    {
+                        // New failure detected — update Last Stop for this category
+                        _lastStopPerCategory[kvp.Key] = f.Description;
+                    }
+                }
+            }
+            _previousFailureKeys = currentKeys;
+        }
+        catch { /* Ignore during init */ }
+
         InvokeAsync(StateHasChanged);
     }
 
@@ -785,11 +1168,34 @@
         var icon = SinopticoIconProvider.GetIcon(el.Type);
         var color = el.Color;
         
+        // Lógica de tema: si el color es el "por defecto" (blanco/negro/naranja), lo ajustamos al tema
+        if (SessionState.IsDarkMode)
+        {
+            if (color.ToLower() == "#000000" || color.ToLower() == "black" || color.ToLower() == "#ff9800")
+                color = "#ffffff";
+        }
+        else
+        {
+            if (color.ToLower() == "#ffffff" || color.ToLower() == "white" || color.ToLower() == "#ff9800")
+                color = "#000000";
+        }
+
         if (el.Type == "Contactor" || el.Type == "Contactor V")
         {
             var state = GetContactorState(el, currentValues);
             icon = state.Icon;
             color = state.Color;
+            
+            if (SessionState.IsDarkMode)
+            {
+                if (color.ToLower() == "#000000" || color.ToLower() == "black" || color.ToLower() == "#ff9800")
+                    color = "#ffffff";
+            }
+            else
+            {
+                if (color.ToLower() == "#ffffff" || color.ToLower() == "white" || color.ToLower() == "#ff9800")
+                    color = "#000000";
+            }
         }
 
         if (string.IsNullOrEmpty(icon)) return "";
@@ -797,7 +1203,7 @@
         if (icon.StartsWith("<svg"))
         {
             var svg = icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display: block;'");
-            return svg.Replace("currentColor", color).Replace("#000000", color);
+            return svg.Replace("currentColor", color).Replace("#000000", color).Replace("#ffffff", color).Replace("white", color);
         }
         else if (icon.StartsWith("<path"))
         {

@@ -1,13 +1,20 @@
+using System.Diagnostics;
 using ApsMonitor.Models;
 
 namespace ApsMonitor.Services;
 
 /// <summary>
 /// Servicio compartido (Scoped) que mantiene el estado de la sesión cargada.
+/// Motor de reproducción basado en Stopwatch para máxima estabilidad.
 /// </summary>
 public class SessionStateService : IDisposable
 {
     private System.Threading.Timer? _playTimer;
+    private Stopwatch? _playStopwatch;
+    private TimeSpan _playStartSessionTime; // Timestamp de la sesión cuando se pulsó Play
+
+    // Throttle: máximo ~30 actualizaciones de UI por segundo
+    private const int UI_TICK_MS = 33;
 
     public SessionDataset? Dataset { get; private set; }
     public List<Signal> Signals { get; private set; } = new();
@@ -19,6 +26,8 @@ public class SessionStateService : IDisposable
 
     public double VelocidadActual { get; set; } = 1;
     public readonly double[] Velocidades = { 0.1, 0.25, 0.5, 1, 2, 5, 10 };
+
+    public bool IsDarkMode { get; set; } = false; // Default to Light Mode as per user's latest preference
 
     public event Action? OnStateChanged;
 
@@ -32,8 +41,6 @@ public class SessionStateService : IDisposable
         NotifyStateChanged();
     }
 
-
-
     public void Play()
     {
         if (!IsLoaded) return;
@@ -41,59 +48,52 @@ public class SessionStateService : IDisposable
 
         IsPlaying = true;
 
+        // Recordar el timestamp de sesión del frame actual y arrancar el cronómetro
+        _playStartSessionTime = Dataset.Timestamps[CurrentFrame];
+        _playStopwatch = Stopwatch.StartNew();
+
+        // Un solo timer periódico a 30fps — mucho más estable que timers recursivos
         _playTimer?.Dispose();
-        ScheduleNextFrame();
+        _playTimer = new System.Threading.Timer(OnPlayTick, null, 0, UI_TICK_MS);
     }
 
-    private void ScheduleNextFrame()
+    private void OnPlayTick(object? state)
     {
-        if (!IsPlaying || !IsLoaded || CurrentFrame >= Dataset!.FrameCount - 1)
+        if (!IsPlaying || !IsLoaded || _playStopwatch == null) return;
+
+        // ¿Cuánto tiempo real ha pasado desde que pulsamos Play?
+        double elapsedMs = _playStopwatch.Elapsed.TotalMilliseconds * VelocidadActual;
+        TimeSpan targetSessionTime = _playStartSessionTime + TimeSpan.FromMilliseconds(elapsedMs);
+
+        // Avanzar frames hasta alcanzar el tiempo objetivo
+        int newFrame = CurrentFrame;
+        while (newFrame < Dataset!.FrameCount - 1 && Dataset.Timestamps[newFrame + 1] <= targetSessionTime)
         {
-            if (CurrentFrame >= Dataset!.FrameCount - 1)
-            {
-                IsPlaying = false;
-                NotifyStateChanged();
-            }
-            return;
+            newFrame++;
         }
 
-        // Calcular el delay real entre el frame actual y el siguiente
-        var currentTs = Dataset.Timestamps[CurrentFrame];
-        var nextTs = Dataset.Timestamps[CurrentFrame + 1];
-        double delayMs = (nextTs - currentTs).TotalMilliseconds / VelocidadActual;
+        // Si no hubo cambio de frame, no refrescar la UI (ahorra recursos)
+        if (newFrame == CurrentFrame) return;
 
-        // Mínimo 1ms para no bloquear, máximo razonable para no congelar la UI
-        int tickMs = Math.Clamp((int)delayMs, 1, 1000);
+        CurrentFrame = newFrame;
 
-        _playTimer?.Dispose();
-        _playTimer = new System.Threading.Timer(_ =>
+        // ¿Llegamos al final?
+        if (CurrentFrame >= Dataset.FrameCount - 1)
         {
-            if (!IsPlaying) return;
+            CurrentFrame = Dataset.FrameCount - 1;
+            IsPlaying = false;
+            _playTimer?.Dispose();
+            _playStopwatch?.Stop();
+        }
 
-            CurrentFrame++;
-
-            if (CurrentFrame >= Dataset.FrameCount - 1)
-            {
-                CurrentFrame = Dataset.FrameCount - 1;
-                IsPlaying = false;
-                _playTimer?.Dispose();
-            }
-
-            NotifyStateChanged();
-
-            // Programar el siguiente frame si seguimos reproduciendo
-            if (IsPlaying)
-            {
-                ScheduleNextFrame();
-            }
-        }, null, tickMs, Timeout.Infinite);
+        NotifyStateChanged();
     }
-
 
     public void Pause()
     {
         IsPlaying = false;
         _playTimer?.Dispose();
+        _playStopwatch?.Stop();
         NotifyStateChanged();
     }
 
@@ -101,6 +101,7 @@ public class SessionStateService : IDisposable
     {
         IsPlaying = false;
         _playTimer?.Dispose();
+        _playStopwatch?.Stop();
         CurrentFrame = 0;
         NotifyStateChanged();
     }
@@ -148,8 +149,9 @@ public class SessionStateService : IDisposable
         CurrentFrame = Math.Clamp(frame, 0, Dataset!.FrameCount - 1);
         if (IsPlaying)
         {
-            _playTimer?.Dispose();
-            ScheduleNextFrame();
+            // Re-sincronizar el cronómetro desde la nueva posición
+            _playStartSessionTime = Dataset.Timestamps[CurrentFrame];
+            _playStopwatch = Stopwatch.StartNew();
         }
         NotifyStateChanged();
     }
@@ -159,8 +161,6 @@ public class SessionStateService : IDisposable
         if (!IsLoaded || CurrentFrame >= Dataset!.FrameCount)
             return new Dictionary<int, double>();
 
-        // Reconstrucción dinámica (solo para el frame actual)
-        // Esto mantiene la compatibilidad con la UI sin saturar la RAM
         var dict = new Dictionary<int, double>();
         for (int s = 0; s < Dataset.SignalCount; s++)
         {
@@ -182,6 +182,12 @@ public class SessionStateService : IDisposable
         return dict;
     }
 
+    public void ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        NotifyStateChanged();
+    }
+
     private void NotifyStateChanged()
     {
         OnStateChanged?.Invoke();
@@ -190,5 +196,6 @@ public class SessionStateService : IDisposable
     public void Dispose()
     {
         _playTimer?.Dispose();
+        _playStopwatch?.Stop();
     }
 }
