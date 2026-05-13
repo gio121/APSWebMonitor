@@ -31,6 +31,11 @@
                            Color="Color.Inherit" 
                            OnClick="() => _showFailures = !_showFailures" />
             
+            <MudIconButton Icon="@(_isAdminMode ? Icons.Material.Filled.AdminPanelSettings : Icons.Material.Outlined.AdminPanelSettings)" 
+                           Color="@(_isAdminMode ? Color.Warning : Color.Inherit)" 
+                           OnClick="@(() => _isAdminMode = !_isAdminMode)" 
+                           Class="ml-2"
+                           Title="@(_isAdminMode ? "Desactivar Modo Admin" : "Activar Modo Admin")" />
             <MudIconButton Icon="@(SessionState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
                            Color="Color.Inherit" 
                            OnClick="@SessionState.ToggleDarkMode" 
@@ -56,57 +61,7 @@
                         var maxFails = 100;
                         var pct = maxFails > 0 ? Math.Max(0, (int)(((maxFails - displayCount) / (double)maxFails) * 100)) : 100;
 
-                        // Estado por defecto: IDLE (sin información). Solo los bits de la señal determinan RUN/STOP.
-                        string statusText = "IDLE";
-                        string statusCss = "status-off";
-                        string statusBtnCss = "btn-off";
-                        string statusIcon = Icons.Material.Filled.MoreHoriz;
-
-                        if (category.StatusSignalId.HasValue && currentValues.TryGetValue(category.StatusSignalId.Value, out var statusVal))
-                        {
-                            long longVal = (long)Math.Truncate(statusVal);
-                            bool IsBitActive(int bit) => (longVal & (1L << bit)) != 0;
-
-                            // Bit 5 = RUN (mayor prioridad positiva)
-                            // Bit 2 o 3 = STOP
-                            // Bit 1 o 6 = WARNING
-                            // Bit 0 o 4 = OFF
-                            if (IsBitActive(5))
-                            {
-                                statusText = "RUN";
-                                statusCss = "status-run";
-                                statusBtnCss = "btn-run";
-                                statusIcon = Icons.Material.Filled.PlayArrow;
-                            }
-                            else if (IsBitActive(2) || IsBitActive(3))
-                            {
-                                statusText = "STOP";
-                                statusCss = "status-stop";
-                                statusBtnCss = "btn-stop";
-                                statusIcon = Icons.Material.Filled.Stop;
-                            }
-                            else if (IsBitActive(1) || IsBitActive(6))
-                            {
-                                statusText = "WARNING";
-                                statusCss = "status-warn";
-                                statusBtnCss = "btn-warn";
-                                statusIcon = Icons.Material.Filled.Warning;
-                            }
-                            else if (IsBitActive(0) || IsBitActive(4))
-                            {
-                                statusText = "OFF";
-                                statusCss = "status-off";
-                                statusBtnCss = "btn-off";
-                                statusIcon = Icons.Material.Filled.PowerOff;
-                            }
-                            else
-                            {
-                                statusText = "IDLE";
-                                statusCss = "status-off";
-                                statusBtnCss = "btn-off";
-                                statusIcon = Icons.Material.Filled.MoreHoriz;
-                            }
-                        }
+                        var statusInfo = GetStatusInfo(category, currentValues, displayCount);
 
                         <div class="ind-card">
                             <!-- Header -->
@@ -118,11 +73,11 @@
                             <!-- Status Row -->
                             <div class="ind-row">
                                 <span class="ind-label">Status</span>
-                                <div class="ind-field @statusCss">
-                                    @statusText
+                                <div class="ind-field @statusInfo.Css">
+                                    @statusInfo.Text
                                 </div>
-                                <div class="ind-status-text-btn @statusBtnCss">
-                                    <MudIcon Icon="@(statusText == "STOP" ? Icons.Material.Filled.Stop : Icons.Material.Filled.PlayArrow)" Size="Size.Small" />
+                                <div class="ind-status-text-btn @statusInfo.BtnCss">
+                                    <MudIcon Icon="@statusInfo.Icon" Size="Size.Small" />
                                 </div>
                             </div>
 
@@ -142,7 +97,7 @@
                             <div class="ind-row">
                                 <span class="ind-label">Failures Counter:</span>
                                 <div class="ind-counter-box">@displayCount</div>
-                                @if (displayCount >= 5)
+                                @if (statusInfo.ShowReset)
                                 {
                                     <button class="ind-btn-reset">Reset</button>
                                 }
@@ -153,7 +108,10 @@
                                 @foreach (var fail in catFailures)
                                 {
                                     <div class="ind-detail-entry">
-                                        <span class="mini-tag">@fail.Tag</span>
+                                        @if (_isAdminMode)
+                                        {
+                                            <span class="mini-tag">@fail.Tag</span>
+                                        }
                                         <span class="mini-desc">@fail.Description</span>
                                     </div>
                                 }
@@ -170,6 +128,7 @@
                     @foreach (var el in _elements)
                     {
                         if (el.Type == "ACpresence" && !IsElementActive(el, currentValues)) continue;
+                        if (el.Type == "Barra" && !IsBarraVisible(el, currentValues)) continue;
 
                         <div class="canvas-element" style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
                             @if (el.Type == "Etiqueta")
@@ -232,6 +191,31 @@
                                         lineColor = "#000000";
                                 }
                                 <div class="element-content line-content" style="background-color: @lineColor;"></div>
+                            }
+                            else if (el.Type == "Barra")
+                            {
+                                var val = 0.0;
+                                if (el.SignalId.HasValue && currentValues.TryGetValue(el.SignalId.Value, out var sigVal))
+                                    val = sigVal;
+                                
+                                var max = el.MaxValue;
+                                if (el.StateSignalId.HasValue && currentValues.TryGetValue(el.StateSignalId.Value, out var maxSigVal))
+                                    max = maxSigVal;
+
+                                var pct = max != 0 ? Math.Clamp((val / max) * 100, 0, 100) : 0;
+                                var barColor = el.Color;
+                                if (SessionState.IsDarkMode && (barColor.ToLower() == "#000000" || barColor.ToLower() == "black"))
+                                    barColor = "#3b82f6";
+
+                                <div class="element-content progress-container d-flex align-center gap-2" style="color: @barColor;">
+                                    <div class="progress-track flex-grow-1">
+                                        <div class="progress-fill" style="width: @(pct)%; background-color: @barColor;"></div>
+                                    </div>
+                                    @if (el.FontSize > 0)
+                                    {
+                                        <span class="progress-text" style="font-size: @(el.FontSize)px; min-width: 3.5ch;">@Math.Round(pct)%</span>
+                                    }
+                                </div>
                             }
                             else
                             {
@@ -654,6 +638,47 @@
         overflow: hidden;
     }
 
+    /* Progress Bar */
+    .progress-container {
+        padding: 4px;
+        width: 100%;
+        height: 100%;
+    }
+    .progress-track {
+        height: 12px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+    .light-theme .progress-track {
+        background-color: rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .progress-fill {
+        height: 100%;
+        width: 0%;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 2px;
+        position: relative;
+    }
+    .progress-fill::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        animation: progress-shimmer 2s infinite;
+    }
+    @@keyframes progress-shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    .progress-text {
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+    }
+
     /* Persistent Failure Side Panel */
     .failures-side-panel {
         position: relative;
@@ -843,6 +868,80 @@
     private Dictionary<string, string> _lastStopPerCategory = new();
     private HashSet<string> _previousFailureKeys = new();
     private bool _statusMapped = false;
+    private bool _isAdminMode = false;
+
+    private class StatusDisplayInfo
+    {
+        public string Text = "IDLE";
+        public string Css = "status-off";
+        public string BtnCss = "btn-off";
+        public string Icon = Icons.Material.Filled.MoreHoriz;
+        public bool ShowReset = false;
+    }
+
+    private StatusDisplayInfo GetStatusInfo(FailureCategoryConfig category, Dictionary<int, double> values, int displayCount)
+    {
+        var info = new StatusDisplayInfo();
+        info.ShowReset = displayCount >= 5;
+
+        if (!category.StatusSignalId.HasValue || !values.TryGetValue(category.StatusSignalId.Value, out var statusVal))
+            return info;
+
+        int intStatus = (int)Math.Truncate(statusVal);
+        var statusSig = SessionState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value);
+
+        // Si es una señal de status estándar (in, ac, dc), usamos la lógica de valores fijos del Inversor
+        if (statusSig != null && (statusSig.Tag.EndsWith("_in", StringComparison.OrdinalIgnoreCase) || 
+                                 statusSig.Tag.EndsWith("_ac", StringComparison.OrdinalIgnoreCase) || 
+                                 statusSig.Tag.EndsWith("_dc", StringComparison.OrdinalIgnoreCase)))
+        {
+            switch (intStatus)
+            {
+                case 1:
+                case 6:
+                    info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+                    break;
+                case 2:
+                case 3:
+                    info.Text = "Failure"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
+                    if (intStatus == 3) info.ShowReset = true;
+                    break;
+                case 5:
+                    info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.PlayArrow;
+                    break;
+                case 0:
+                case 4:
+                default:
+                    info.Text = "OFF"; info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
+                    break;
+            }
+        }
+        else
+        {
+            // Lógica por bits para otras señales
+            long longVal = (long)intStatus;
+            bool IsBitActive(int bit) => (longVal & (1L << bit)) != 0;
+
+            if (IsBitActive(5))
+            {
+                info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.PlayArrow;
+            }
+            else if (IsBitActive(2) || IsBitActive(3))
+            {
+                info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+            }
+            else if (IsBitActive(1) || IsBitActive(6))
+            {
+                info.Text = "Failure"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
+            }
+            else if (IsBitActive(0) || IsBitActive(4))
+            {
+                info.Text = "OFF"; info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
+            }
+        }
+
+        return info;
+    }
 
     private struct ActiveFailure
     {
@@ -1004,6 +1103,23 @@
         catch { /* Ignore during init */ }
 
         InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsBarraVisible(SinopticoElement el, Dictionary<int, double> values)
+    {
+        if (el.Type != "Barra") return true;
+        if (!el.CommandSignalId.HasValue) return true;
+        
+        if (values.TryGetValue(el.CommandSignalId.Value, out double val))
+        {
+            if (el.CommandSignalBit.HasValue)
+            {
+                long longVal = (long)Math.Truncate(val);
+                return (longVal & (1L << el.CommandSignalBit.Value)) != 0;
+            }
+            return val != 0;
+        }
+        return false;
     }
 
     private bool IsElementActive(SinopticoElement el, Dictionary<int, double> values)

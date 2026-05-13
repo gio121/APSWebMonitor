@@ -79,20 +79,22 @@ public class SessionParserService
                             // 5. Convertir Hex a Bytes rápidamente sin Split
                             byte[] frameData = ParseHex(hexPart);
 
-                            if (frameData.Length >= 30) // Trama de respuesta (Control/Comms)
+                            if (frameData.Length >= 7) // Trama de respuesta (Control/Comms)
                             {
                                 int payloadLength = frameData.Length - 7;
-                                if (payloadLength > 0)
+                                if (payloadLength >= 0)
                                 {
                                     // Identificar Nodo por tamaño de payload
                                     int? matchingNode = null;
                                     int minDiff = int.MaxValue;
                                     foreach (var kvp in nodeSizes)
                                     {
-                                        if (payloadLength >= kvp.Value)
+                                        // Buscar la mejor coincidencia sin obligar a que la trama sea mayor al máximo
+                                        int diff = Math.Abs(payloadLength - kvp.Value);
+                                        if (diff < minDiff) 
                                         { 
-                                            int diff = payloadLength - kvp.Value;
-                                            if (diff < minDiff) { minDiff = diff; matchingNode = kvp.Key; }
+                                            minDiff = diff; 
+                                            matchingNode = kvp.Key; 
                                         }
                                     }
 
