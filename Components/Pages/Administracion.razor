@@ -1,5 +1,10 @@
 @page "/administracion"
+@attribute [Authorize(Roles = "Administrador")]
 @rendermode InteractiveServer
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ApsDataService DataService
+@inject IDialogService DialogService
 
 <MudText Typo="Typo.h5" Class="fw-bold mb-6 mt-n2">Administración del Sistema</MudText>
 
@@ -53,17 +58,17 @@
                 <MudListItem T="string">
                     <div class="d-flex align-center">
                         <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="mr-2 text-warning" />
-                        <MudText Typo="Typo.body2">2 Administradores</MudText>
+                        <MudText Typo="Typo.body2">@_adminCount Administradores</MudText>
                     </div>
                 </MudListItem>
                 <MudListItem T="string">
                     <div class="d-flex align-center">
                         <MudIcon Icon="@Icons.Material.Filled.Engineering" Size="Size.Small" Class="mr-2 text-info" />
-                        <MudText Typo="Typo.body2">5 Operadores</MudText>
+                        <MudText Typo="Typo.body2">@_operatorCount Operadores (Mantenimiento)</MudText>
                     </div>
                 </MudListItem>
             </MudList>
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-auto">Gestionar Usuarios</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-auto" OnClick="OpenUserManagement">Gestionar Usuarios</MudButton>
         </MudPaper>
     </MudItem>
 
@@ -89,6 +94,36 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+@code {
+    private int _adminCount = 0;
+    private int _operatorCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserCounts();
+    }
+
+    private async Task LoadUserCounts()
+    {
+        var users = await DataService.GetUsersAsync();
+        _adminCount = users.Count(u => u.Role == "Administrador");
+        _operatorCount = users.Count(u => u.Role == "Mantenimiento");
+    }
+
+    private async Task OpenUserManagement()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.UserManagementDialog>("Gestión de Usuarios", options);
+        var result = await dialog.Result;
+        
+        if (result != null && !result.Canceled)
+        {
+            await LoadUserCounts();
+            StateHasChanged();
+        }
+    }
+}
 
 <style>
     .settings-card {

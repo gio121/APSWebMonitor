@@ -1,8 +1,11 @@
 @page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject SessionStateService SessionState
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
 <MudText Typo="Typo.h5" Class="fw-bold mb-4 mt-n2">Panel de Control</MudText>
@@ -21,7 +24,7 @@ else
                     <MudIcon Icon="@Icons.Material.Filled.FitScreen" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
                     <MudText Typo="Typo.body2" Class="text-muted">Ventanas Activas</MudText>
                 </div>
-                <MudText Typo="Typo.h4" Class="fw-bold">@_windows.Count(w => w.IsActive)</MudText>
+                <MudText Typo="Typo.h4" Class="fw-bold">@_filteredWindows.Count(w => w.IsActive)</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
@@ -59,7 +62,7 @@ else
             <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="height: 420px; overflow-y: auto;">
                 <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">Ventanas Activas</MudText>
                 <MudList T="Window" Dense="true" Class="pa-0">
-                    @foreach (var window in _windows.Where(w => w.IsActive))
+                    @foreach (var window in _filteredWindows.Where(w => w.IsActive))
                     {
                         <div class="pa-3 mb-3 d-flex align-center justify-space-between list-item-card rounded">
                             <div>
@@ -159,13 +162,19 @@ else
 
 @code {
     private List<Window> _windows = new();
+    private List<Window> _filteredWindows = new();
     private List<Signal> _signals = new();
     private List<EventMessage> _events = new();
     private bool _isLoading = true;
+    private bool _isMantenimiento = false;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isMantenimiento = authState.User.IsInRole("Mantenimiento");
+
         _windows = await DataService.GetWindowsAsync();
+        _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
         _signals = await DataService.GetSignalsAsync();
         _events = await DataService.GetEventsAsync();
         _isLoading = false;

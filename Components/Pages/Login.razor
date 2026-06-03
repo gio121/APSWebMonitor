@@ -1,0 +1,211 @@
+@page "/login"
+@layout ApsMonitor.Components.Layout.LoginLayout
+@rendermode InteractiveServer
+@using ApsMonitor.Services
+@inject CustomAuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="login-container">
+    <div class="login-card">
+        <!-- Logo Section -->
+        <div class="login-logo-section">
+            <img src="SepsaMedha.jpg" alt="Logo" class="login-logo" />
+            <MudText Typo="Typo.h5" Class="fw-bold login-title">APS Monitor</MudText>
+            <MudText Typo="Typo.caption" Class="login-subtitle">SISTEMA SCADA</MudText>
+        </div>
+
+        <!-- Divider -->
+        <div class="login-divider"></div>
+
+        <!-- Form Section -->
+        <div class="login-form-section">
+            <MudText Typo="Typo.h6" Class="fw-bold mb-1">Iniciar Sesión</MudText>
+            <MudText Typo="Typo.body2" Class="text-muted mb-6">Introduce tus credenciales para acceder</MudText>
+
+            <MudTextField @bind-Value="_username" 
+                          Label="Usuario" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense" 
+                          Class="mb-4 login-input"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Person"
+                          Immediate="true"
+                          AutoFocus="true"
+                          OnKeyDown="OnKeyDown"
+                          Error="@_hasError" />
+
+            <MudTextField @bind-Value="_password" 
+                          Label="Contraseña" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense" 
+                          Class="mb-6 login-input"
+                          InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                          OnAdornmentClick="() => _showPassword = !_showPassword"
+                          Immediate="true"
+                          OnKeyDown="OnKeyDown"
+                          Error="@_hasError"
+                          ErrorText="@_errorMessage" />
+
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       FullWidth="true" 
+                       Class="login-btn fw-bold" 
+                       OnClick="HandleLogin"
+                       Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Verificando...</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-2" />
+                    <span>Acceder</span>
+                }
+            </MudButton>
+        </div>
+
+        <!-- Hint -->
+        <div class="login-hint">
+            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+            <MudText Typo="Typo.caption">Credenciales por defecto: <strong>admin</strong> / <strong>admin</strong></MudText>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 420px;
+        padding: 16px;
+    }
+    .login-card {
+        background: rgba(25, 33, 45, 0.85);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 40px 32px 28px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                    0 0 1px rgba(255, 255, 255, 0.1) inset;
+    }
+    .login-logo-section {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .login-logo {
+        width: 120px;
+        max-width: 100%;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+    .login-title {
+        color: #3b82f6;
+        letter-spacing: 0.5px;
+    }
+    .login-subtitle {
+        color: #64748b;
+        letter-spacing: 2px;
+        font-weight: 600;
+        font-size: 0.65rem;
+    }
+    .login-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        margin: 20px 0 24px;
+    }
+    .login-form-section {
+        margin-bottom: 16px;
+    }
+    .login-input .mud-input {
+        background: rgba(0, 0, 0, 0.25) !important;
+        border-radius: 8px;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .login-btn {
+        height: 44px;
+        border-radius: 10px;
+        text-transform: none;
+        font-size: 0.95rem;
+        letter-spacing: 0.3px;
+    }
+    .login-hint {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        color: #64748b;
+    }
+    .login-hint .mud-icon-root {
+        color: #475569;
+    }
+</style>
+
+@code {
+    private string _username = "";
+    private string _password = "";
+    private bool _showPassword = false;
+    private bool _isLoading = false;
+    private bool _hasError = false;
+    private string _errorMessage = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task OnKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await HandleLogin();
+    }
+
+    private async Task HandleLogin()
+    {
+        _hasError = false;
+        _errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            _hasError = true;
+            _errorMessage = "Introduce usuario y contraseña";
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        await Task.Delay(300); // Breve pausa visual
+
+        var user = await AuthProvider.LoginAsync(_username.Trim(), _password);
+        if (user != null)
+        {
+            Snackbar.Add($"Bienvenido, {user.Nombre}", Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            _hasError = true;
+            _errorMessage = "Usuario o contraseña incorrectos";
+            Snackbar.Add("Credenciales incorrectas", Severity.Error);
+        }
+
+        _isLoading = false;
+    }
+}

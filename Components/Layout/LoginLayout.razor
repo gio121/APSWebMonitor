@@ -1,0 +1,57 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="LoginTheme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="login-layout">
+    @Body
+</div>
+
+<style>
+    .login-layout {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1a1f2e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .login-layout::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(ellipse at 30% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+        animation: loginBg 20s ease-in-out infinite alternate;
+    }
+    @@keyframes loginBg {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(-3%, -3%); }
+    }
+</style>
+
+@code {
+    private bool _isDarkMode = true;
+    private MudThemeProvider? _themeProvider;
+
+    public static readonly MudTheme LoginTheme = new MudTheme()
+    {
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#3b82f6",
+            Secondary = "#8b5cf6",
+            Background = "#0d1117",
+            Surface = "#1f2937",
+            TextPrimary = "#e2e8f0",
+            TextSecondary = "#94a3b8",
+            Success = "#22c55e",
+            Error = "#ef4444",
+        },
+    };
+}

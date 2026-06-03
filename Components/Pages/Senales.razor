@@ -1,4 +1,5 @@
 @page "/senales"
+@attribute [Authorize(Roles = "Administrador")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services

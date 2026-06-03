@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
 @inject SessionStateService _sessionState
+@inject CustomAuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="ApsMudTheme" />
@@ -18,12 +20,16 @@
         <NavMenu />
         
         <div class="mt-auto px-4 py-4 d-flex align-center user-footer">
-            <div>
-                <MudText Typo="Typo.body2" Class="fw-bold">Administrador</MudText>
-                <MudText Typo="Typo.caption" Class="text-muted">Administrador</MudText>
-            </div>
-            <MudSpacer />
-            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" />
+            <AuthorizeView>
+                <Authorized>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="fw-bold">@context.User.Identity?.Name</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">@(context.User.IsInRole("Administrador") ? "Administrador" : "Mantenimiento")</MudText>
+                    </div>
+                    <MudSpacer />
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" OnClick="HandleLogout" />
+                </Authorized>
+            </AuthorizeView>
         </div>
     </MudDrawer>
 
@@ -55,6 +61,12 @@
     protected override void OnInitialized()
     {
         _sessionState.OnStateChanged += () => InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthProvider.LogoutAsync();
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 
     public void Dispose()

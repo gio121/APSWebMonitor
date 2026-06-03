@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject CustomAuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
 
 <MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="ApsMudTheme" />
 <MudPopoverProvider />
@@ -16,12 +18,16 @@
         <NavMenu />
         
         <div class="mt-auto px-4 py-4 d-flex align-center user-footer">
-            <div>
-                <MudText Typo="Typo.body2" Class="fw-bold">Administrador</MudText>
-                <MudText Typo="Typo.caption" Class="text-muted">Administrador</MudText>
-            </div>
-            <MudSpacer />
-            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" />
+            <AuthorizeView>
+                <Authorized>
+                    <div>
+                        <MudText Typo="Typo.body2" Class="fw-bold">@context.User.Identity?.Name</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">@(context.User.IsInRole("Administrador") ? "Administrador" : "Mantenimiento")</MudText>
+                    </div>
+                    <MudSpacer />
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" OnClick="HandleLogout" />
+                </Authorized>
+            </AuthorizeView>
         </div>
     </MudDrawer>
 
@@ -49,6 +55,12 @@
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     private MudThemeProvider? _themeProvider;
+
+    private async Task HandleLogout()
+    {
+        await AuthProvider.LogoutAsync();
+        NavigationManager.NavigateTo("/login", forceLoad: true);
+    }
 
     public static readonly MudTheme ApsMudTheme = new MudTheme()
     {

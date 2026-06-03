@@ -1,0 +1,215 @@
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@using System.Security.Claims
+@inject ApsDataService DataService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<MudDialog Class="user-mgmt-dialog">
+    <DialogContent>
+        <div style="max-height: 500px; overflow-y: auto; padding: 4px;">
+            @if (_isEditing)
+            {
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">@(_editUser.Id == 0 ? "Crear Nuevo Usuario" : "Editar Usuario")</MudText>
+                
+                <MudTextField @bind-Value="_editUser.Nombre" Label="Nombre Completo" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
+                <MudTextField @bind-Value="_editUser.Username" Label="Nombre de Usuario" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" Disabled="@(_editUser.Id > 0)" />
+                
+                <MudSelect T="string" @bind-Value="_editUser.Role" Label="Rol" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
+                    <MudSelectItem Value="@("Administrador")">Administrador</MudSelectItem>
+                    <MudSelectItem Value="@("Mantenimiento")">Mantenimiento</MudSelectItem>
+                </MudSelect>
+
+                <MudTextField @bind-Value="_password" 
+                              Label="@(_editUser.Id == 0 ? "Contraseña" : "Contraseña (dejar en blanco para mantener)")" 
+                              InputType="InputType.Password" 
+                              Variant="Variant.Outlined" 
+                              Margin="Margin.Dense" 
+                              Class="mb-4" />
+
+                <div class="d-flex justify-end gap-2">
+                    <MudButton OnClick="CancelEdit" Variant="Variant.Outlined">Cancelar</MudButton>
+                    <MudButton OnClick="SaveUser" Color="Color.Info" Variant="Variant.Filled">Guardar</MudButton>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex justify-space-between align-center mb-4">
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold">Lista de Usuarios</MudText>
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" OnClick="StartCreate">Nuevo Usuario</MudButton>
+                </div>
+
+                <MudTable Items="_users" Hover="true" Dense="true" Elevation="0" Class="users-table">
+                    <HeaderContent>
+                        <MudTh>Nombre</MudTh>
+                        <MudTh>Usuario</MudTh>
+                        <MudTh>Rol</MudTh>
+                        <MudTh Style="width: 100px; text-align: right;">Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                        <MudTd DataLabel="Usuario">@context.Username</MudTd>
+                        <MudTd DataLabel="Rol">
+                            <MudChip T="string" Size="Size.Small" Color="@(context.Role == "Administrador" ? Color.Warning : Color.Default)" Variant="Variant.Filled">
+                                @context.Role
+                            </MudChip>
+                        </MudTd>
+                        <MudTd Style="text-align: right;">
+                            <div class="d-flex justify-end gap-1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Inherit" OnClick="@(() => StartEdit(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" 
+                                               Disabled="@(IsCurrentUser(context.Username))" 
+                                               OnClick="@(() => ConfirmDelete(context))" />
+                            </div>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        @if (!_isEditing)
+        {
+            <MudButton OnClick="Close" Color="Color.Default">Cerrar</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .user-mgmt-dialog {
+        background-color: #1a222c !important;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        min-width: 500px;
+    }
+    .users-table {
+        background: transparent !important;
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px;
+    }
+    .users-table th {
+        font-weight: bold;
+        color: #94a3b8 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+    .users-table td {
+        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    }
+</style>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<User> _users = new();
+    private bool _isEditing = false;
+    private User _editUser = new();
+    private string _password = "";
+    private string _currentUsername = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUsername = authState.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _users = await DataService.GetUsersAsync();
+    }
+
+    private bool IsCurrentUser(string username)
+    {
+        // En Blazor context, el Identity.Name contiene el Nombre (Display Name), pero el Claim NameIdentifier contiene el username.
+        // Vamos a verificar ambos para mayor seguridad.
+        return string.Equals(username, _currentUsername, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void StartCreate()
+    {
+        _editUser = new User { Role = "Mantenimiento" };
+        _password = "";
+        _isEditing = true;
+    }
+
+    private void StartEdit(User user)
+    {
+        _editUser = new User
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Nombre = user.Nombre,
+            Role = user.Role,
+            PasswordHash = user.PasswordHash
+        };
+        _password = "";
+        _isEditing = true;
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+    }
+
+    private async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(_editUser.Nombre) || string.IsNullOrWhiteSpace(_editUser.Username))
+        {
+            Snackbar.Add("El nombre y nombre de usuario son obligatorios", Severity.Warning);
+            return;
+        }
+
+        if (_editUser.Id == 0)
+        {
+            // Validar contraseña requerida para usuario nuevo
+            if (string.IsNullOrWhiteSpace(_password))
+            {
+                Snackbar.Add("La contraseña es obligatoria para un usuario nuevo", Severity.Warning);
+                return;
+            }
+
+            // Validar si el usuario ya existe
+            var existing = await DataService.GetUserByUsernameAsync(_editUser.Username);
+            if (existing != null)
+            {
+                Snackbar.Add("El nombre de usuario ya está registrado", Severity.Warning);
+                return;
+            }
+
+            _editUser.PasswordHash = PasswordHasher.Hash(_password);
+            await DataService.AddUserAsync(_editUser);
+            Snackbar.Add("Usuario creado correctamente", Severity.Success);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(_password))
+            {
+                _editUser.PasswordHash = PasswordHasher.Hash(_password);
+            }
+            await DataService.UpdateUserAsync(_editUser);
+            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+        }
+
+        _isEditing = false;
+        await LoadUsers();
+    }
+
+    private async Task ConfirmDelete(User user)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Confirmar Eliminación", 
+            $"¿Estás seguro de que quieres eliminar al usuario '{user.Username}' ({user.Nombre})?", 
+            yesText: "Eliminar", cancelText: "Cancelar");
+            
+        if (result == true)
+        {
+            await DataService.DeleteUserAsync(user.Id);
+            Snackbar.Add("Usuario eliminado correctamente", Severity.Success);
+            await LoadUsers();
+        }
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+}

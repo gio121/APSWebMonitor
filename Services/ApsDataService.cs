@@ -136,4 +136,42 @@ public class ApsDataService
             await context.SaveChangesAsync();
         }
     }
+
+    // Users
+    public async Task<List<User>> GetUsersAsync()
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.Users.ToListAsync();
+    }
+
+    public async Task<User?> GetUserByUsernameAsync(string username)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.Users.FirstOrDefaultAsync(u => u.Username == username);
+    }
+
+    public async Task AddUserAsync(User user)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateUserAsync(User user)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteUserAsync(int id)
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        var user = await context.Users.FindAsync(id);
+        if (user != null)
+        {
+            context.Users.Remove(user);
+            await context.SaveChangesAsync();
+        }
+    }
 }

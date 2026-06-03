@@ -1,10 +1,13 @@
 @page "/sinoptico/ver/{WindowId:int}"
+@attribute [Authorize]
 @using System.Text.Json
 @using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject NavigationManager NavigationManager
 @inject SessionStateService SessionState
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -31,11 +34,13 @@
                            Color="Color.Inherit" 
                            OnClick="() => _showFailures = !_showFailures" />
             
-            <MudIconButton Icon="@(_isAdminMode ? Icons.Material.Filled.AdminPanelSettings : Icons.Material.Outlined.AdminPanelSettings)" 
-                           Color="@(_isAdminMode ? Color.Warning : Color.Inherit)" 
-                           OnClick="@(() => _isAdminMode = !_isAdminMode)" 
-                           Class="ml-2"
-                           Title="@(_isAdminMode ? "Desactivar Modo Admin" : "Activar Modo Admin")" />
+            <AuthorizeView Roles="Administrador">
+                <MudIconButton Icon="@(_isAdminMode ? Icons.Material.Filled.AdminPanelSettings : Icons.Material.Outlined.AdminPanelSettings)" 
+                               Color="@(_isAdminMode ? Color.Warning : Color.Inherit)" 
+                               OnClick="@(() => _isAdminMode = !_isAdminMode)" 
+                               Class="ml-2"
+                               Title="@(_isAdminMode ? "Desactivar Modo Admin" : "Activar Modo Admin")" />
+            </AuthorizeView>
             <MudIconButton Icon="@(SessionState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
                            Color="Color.Inherit" 
                            OnClick="@SessionState.ToggleDarkMode" 
@@ -952,10 +957,25 @@
     
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var allWindows = await DataService.GetWindowsAsync();
         _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
+
+        if (_window == null)
+        {
+            Snackbar.Add("La ventana no existe", Severity.Error);
+            NavigationManager.NavigateTo("/ventanas");
+            return;
+        }
+
+        if (authState.User.IsInRole("Mantenimiento") && !_window.PermitirMantenimiento)
+        {
+            Snackbar.Add("No estás autorizado para ver esta ventana", Severity.Warning);
+            NavigationManager.NavigateTo("/ventanas");
+            return;
+        }
         
-        if (_window != null && !string.IsNullOrWhiteSpace(_window.ContentJson))
+        if (!string.IsNullOrWhiteSpace(_window.ContentJson))
         {
             try
             {

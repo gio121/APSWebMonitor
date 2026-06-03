@@ -14,6 +14,9 @@ public class Window
     // Synoptic Content (JSON serialized elements)
     public string ContentJson { get; set; } = "[]";
 
+    // Access control
+    public bool PermitirMantenimiento { get; set; } = false;
+
     // Failure configuration (JSON serialized List<FailureCategoryConfig>)
     public string FailuresConfigJson { get; set; } = "[]";
 }

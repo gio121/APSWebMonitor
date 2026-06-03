@@ -3,6 +3,7 @@ using MudBlazor.Services;
 using Microsoft.EntityFrameworkCore;
 using ApsMonitor.Data;
 using ApsMonitor.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,13 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
 
 builder.Services.AddScoped<ApsDataService>();
 builder.Services.AddScoped<SessionStateService>();
+
+// Authentication & Authorization
+builder.Services.AddAuthentication();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthenticationStateProvider>());
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -33,12 +41,46 @@ using (var scope = app.Services.CreateScope())
         using var connection = context.Database.GetDbConnection();
         connection.Open();
         using var command = connection.CreateCommand();
+
+        // --- Migrar columna FailuresConfigJson en Windows ---
         command.CommandText = "PRAGMA table_info(Windows)";
         using var reader = command.ExecuteReader();
-        bool hasColumn = false;
-        while (reader.Read()) { if (reader.GetString(1) == "FailuresConfigJson") { hasColumn = true; break; } }
+        bool hasFailuresColumn = false;
+        bool hasPermitirColumn = false;
+        while (reader.Read()) 
+        { 
+            var colName = reader.GetString(1);
+            if (colName == "FailuresConfigJson") { hasFailuresColumn = true; } 
+            if (colName == "PermitirMantenimiento") { hasPermitirColumn = true; } 
+        }
         reader.Close();
-        if (!hasColumn) { command.CommandText = "ALTER TABLE Windows ADD COLUMN FailuresConfigJson TEXT NOT NULL DEFAULT '[]'"; command.ExecuteNonQuery(); }
+        
+        if (!hasFailuresColumn) 
+        { 
+            command.CommandText = "ALTER TABLE Windows ADD COLUMN FailuresConfigJson TEXT NOT NULL DEFAULT '[]'"; 
+            command.ExecuteNonQuery(); 
+        }
+
+        // --- Migrar columna PermitirMantenimiento en Windows ---
+        if (!hasPermitirColumn)
+        {
+            command.CommandText = "ALTER TABLE Windows ADD COLUMN PermitirMantenimiento INTEGER NOT NULL DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+
+        // --- Crear tabla Users si no existe ---
+        command.CommandText = @"CREATE TABLE IF NOT EXISTS Users (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username TEXT NOT NULL,
+            PasswordHash TEXT NOT NULL,
+            Nombre TEXT NOT NULL,
+            Role TEXT NOT NULL
+        )";
+        command.ExecuteNonQuery();
+
+        // --- Seeding: asegurar usuarios por defecto ---
+        EnsureDefaultUser(command, "admin", "admin", "Administrador", "Administrador");
+        EnsureDefaultUser(command, "mantenimiento", "mantenimiento", "Mantenimiento", "Mantenimiento");
     }
     catch (Exception ex)
     {
@@ -60,6 +102,38 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AllowAnonymous();
 
 app.Run();
+
+static void EnsureDefaultUser(System.Data.Common.DbCommand command, string username, string password, string nombre, string role)
+{
+    command.Parameters.Clear();
+    command.CommandText = "SELECT COUNT(*) FROM Users WHERE Username = $username";
+    AddParameter(command, "$username", username);
+
+    var userExists = Convert.ToInt64(command.ExecuteScalar()) > 0;
+    if (userExists)
+        return;
+
+    command.Parameters.Clear();
+    command.CommandText = @"INSERT INTO Users (Username, PasswordHash, Nombre, Role)
+        VALUES ($username, $passwordHash, $nombre, $role)";
+
+    AddParameter(command, "$username", username);
+    AddParameter(command, "$passwordHash", PasswordHasher.Hash(password));
+    AddParameter(command, "$nombre", nombre);
+    AddParameter(command, "$role", role);
+    command.ExecuteNonQuery();
+
+    Console.WriteLine($"Usuario por defecto creado: {username}");
+}
+
+static void AddParameter(System.Data.Common.DbCommand command, string name, object value)
+{
+    var parameter = command.CreateParameter();
+    parameter.ParameterName = name;
+    parameter.Value = value;
+    command.Parameters.Add(parameter);
+}

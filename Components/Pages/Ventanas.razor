@@ -1,14 +1,20 @@
 @page "/ventanas"
+@attribute [Authorize]
+@rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject NavigationManager NavigationManager
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="d-flex justify-space-between align-center mb-6">
     <MudText Typo="Typo.h5" Class="fw-bold">Ventanas</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">Nueva Ventana</MudButton>
+    @if (!_isMantenimiento)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">Nueva Ventana</MudButton>
+    }
 </div>
 
 <MudTextField @bind-Value="searchString" Immediate="true" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
@@ -22,7 +28,7 @@
 else
 {
     <MudGrid>
-        @foreach (var window in _windows.Where(FilterWindow))
+        @foreach (var window in _filteredWindows.Where(FilterWindow))
         {
             <MudItem xs="12" sm="6" md="4" lg="6"> <!-- lg=6 because in screenshot there are two cards per row -->
                 <MudPaper Class="pa-4 window-card h-100 d-flex flex-column" Elevation="0">
@@ -30,7 +36,10 @@ else
                         <div class="flex-grow-1">
                             <div class="d-flex align-center gap-1">
                                 <MudText Typo="Typo.subtitle1" Class="fw-bold">@window.Nombre</MudText>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Inherit" Class="pa-1 op-7" OnClick="@(() => EditarPropiedades(window))" />
+                                @if (!_isMantenimiento)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Inherit" Class="pa-1 op-7" OnClick="@(() => EditarPropiedades(window))" />
+                                }
                             </div>
                             <MudText Typo="Typo.body2" Class="text-muted mb-1">@window.Descripcion</MudText>
                             <MudText Typo="Typo.caption" Class="text-muted">Categoría: @window.Categoria</MudText>
@@ -45,23 +54,41 @@ else
                             }
                         </div>
                     </div>
+
+                    <!-- Admin: Switch de acceso mantenimiento -->
+                    @if (!_isMantenimiento)
+                    {
+                        <div class="d-flex align-center mt-2 mb-1">
+                            <MudSwitch T="bool" Value="@window.PermitirMantenimiento" ValueChanged="@(val => TogglePermisoMantenimiento(window, val))" Color="Color.Info" Size="Size.Small" />
+                            <MudText Typo="Typo.caption" Class="text-muted ml-1">Acceso Mantenimiento</MudText>
+                        </div>
+                    }
                     
-                        <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
-                            @if (window.Tipo == "Sinóptico")
+                    <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
+                        @if (window.Tipo == "Sinóptico")
+                        {
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">Ver</MudButton>
+                            @if (!_isMantenimiento)
                             {
-                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">Ver</MudButton>
                                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
                             }
-                            else
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
+                            @if (!_isMantenimiento)
                             {
-                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
                                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
                             }
-                        <MudButton Variant="Variant.Outlined" StartIcon="@(window.IsActive ? Icons.Material.Filled.PowerOff : Icons.Material.Filled.PowerSettingsNew)" Size="Size.Small" OnClick="@(() => ToggleActivarVentana(window))">
-                            @(window.IsActive ? "Desactivar" : "Activar")
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => DuplicarVentana(window))">Duplicar</MudButton>
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto" OnClick="@(() => EliminarVentana(window))">Eliminar</MudButton>
+                        }
+                        @if (!_isMantenimiento)
+                        {
+                            <MudButton Variant="Variant.Outlined" StartIcon="@(window.IsActive ? Icons.Material.Filled.PowerOff : Icons.Material.Filled.PowerSettingsNew)" Size="Size.Small" OnClick="@(() => ToggleActivarVentana(window))">
+                                @(window.IsActive ? "Desactivar" : "Activar")
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => DuplicarVentana(window))">Duplicar</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto" OnClick="@(() => EliminarVentana(window))">Eliminar</MudButton>
+                        }
                     </div>
                 </MudPaper>
             </MudItem>
@@ -101,12 +128,18 @@ else
 
 @code {
     private List<Window> _windows = new();
+    private List<Window> _filteredWindows = new();
     private bool _isLoading = true;
+    private bool _isMantenimiento = false;
     private string searchString = "";
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isMantenimiento = authState.User.IsInRole("Mantenimiento");
+
         _windows = await DataService.GetWindowsAsync();
+        _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
         _isLoading = false;
     }
 
@@ -119,6 +152,14 @@ else
         if (window.Descripcion.Contains(searchString, StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
+    }
+
+    private async Task TogglePermisoMantenimiento(Window window, bool value)
+    {
+        window.PermitirMantenimiento = value;
+        await DataService.UpdateWindowAsync(window);
+        Snackbar.Add($"Acceso de mantenimiento {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
+        StateHasChanged();
     }
 
     private async Task CrearNuevaVentana()
@@ -183,6 +224,7 @@ else
         {
             await DataService.DeleteWindowAsync(window.Id);
             _windows.Remove(window);
+            _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
             StateHasChanged();
         }
     }
@@ -212,6 +254,7 @@ else
         {
             // La añadimos a la lista local para verla instantáneamente
             _windows.Add(creada);
+            _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
             Snackbar.Add($"Ventana '{window.Nombre}' duplicada correctamente", Severity.Success);
             StateHasChanged();
         }
