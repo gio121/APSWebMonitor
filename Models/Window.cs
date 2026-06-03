@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace ApsMonitor.Models;
 
 public class Window
@@ -16,9 +18,38 @@ public class Window
 
     // Access control
     public bool PermitirMantenimiento { get; set; } = false;
+    public string AllowedRolesJson { get; set; } = "[]";
 
     // Failure configuration (JSON serialized List<FailureCategoryConfig>)
     public string FailuresConfigJson { get; set; } = "[]";
+
+    public List<string> GetAllowedRoles()
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(AllowedRolesJson) ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
+
+    public bool IsRoleAllowed(string role)
+    {
+        return GetAllowedRoles().Contains(role, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public void SetRoleAllowed(string role, bool allowed)
+    {
+        var roles = GetAllowedRoles();
+        roles.RemoveAll(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
+
+        if (allowed)
+            roles.Add(role);
+
+        AllowedRolesJson = JsonSerializer.Serialize(roles);
+    }
 }
 
 public class FailureCategoryConfig

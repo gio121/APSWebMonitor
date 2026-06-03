@@ -11,7 +11,7 @@
 
 <div class="d-flex justify-space-between align-center mb-6">
     <MudText Typo="Typo.h5" Class="fw-bold">Ventanas</MudText>
-    @if (!_isMantenimiento)
+    @if (_isAdmin)
     {
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">Nueva Ventana</MudButton>
     }
@@ -36,7 +36,7 @@ else
                         <div class="flex-grow-1">
                             <div class="d-flex align-center gap-1">
                                 <MudText Typo="Typo.subtitle1" Class="fw-bold">@window.Nombre</MudText>
-                                @if (!_isMantenimiento)
+                                @if (_isAdmin)
                                 {
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Inherit" Class="pa-1 op-7" OnClick="@(() => EditarPropiedades(window))" />
                                 }
@@ -55,12 +55,32 @@ else
                         </div>
                     </div>
 
-                    <!-- Admin: Switch de acceso mantenimiento -->
-                    @if (!_isMantenimiento)
+                    <!-- Admin: selector de roles con acceso -->
+                    @if (_isAdmin)
                     {
-                        <div class="d-flex align-center mt-2 mb-1">
-                            <MudSwitch T="bool" Value="@window.PermitirMantenimiento" ValueChanged="@(val => TogglePermisoMantenimiento(window, val))" Color="Color.Info" Size="Size.Small" />
-                            <MudText Typo="Typo.caption" Class="text-muted ml-1">Acceso Mantenimiento</MudText>
+                        <div class="mt-2 mb-1">
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Info"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.ManageAccounts"
+                                       OnClick="@(() => ToggleAccessPanel(window.Id))">
+                                Accesos
+                            </MudButton>
+
+                            @if (IsAccessPanelOpen(window.Id))
+                            {
+                                <div class="access-panel mt-2">
+                                    @foreach (var role in _availableRoles)
+                                    {
+                                        <MudCheckBox T="bool"
+                                                     Label="@role"
+                                                     Dense="true"
+                                                     Color="Color.Info"
+                                                     Value="@window.IsRoleAllowed(role)"
+                                                     ValueChanged="@(value => ToggleRoleAccess(window, role, value))" />
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                     
@@ -68,7 +88,7 @@ else
                         @if (window.Tipo == "Sinóptico")
                         {
                             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">Ver</MudButton>
-                            @if (!_isMantenimiento)
+                            @if (_isAdmin)
                             {
                                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
                             }
@@ -76,12 +96,12 @@ else
                         else
                         {
                             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
-                            @if (!_isMantenimiento)
+                            @if (_isAdmin)
                             {
                                 <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
                             }
                         }
-                        @if (!_isMantenimiento)
+                        @if (_isAdmin)
                         {
                             <MudButton Variant="Variant.Outlined" StartIcon="@(window.IsActive ? Icons.Material.Filled.PowerOff : Icons.Material.Filled.PowerSettingsNew)" Size="Size.Small" OnClick="@(() => ToggleActivarVentana(window))">
                                 @(window.IsActive ? "Desactivar" : "Activar")
@@ -124,22 +144,41 @@ else
     .op-7:hover {
         opacity: 1;
     }
+    .access-panel {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 6px;
+        background-color: rgba(0,0,0,0.16);
+        padding: 8px 12px;
+        max-width: 260px;
+    }
 </style>
 
 @code {
     private List<Window> _windows = new();
     private List<Window> _filteredWindows = new();
     private bool _isLoading = true;
-    private bool _isMantenimiento = false;
+    private bool _isAdmin = false;
+    private string _currentRole = "";
     private string searchString = "";
+    private List<string> _availableRoles = new();
+    private HashSet<int> _expandedAccessWindowIds = new();
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _isMantenimiento = authState.User.IsInRole("Mantenimiento");
+        _isAdmin = authState.User.IsInRole("Administrador");
+        _currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
 
         _windows = await DataService.GetWindowsAsync();
-        _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
+        var users = await DataService.GetUsersAsync();
+        _availableRoles = users
+            .Select(u => u.Role)
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(role => role)
+            .ToList();
+
+        _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
         _isLoading = false;
     }
 
@@ -154,11 +193,27 @@ else
         return false;
     }
 
-    private async Task TogglePermisoMantenimiento(Window window, bool value)
+    private bool CanCurrentRoleSeeWindow(Window window)
     {
-        window.PermitirMantenimiento = value;
+        return window.IsActive && window.IsRoleAllowed(_currentRole);
+    }
+
+    private bool IsAccessPanelOpen(int windowId)
+    {
+        return _expandedAccessWindowIds.Contains(windowId);
+    }
+
+    private void ToggleAccessPanel(int windowId)
+    {
+        if (!_expandedAccessWindowIds.Add(windowId))
+            _expandedAccessWindowIds.Remove(windowId);
+    }
+
+    private async Task ToggleRoleAccess(Window window, string role, bool value)
+    {
+        window.SetRoleAllowed(role, value);
         await DataService.UpdateWindowAsync(window);
-        Snackbar.Add($"Acceso de mantenimiento {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
+        Snackbar.Add($"Acceso de {role} {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
         StateHasChanged();
     }
 
@@ -177,6 +232,7 @@ else
                 Categoria = "General",
                 Tipo = "Sinóptico",
                 IsActive = false,
+                AllowedRolesJson = "[\"Administrador\"]",
                 ContentJson = "[]" // Canvas vacío
             };
             
@@ -224,7 +280,7 @@ else
         {
             await DataService.DeleteWindowAsync(window.Id);
             _windows.Remove(window);
-            _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
+            _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
             StateHasChanged();
         }
     }
@@ -246,6 +302,7 @@ else
             Categoria = window.Categoria,
             Tipo = window.Tipo,
             IsActive = false,
+            AllowedRolesJson = window.AllowedRolesJson,
             ContentJson = window.ContentJson
         };
 
@@ -254,7 +311,7 @@ else
         {
             // La añadimos a la lista local para verla instantáneamente
             _windows.Add(creada);
-            _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
+            _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
             Snackbar.Add($"Ventana '{window.Nombre}' duplicada correctamente", Severity.Success);
             StateHasChanged();
         }

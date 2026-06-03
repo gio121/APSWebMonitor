@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\services\\passwordhasher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:services\\passwordhasher.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\dialogs\\commanddialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\dialogs\\commanddialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -165,7 +169,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -173,7 +177,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 0,
+              "Title": "PasswordHasher.cs",
+              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\PasswordHasher.cs",
+              "RelativeDocumentMoniker": "Services\\PasswordHasher.cs",
+              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\PasswordHasher.cs",
+              "RelativeToolTip": "Services\\PasswordHasher.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-03T10:02:10.715Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "SessionPlayerBar.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\SessionPlayerBar.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\SessionPlayerBar.razor",
@@ -185,7 +202,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "NavMenu.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\NavMenu.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\NavMenu.razor",
@@ -197,7 +214,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "build_errors.txt",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\build_errors.txt",
               "RelativeDocumentMoniker": "build_errors.txt",
@@ -209,7 +226,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 12,
               "Title": "Administracion.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Administracion.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Administracion.razor",
@@ -221,7 +238,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "SinopticoViewer.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoViewer.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\SinopticoViewer.razor",
@@ -233,7 +250,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "FullScreenLayout.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\FullScreenLayout.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\FullScreenLayout.razor",
@@ -245,20 +262,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "CommandDialog.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\CommandDialog.razor",
               "RelativeDocumentMoniker": "Components\\Dialogs\\CommandDialog.razor",
               "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\CommandDialog.razor",
               "RelativeToolTip": "Components\\Dialogs\\CommandDialog.razor",
-              "ViewState": "AgIAAA4AAAAAAAAAAAAmwCgAAAAwAAAAAAAAAA==",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAmwCEAAABPAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2026-04-20T07:38:36.873Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "SinopticoEditor.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoEditor.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\SinopticoEditor.razor",
@@ -270,7 +287,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 13,
               "Title": "ScadaCommand.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\ScadaCommand.cs",
               "RelativeDocumentMoniker": "Models\\ScadaCommand.cs",
@@ -282,7 +299,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "SessionParserService.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SessionParserService.cs",
               "RelativeDocumentMoniker": "Services\\SessionParserService.cs",
@@ -294,7 +311,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "20260325103158_InitialCreate.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Migrations\\20260325103158_InitialCreate.cs",
               "RelativeDocumentMoniker": "Migrations\\20260325103158_InitialCreate.cs",
@@ -306,7 +323,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 10,
               "Title": "SinopticoIconProvider.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SinopticoIconProvider.cs",
               "RelativeDocumentMoniker": "Services\\SinopticoIconProvider.cs",
@@ -318,7 +335,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 11,
               "Title": "SessionStateService.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SessionStateService.cs",
               "RelativeDocumentMoniker": "Services\\SessionStateService.cs",
@@ -330,7 +347,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 14,
               "Title": "SessionDataset.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SessionDataset.cs",
               "RelativeDocumentMoniker": "Models\\SessionDataset.cs",
@@ -342,7 +359,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 15,
               "Title": "NewWindowDialog.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\NewWindowDialog.razor",
               "RelativeDocumentMoniker": "Components\\Dialogs\\NewWindowDialog.razor",
@@ -354,7 +371,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 17,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
@@ -366,7 +383,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 20,
               "Title": "Ventanas.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Ventanas.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Ventanas.razor",
@@ -378,7 +395,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 16,
               "Title": "FailuresConfigDialog.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\FailuresConfigDialog.razor",
               "RelativeDocumentMoniker": "Components\\Dialogs\\FailuresConfigDialog.razor",
@@ -390,7 +407,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 22,
               "Title": "EventMessage.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\EventMessage.cs",
               "RelativeDocumentMoniker": "Models\\EventMessage.cs",
@@ -402,7 +419,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 18,
               "Title": "SinopticoElement.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SinopticoElement.cs",
               "RelativeDocumentMoniker": "Models\\SinopticoElement.cs",
@@ -414,7 +431,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 19,
               "Title": "MainLayout.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\MainLayout.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\MainLayout.razor",
@@ -426,7 +443,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 25,
               "Title": "ReconnectModal.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\ReconnectModal.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\ReconnectModal.razor",
@@ -438,7 +455,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 21,
               "Title": "Comandos.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Comandos.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Comandos.razor",
@@ -450,7 +467,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 23,
               "Title": "Home.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Home.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
@@ -462,7 +479,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 24,
               "Title": "Error.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Error.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Error.razor",
@@ -474,7 +491,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 27,
               "Title": "Sesiones.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Sesiones.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Sesiones.razor",
@@ -486,7 +503,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 30,
               "Title": "20260325112758_AddBitTexts.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Migrations\\20260325112758_AddBitTexts.cs",
               "RelativeDocumentMoniker": "Migrations\\20260325112758_AddBitTexts.cs",
@@ -498,7 +515,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 28,
               "Title": "Senales.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Senales.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Senales.razor",
@@ -510,7 +527,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 26,
               "Title": "SignalDialog.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\SignalDialog.razor",
               "RelativeDocumentMoniker": "Components\\Dialogs\\SignalDialog.razor",
@@ -522,7 +539,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 29,
               "Title": "Monitor.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Monitor.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Monitor.razor",
@@ -534,7 +551,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 33,
               "Title": "SessionParserService.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\AppData\\Local\\SourceServer\\7770140691067b1514fe4888f9d36ce0548973e2f5283faf5b30d77babab3b3c\\Services\\SessionParserService.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\SourceServer\\7770140691067b1514fe4888f9d36ce0548973e2f5283faf5b30d77babab3b3c\\Services\\SessionParserService.cs",
@@ -546,7 +563,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 31,
               "Title": "ApsDataService.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\ApsDataService.cs",
               "RelativeDocumentMoniker": "Services\\ApsDataService.cs",
@@ -558,7 +575,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 34,
+              "DocumentIndex": 35,
               "Title": "app.css",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\app.css",
               "RelativeDocumentMoniker": "wwwroot\\app.css",
@@ -570,7 +587,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 32,
               "Title": "ApsCalculationUtils.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\ApsCalculationUtils.cs",
               "RelativeDocumentMoniker": "Services\\ApsCalculationUtils.cs",
@@ -582,7 +599,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 35,
+              "DocumentIndex": 36,
               "Title": "ApsDbContext.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Data\\ApsDbContext.cs",
               "RelativeDocumentMoniker": "Data\\ApsDbContext.cs",
@@ -594,7 +611,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 34,
               "Title": "favicon.png",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\favicon.png",
               "RelativeDocumentMoniker": "wwwroot\\favicon.png",
@@ -605,7 +622,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
+              "DocumentIndex": 38,
               "Title": "Signal.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Signal.cs",
               "RelativeDocumentMoniker": "Models\\Signal.cs",
@@ -617,7 +634,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 36,
+              "DocumentIndex": 37,
               "Title": "Window.cs",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Window.cs",
               "RelativeDocumentMoniker": "Models\\Window.cs",
@@ -629,7 +646,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 38,
+              "DocumentIndex": 39,
               "Title": "NotFound.razor",
               "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\NotFound.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\NotFound.razor",

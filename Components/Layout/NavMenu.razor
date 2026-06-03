@@ -1,13 +1,16 @@
 <MudNavMenu Class="mt-2">
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.House">Inicio</MudNavLink>
     <MudNavLink Href="/ventanas" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Window">Ventanas</MudNavLink>
-    
-    <AuthorizeView Roles="Administrador">
-        <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Señales</MudNavLink>
+
+    <AuthorizeView Roles="Administrador,Mantenimiento">
         <MudNavLink Href="/sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.PlayCircle">Sesiones</MudNavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="Administrador">
+        <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Senales</MudNavLink>
         <MudNavLink Href="/monitor" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MonitorHeart">Monitor</MudNavLink>
         <MudNavLink Href="/comandos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Terminal">Comandos</MudNavLink>
-        <MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administración</MudNavLink>
+        <MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administracion</MudNavLink>
     </AuthorizeView>
 </MudNavMenu>
 

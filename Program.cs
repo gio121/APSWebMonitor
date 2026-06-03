@@ -47,11 +47,13 @@ using (var scope = app.Services.CreateScope())
         using var reader = command.ExecuteReader();
         bool hasFailuresColumn = false;
         bool hasPermitirColumn = false;
+        bool hasAllowedRolesColumn = false;
         while (reader.Read()) 
         { 
             var colName = reader.GetString(1);
             if (colName == "FailuresConfigJson") { hasFailuresColumn = true; } 
             if (colName == "PermitirMantenimiento") { hasPermitirColumn = true; } 
+            if (colName == "AllowedRolesJson") { hasAllowedRolesColumn = true; } 
         }
         reader.Close();
         
@@ -65,6 +67,19 @@ using (var scope = app.Services.CreateScope())
         if (!hasPermitirColumn)
         {
             command.CommandText = "ALTER TABLE Windows ADD COLUMN PermitirMantenimiento INTEGER NOT NULL DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+
+        // --- Migrar columna AllowedRolesJson en Windows ---
+        if (!hasAllowedRolesColumn)
+        {
+            command.CommandText = "ALTER TABLE Windows ADD COLUMN AllowedRolesJson TEXT NOT NULL DEFAULT '[]'";
+            command.ExecuteNonQuery();
+
+            command.CommandText = "UPDATE Windows SET AllowedRolesJson = '[\"Administrador\"]' WHERE PermitirMantenimiento = 0";
+            command.ExecuteNonQuery();
+
+            command.CommandText = "UPDATE Windows SET AllowedRolesJson = '[\"Administrador\",\"Mantenimiento\"]' WHERE PermitirMantenimiento = 1";
             command.ExecuteNonQuery();
         }
 

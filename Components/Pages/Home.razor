@@ -166,15 +166,17 @@ else
     private List<Signal> _signals = new();
     private List<EventMessage> _events = new();
     private bool _isLoading = true;
-    private bool _isMantenimiento = false;
+    private bool _isAdmin = false;
+    private string _currentRole = "";
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _isMantenimiento = authState.User.IsInRole("Mantenimiento");
+        _isAdmin = authState.User.IsInRole("Administrador");
+        _currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
 
         _windows = await DataService.GetWindowsAsync();
-        _filteredWindows = _isMantenimiento ? _windows.Where(w => w.PermitirMantenimiento).ToList() : _windows;
+        _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
         _signals = await DataService.GetSignalsAsync();
         _events = await DataService.GetEventsAsync();
         _isLoading = false;
@@ -192,6 +194,11 @@ else
             return values.TryGetValue(signal.Id, out var val) ? val : 0;
         }
         return signal.ValorActual;
+    }
+
+    private bool CanCurrentRoleSeeWindow(Window window)
+    {
+        return window.IsActive && window.IsRoleAllowed(_currentRole);
     }
 
     private string FormatValue(double value, Signal signal)

@@ -968,7 +968,15 @@
             return;
         }
 
-        if (authState.User.IsInRole("Mantenimiento") && !_window.PermitirMantenimiento)
+        if (!_window.IsActive)
+        {
+            Snackbar.Add("La ventana no está activa", Severity.Warning);
+            NavigationManager.NavigateTo("/ventanas");
+            return;
+        }
+
+        var currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        if (!_window.IsRoleAllowed(currentRole))
         {
             Snackbar.Add("No estás autorizado para ver esta ventana", Severity.Warning);
             NavigationManager.NavigateTo("/ventanas");
