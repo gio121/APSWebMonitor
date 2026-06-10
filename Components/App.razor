@@ -13,11 +13,22 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="InteractiveServer" />
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
+    <script>
+        (() => {
+            const path = window.location.pathname.toLowerCase();
+            const isLogin = path === "/login";
+            const hasSession = sessionStorage.getItem("auth_username") !== null;
+
+            if (!isLogin && !hasSession) {
+                window.location.replace("/login");
+            }
+        })();
+    </script>
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/dragbar.js"></script>

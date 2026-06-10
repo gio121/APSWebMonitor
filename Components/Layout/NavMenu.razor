@@ -4,10 +4,10 @@
 
     <AuthorizeView Roles="Administrador,Mantenimiento">
         <MudNavLink Href="/sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.PlayCircle">Sesiones</MudNavLink>
+        <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Senales</MudNavLink>
     </AuthorizeView>
 
     <AuthorizeView Roles="Administrador">
-        <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Senales</MudNavLink>
         <MudNavLink Href="/monitor" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MonitorHeart">Monitor</MudNavLink>
         <MudNavLink Href="/comandos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Terminal">Comandos</MudNavLink>
         <MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administracion</MudNavLink>
