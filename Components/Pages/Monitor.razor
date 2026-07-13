@@ -1,9 +1,10 @@
 @page "/monitor"
 @attribute [Authorize(Roles = "Administrador")]
 @rendermode InteractiveServer
-@using System.Net.Http.Json
+@using ApsMonitor.Services
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject SepsaProtocolClient SepsaClient
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
     <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
@@ -22,7 +23,8 @@
             </MudText>
 
             <MudTextField @bind-Value="_ipAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" />
-            <MudTextField @bind-Value="_port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 80 / /api/send" />
+            <MudTextField @bind-Value="_port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 80 / 8080" />
+            <MudTextField @bind-Value="_payloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
 
             <MudButton Variant="Variant.Filled" Color="@(_isConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@_isConnecting">
                 @if (_isConnecting)
@@ -438,13 +440,13 @@
 </style>
 
 @code {
-    private string _ipAddress = "192.168.1.100";
-    private string _port = "80";
+    private string _ipAddress = "192.168.15.1";
+    private string _port = "8080";
     private bool _isConnected = false;
     private bool _isConnecting = false;
     private bool _isSending = false;
+    private string _payloadHex = "00 00";
     private List<LogEntry> _logs = new();
-    private static readonly HttpClient _httpClient = new HttpClient();
 
     private async Task ToggleConnection()
     {
@@ -486,23 +488,22 @@
 
         try
         {
-            var targetUrl = $"http://{_ipAddress}:{_port}/api/send";
-            var payloadArray = new int[] { 85, 15, 0, 2, 1, 26, 0, 0, 0, 0, 0, 0, 0, 131 };
-            
-            var requestContent = new { payload = payloadArray };
-            
-            LogMsg("Trama", $"Enviando POST a {targetUrl} con payload: [{string.Join(", ", payloadArray)}]", true, false);
+            var baseUrl = $"{_ipAddress}:{_port}";
+            var payload = SepsaProtocolClient.ParsePayload(_payloadHex);
+            var frame = SepsaClient.BuildFrame(payload);
 
-            var response = await _httpClient.PostAsJsonAsync(targetUrl, requestContent);
+            LogMsg("Trama", $"TX {SepsaProtocolClient.ToHex(frame)}", true, false);
+
+            var response = await SepsaClient.SendAsync(baseUrl, frame);
             
-            if (response.IsSuccessStatusCode)
+            if (response.IsSuccess)
             {
-                var responseStr = await response.Content.ReadAsStringAsync();
-                LogMsg("Respuesta", $"Código {response.StatusCode}. Contenido: {responseStr}", false, false);
+                var responseHex = SepsaProtocolClient.ToHex(response.Payload);
+                LogMsg("Respuesta", $"RX {responseHex}", false, false);
             }
             else
             {
-                LogMsg("Error", $"Fallo en la petición. Código: {response.StatusCode}", false, true);
+                LogMsg("Error", $"Fallo en {response.Endpoint}. Codigo: {response.StatusCode}. {response.Error}", false, true);
             }
         }
         catch (Exception ex)
