@@ -22,9 +22,9 @@ else
             <MudPaper Class="pa-4 dashboard-card" Elevation="0">
                 <div class="d-flex align-center mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.FitScreen" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
-                    <MudText Typo="Typo.body2" Class="text-muted">Ventanas Activas</MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">@(_isAdmin ? "Ventanas (Total)" : "Ventanas Activas")</MudText>
                 </div>
-                <MudText Typo="Typo.h4" Class="fw-bold">@_filteredWindows.Count(w => w.IsActive)</MudText>
+                <MudText Typo="Typo.h4" Class="fw-bold">@(_isAdmin ? _filteredWindows.Count : _filteredWindows.Count(w => w.IsActive))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
@@ -57,21 +57,27 @@ else
     </MudGrid>
 
     <MudGrid>
-        <!-- Ventanas Activas -->
+        <!-- Ventanas -->
         <MudItem xs="12" md="6">
             <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="height: 420px; overflow-y: auto;">
-                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">Ventanas Activas</MudText>
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">@(_isAdmin ? "Ventanas" : "Ventanas Activas")</MudText>
                 <MudList T="Window" Dense="true" Class="pa-0">
-                    @foreach (var window in _filteredWindows.Where(w => w.IsActive))
+                    @foreach (var window in (_isAdmin ? _filteredWindows : _filteredWindows.Where(w => w.IsActive)))
                     {
-                        <div class="pa-3 mb-3 d-flex align-center justify-space-between list-item-card rounded">
+                        <div class="pa-3 mb-3 d-flex align-center justify-space-between list-item-card rounded @(!window.IsActive ? "inactive-window" : "")">
                             <div>
                                 <MudText Typo="Typo.body1" Class="fw-bold">@window.Nombre</MudText>
                                 <MudText Typo="Typo.body2" Class="text-muted">@window.Descripcion</MudText>
                             </div>
-                            <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
-                                @window.Tipo
-                            </MudChip>
+                            <div class="d-flex gap-2">
+                                @if (!window.IsActive)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Filled">Inactiva</MudChip>
+                                }
+                                <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
+                                    @window.Tipo
+                                </MudChip>
+                            </div>
                         </div>
                     }
                 </MudList>
@@ -151,6 +157,10 @@ else
     .list-item-card {
         background-color: #212a36;
         border: 1px solid rgba(255,255,255,0.02);
+    }
+    .list-item-card.inactive-window {
+        opacity: 0.55;
+        border-left: 3px solid #64748b;
     }
     .signals-table .mud-table-cell {
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;

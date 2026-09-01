@@ -173,7 +173,7 @@ else
         var users = await DataService.GetUsersAsync();
         _availableRoles = users
             .Select(u => u.Role)
-            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Where(role => !string.IsNullOrWhiteSpace(role) && !string.Equals(role, "Administrador", StringComparison.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(role => role)
             .ToList();

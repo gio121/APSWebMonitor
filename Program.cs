@@ -18,6 +18,7 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
 
 builder.Services.AddScoped<ApsDataService>();
 builder.Services.AddScoped<SessionStateService>();
+builder.Services.AddScoped<SessionAnalyzerService>();
 builder.Services.AddHttpClient<SepsaProtocolClient>();
 
 // Authentication & Authorization

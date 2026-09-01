@@ -958,6 +958,7 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var isAdmin = authState.User.IsInRole("Administrador");
         var allWindows = await DataService.GetWindowsAsync();
         _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
 
@@ -968,7 +969,7 @@
             return;
         }
 
-        if (!_window.IsActive)
+        if (!_window.IsActive && !isAdmin)
         {
             Snackbar.Add("La ventana no está activa", Severity.Warning);
             NavigationManager.NavigateTo("/ventanas");
@@ -976,7 +977,7 @@
         }
 
         var currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
-        if (!_window.IsRoleAllowed(currentRole))
+        if (!_window.IsRoleAllowed(currentRole) && !isAdmin)
         {
             Snackbar.Add("No estás autorizado para ver esta ventana", Severity.Warning);
             NavigationManager.NavigateTo("/ventanas");

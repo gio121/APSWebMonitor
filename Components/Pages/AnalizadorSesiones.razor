@@ -1,0 +1,94 @@
+@page "/analizador-sesiones"
+@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@rendermode InteractiveServer
+@using System.Text
+@inject SessionAnalyzerService Analyzer
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<div class="d-flex justify-space-between align-start mb-5 mt-n2 flex-wrap gap-3">
+    <div><MudText Typo="Typo.h5" Class="fw-bold">Analizador de sesiones</MudText><MudText Typo="Typo.body2" Class="text-muted">Carga un CMFX y uno o varios DAT para compararlos.</MudText></div>
+    <div class="d-flex gap-2">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Settings" OnClick="OpenCmfx">Cargar CMFX</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.AddCircle" OnClick="OpenDat" Disabled="@(!_elements.Any())">Añadir DAT</MudButton>
+    </div>
+</div>
+
+<InputFile id="cmfxPicker" OnChange="LoadCmfx" accept=".cmfx" style="display:none" />
+<InputFile id="datPicker" OnChange="LoadDat" accept=".dat" multiple style="display:none" />
+
+<MudGrid>
+    <MudItem xs="12" lg="7">
+        <MudPaper Class="pa-4 analyzer-panel" Elevation="0">
+            <div class="d-flex justify-space-between align-center mb-4"><div><MudText Typo="Typo.subtitle1" Class="fw-bold">Sesiones a analizar</MudText><MudText Typo="Typo.caption" Class="text-muted">@(_elements.Any() ? $"CMFX: {_cmfxName} · {_elements.Select(x => x.KeyName).Distinct().Count()} variables" : "Primero carga el archivo de configuración CMFX.")</MudText></div><MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@_sessions.Count sesiones</MudChip></div>
+            @if (!_sessions.Any())
+            {
+                <div class="analyzer-dropzone pa-8 d-flex flex-column align-center"><MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="Color.Primary" Style="font-size:42px" /><MudText Class="mt-2">Añade archivos DAT para empezar</MudText></div>
+            }
+            else
+            {
+                @foreach (var session in _sessions)
+                {
+                    <div class="session-row d-flex align-center gap-3 mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" />
+                        <div class="flex-grow-1"><MudText Typo="Typo.body2" Class="fw-bold">@session.Name</MudText><MudText Typo="Typo.caption" Class="text-muted">@session.RangeFrom.ToString("dd/MM HH:mm:ss") — @session.RangeTo.ToString("dd/MM HH:mm:ss") · @session.SelectedKeys.Count variables</MudText></div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => SelectSession(session))" AriaLabel="Configurar sesión" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Error" OnClick="@(() => RemoveSession(session))" AriaLabel="Eliminar sesión" />
+                    </div>
+                }
+            }
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" lg="5">
+        <MudPaper Class="pa-4 analyzer-panel h-100" Elevation="0">
+            <MudText Typo="Typo.subtitle1" Class="fw-bold">Resumen</MudText><MudDivider Class="my-4" />
+            <div class="d-flex justify-space-between mb-2"><span class="text-muted">CMFX</span><span>@(_cmfxName ?? "Sin cargar")</span></div>
+            <div class="d-flex justify-space-between mb-2"><span class="text-muted">Sesiones</span><span>@_sessions.Count</span></div>
+            <div class="d-flex justify-space-between mb-4"><span class="text-muted">Variables</span><span>@_sessions.Sum(x => x.SelectedKeys.Count)</span></div>
+            <MudButton FullWidth Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.QueryStats" Disabled="@(!_sessions.Any() || !_sessions.Any(x => x.SelectedKeys.Any()) || _busy)" OnClick="RunAnalysis">@(_busy ? "Analizando..." : "Ver gráfica")</MudButton>
+            <MudButton FullWidth Variant="Variant.Outlined" Class="mt-2" StartIcon="@Icons.Material.Filled.Download" Disabled="@(_result is null || _result.RowCount == 0)" OnClick="ExportCsv">Exportar CSV</MudButton>
+        </MudPaper>
+    </MudItem>
+
+    @if (_editing is not null)
+    {
+        <MudItem xs="12"><MudPaper Class="pa-4 analyzer-panel"><div class="d-flex justify-space-between align-center"><div><MudText Typo="Typo.subtitle1" Class="fw-bold">Configurar @_editing.Name</MudText><MudText Typo="Typo.caption" Class="text-muted">El rango usa todo el DAT de forma predeterminada. Marca variables o bits digitales.</MudText></div><div class="d-flex gap-2"><MudButton Variant="Variant.Text" OnClick="CloseEditor">Cerrar</MudButton>@if (_result is not null) { <MudButton Variant="Variant.Text" StartIcon="@(_variablesCollapsed ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ExpandLess)" OnClick="ToggleVariablesPanel">@(_variablesCollapsed ? "Mostrar variables" : "Minimizar variables")</MudButton> }</div></div>
+            <MudCollapse Expanded="@(!_variablesCollapsed)">
+            <MudDivider Class="my-3" />
+            <div class="d-flex gap-4 flex-wrap mb-3"><MudNumericField T="int" Label="Ajuste horario (h)" @bind-Value="_editing.TimeOffsetHours" Min="-24" Max="24" Style="max-width:220px" /><MudText Typo="Typo.caption" Class="align-self-center text-muted">Rango actual: @_editing.RangeFrom.ToString("dd/MM/yyyy HH:mm:ss") — @_editing.RangeTo.ToString("dd/MM/yyyy HH:mm:ss")</MudText></div>
+            <MudTextField @bind-Value="_filter" Immediate Placeholder="Buscar variable..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-2" />
+            <div class="d-flex gap-2 mb-2"><MudButton Size="Size.Small" Variant="Variant.Text" OnClick="SelectAll">Seleccionar todas</MudButton><MudButton Size="Size.Small" Variant="Variant.Text" OnClick="ClearAll">Quitar todas</MudButton></div>
+            <div class="variables-grid">
+                @foreach (var element in FilteredElements())
+                {
+                    var key = element.KeyName;
+                    <div class="variable-row"><MudCheckBox T="bool" Value="@_editing.SelectedKeys.Contains(key)" ValueChanged="@(checkedValue => ToggleKey(key, checkedValue))" Label="@key" />
+                    @if (element.BitNames.Any()) { <MudExpansionPanels><MudExpansionPanel Text="Bits digitales"><div class="d-flex flex-wrap gap-2">@foreach (var bit in element.BitNames.OrderBy(x => x.Key)) { var bitIndex = bit.Key; <MudCheckBox T="bool" Value="@IsBitSelected(key, bitIndex)" ValueChanged="@(checkedValue => ToggleBit(key, bitIndex, checkedValue))" Label="@($"{bitIndex}: {bit.Value}")" /> }</div></MudExpansionPanel></MudExpansionPanels> }</div>
+                }
+            </div>
+            </MudCollapse>
+        </MudPaper></MudItem>
+    }
+
+    <MudItem xs="12"><MudPaper Class="pa-4 analyzer-panel"><MudText Typo="Typo.subtitle1" Class="fw-bold">Resultado</MudText><MudText Typo="Typo.caption" Class="text-muted">Zoom con la rueda; usa la leyenda para ocultar series.</MudText><div id="sessionAnalyzerChart" class="chart-placeholder mt-3 @(_variablesCollapsed && _result is not null ? "chart-expanded" : "")">@if (_result is null) { <div class="chart-empty text-muted">La gráfica aparecerá aquí al ejecutar el análisis.</div> }</div></MudPaper></MudItem>
+</MudGrid>
+
+<style>
+ .analyzer-panel { background:#1a222c; border:1px solid rgba(255,255,255,.06); border-radius:12px; } .text-muted { color:#94a3b8 !important; } .analyzer-dropzone { border:1px dashed rgba(59,130,246,.45); border-radius:10px; } .session-row { border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:11px 13px; } .variables-grid { max-height:440px; overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:8px; } .variable-row { padding:3px 8px; border-bottom:1px solid rgba(255,255,255,.05); } .chart-placeholder { width:100%; min-height:440px; height:440px; position:relative; } .chart-placeholder.chart-expanded { height:min(70vh, 760px); min-height:560px; } .chart-placeholder .modebar-container { position:absolute !important; top:8px !important; right:12px !important; left:auto !important; } .chart-placeholder .modebar { position:static !important; } .chart-empty { height:100%; display:flex; align-items:center; justify-content:center; } 
+</style>
+
+@code {
+    private readonly List<AnalyzerSession> _sessions = []; private List<AnalyzerValueElement> _elements = []; private AnalyzerSession? _editing; private AnalyzerResult? _result; private string? _cmfxName; private string _filter = ""; private bool _busy; private bool _variablesCollapsed;
+    private async Task OpenCmfx() => await JS.InvokeVoidAsync("eval", "document.getElementById('cmfxPicker').click()");
+    private async Task OpenDat() => await JS.InvokeVoidAsync("eval", "document.getElementById('datPicker').click()");
+    private async Task LoadCmfx(InputFileChangeEventArgs e) { try { using var s=e.File.OpenReadStream(50*1024*1024); using var ms=new MemoryStream(); await s.CopyToAsync(ms); _elements=Analyzer.LoadConfig(ms.ToArray()); _cmfxName=e.File.Name; foreach(var session in _sessions) session.SelectedKeys=_elements.Select(x=>x.KeyName).Distinct().ToList(); Snackbar.Add($"CMFX cargado: {_elements.Select(x=>x.KeyName).Distinct().Count()} variables.", Severity.Success); } catch(Exception ex) { Snackbar.Add($"Error CMFX: {ex.Message}", Severity.Error); } }
+    private async Task LoadDat(InputFileChangeEventArgs e) { foreach(var file in e.GetMultipleFiles(20)) { try { using var s=file.OpenReadStream(300*1024*1024); using var ms=new MemoryStream(); await s.CopyToAsync(ms); var content=ms.ToArray(); var range=Analyzer.GetDateRange(content); _sessions.Add(new AnalyzerSession { Name=file.Name, Content=content, RangeFrom=range.Min, RangeTo=range.Max, SelectedKeys=_elements.Select(x=>x.KeyName).Distinct().ToList() }); } catch(Exception ex) { Snackbar.Add($"No se pudo cargar {file.Name}: {ex.Message}", Severity.Error); } } }
+    private void SelectSession(AnalyzerSession session) { _editing=session; _variablesCollapsed=false; } private void CloseEditor() => _editing=null; private async Task ToggleVariablesPanel() { _variablesCollapsed=!_variablesCollapsed; await InvokeAsync(StateHasChanged); await Task.Delay(50); await JS.InvokeVoidAsync("sessionAnalyzer.resize", "sessionAnalyzerChart"); } private void RemoveSession(AnalyzerSession session) { if(_editing==session) _editing=null; _sessions.Remove(session); }
+    private IEnumerable<AnalyzerValueElement> FilteredElements() => _elements.Where(x => string.IsNullOrWhiteSpace(_filter) || x.KeyName.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+    private void ToggleKey(string key, bool value) { if(_editing is null)return; if(value) { if(!_editing.SelectedKeys.Contains(key)) _editing.SelectedKeys.Add(key); } else { _editing.SelectedKeys.Remove(key); _editing.DigitalBits.Remove(key); } }
+    private bool IsBitSelected(string key, int bit) => _editing?.DigitalBits.TryGetValue(key, out var bits)==true && bits.Contains(bit);
+    private void ToggleBit(string key, int bit, bool value) { if(_editing is null)return; if(value) { if(!_editing.SelectedKeys.Contains(key)) _editing.SelectedKeys.Add(key); if(!_editing.DigitalBits.TryGetValue(key,out var bits)) _editing.DigitalBits[key]=bits=[]; if(!bits.Contains(bit))bits.Add(bit); } else if(_editing.DigitalBits.TryGetValue(key,out var bits)) { bits.Remove(bit); if(!bits.Any())_editing.DigitalBits.Remove(key); } }
+    private void SelectAll() { if(_editing is not null) _editing.SelectedKeys=_elements.Select(x=>x.KeyName).Distinct().ToList(); } private void ClearAll() { if(_editing is not null) { _editing.SelectedKeys=[]; _editing.DigitalBits=[]; } }
+    private async Task RunAnalysis() { _busy=true; try { _result=await Task.Run(()=>Analyzer.Analyze(_sessions,_elements)); if(_result.RowCount==0) { Snackbar.Add("No se encontraron datos para los rangos seleccionados.",Severity.Warning); return; } var chartData=_result.Sessions.Select(s=>new { name=s.Name, keys=s.Keys, rows=s.Rows.Select(r=>new { timestamp=r.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss.fff"), values=r.Values }) }); await JS.InvokeVoidAsync("sessionAnalyzer.draw","sessionAnalyzerChart",chartData); Snackbar.Add($"Análisis terminado: {_result.RowCount:N0} muestras.",Severity.Success); } catch(Exception ex) { Snackbar.Add($"Error al analizar: {ex.Message}",Severity.Error); } finally { _busy=false; } }
+    private async Task ExportCsv() { if(_result is null)return; var sb=new StringBuilder("Sesion;Timestamp;Variable;Valor\r\n"); foreach(var s in _result.Sessions) foreach(var r in s.Rows) foreach(var v in r.Values) sb.Append('"').Append(s.Name.Replace("\"","\"\"")).Append("\";").Append(r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff")).Append(";\"").Append(v.Key.Replace("\"","\"\"")).Append("\";").Append(v.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append("\r\n"); await JS.InvokeVoidAsync("sessionAnalyzer.download","analisis_sesiones.csv",sb.ToString()); }
+}
