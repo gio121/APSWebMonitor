@@ -1,10 +1,13 @@
 @page "/monitor"
 @attribute [Authorize(Roles = "Administrador")]
 @rendermode InteractiveServer
+@using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject SepsaProtocolClient SepsaClient
+@inject ApsDataService DataService
+@implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
     <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
@@ -44,10 +47,30 @@
                 }
             </MudButton>
 
+            @if (_isConnected)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="@(_isMonitoring ? Color.Warning : Color.Primary)"
+                           FullWidth="true"
+                           OnClick="ToggleMonitoring"
+                           Class="mt-2 fw-bold">
+                    @if (_isMonitoring)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Detener Monitorización</span>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Sensors" Class="mr-2" />
+                        <span>Monitorizar</span>
+                    }
+                </MudButton>
+            }
+
             <MudDivider Class="my-4 custom-divider" />
 
             <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">Acciones de Prueba</MudText>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!_isConnected || _isSending" Class="mb-2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!_isConnected || _isSending || _isMonitoring" Class="mb-2">
                 @if (_isSending)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -135,6 +158,95 @@
         </div>
     </MudItem>
 </MudGrid>
+
+<MudDivider Class="my-6 custom-divider" />
+
+<!-- Sección de Variables en Tiempo Real -->
+<div class="d-flex justify-space-between align-center mb-3">
+    <div class="d-flex align-center">
+        <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Info" Class="mr-2" />
+        <div>
+            <MudText Typo="Typo.h6" Class="fw-bold">Variables del Sistema</MudText>
+            <MudText Typo="Typo.caption" Class="text-muted">Valores en tiempo real decodificados de la comunicación con la tarjeta</MudText>
+        </div>
+    </div>
+    <div class="d-flex align-center gap-3">
+        <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar señal..." 
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
+                      IconSize="Size.Small" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                      Style="max-width:300px; background-color:#1a222c;" />
+        <MudText Typo="Typo.caption" Class="text-muted d-none d-md-flex">Despliega un nodo para ver sus valores en tiempo real</MudText>
+    </div>
+</div>
+
+@if (_isLoadingSignals)
+{
+    <div class="d-flex justify-center my-6">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    </div>
+}
+else if (_currentValues.Count == 0)
+{
+    <MudPaper Class="pa-8 d-flex flex-column align-center justify-center session-empty" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Filled.SensorsOff" Size="Size.Large" Color="Color.Default" Class="mb-3" Style="font-size: 48px;" />
+        <MudText Typo="Typo.subtitle1" Class="text-muted mb-1">No hay señales configuradas</MudText>
+        <MudText Typo="Typo.body2" Class="text-muted">Añade señales desde la sección de Señales para visualizarlas en el monitor</MudText>
+    </MudPaper>
+}
+else
+{
+    <MudExpansionPanels MultiExpansion="true" Class="nodes-container">
+        @foreach (var group in _currentValues.Where(v => _quickFilter(v)).GroupBy(v => v.NodoNumero).OrderBy(g => g.Key))
+        {
+            var nodeNum = group.Key;
+            var nodeDesc = group.First().NodoDescripcion;
+            var changingCount = group.Count(v => v.HasChanged);
+
+            <MudExpansionPanel Class="node-panel mb-2 rounded-lg">
+                <TitleContent>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Router" Color="Color.Info" Class="mr-3" />
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">Nodo @nodeNum: @nodeDesc</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() señales en este nodo</MudText>
+                        </div>
+                        @if (changingCount > 0)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text" Icon="@Icons.Material.Filled.Timeline">
+                                @changingCount variando
+                            </MudChip>
+                        }
+                    </div>
+                </TitleContent>
+                <ChildContent>
+                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #1a222c;">
+                        <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
+                            <Columns>
+                                <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
+                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
+                                <TemplateColumn Title="Valor" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
+                                    <CellTemplate>
+                                        <div class="@(context.Item.HasChanged ? "value-changed" : "")" style="width: 230px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            @context.Item.FormattedValue
+                                        </div>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                                <PropertyColumn Property="x => x.Unidad" Title="Unidad" Width="80px" />
+                                <TemplateColumn Title="Raw Value" CellStyle="width: 120px;" HeaderStyle="width: 120px;">
+                                    <CellTemplate>
+                                        <div style="font-variant-numeric: tabular-nums;">
+                                            @context.Item.RawValue
+                                        </div>
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                    </MudPaper>
+                </ChildContent>
+            </MudExpansionPanel>
+        }
+    </MudExpansionPanels>
+}
 
 <style>
     /* ── Configuration Panel ── */
@@ -437,6 +549,35 @@
         from { opacity: 0; transform: translateX(-6px); }
         to { opacity: 1; transform: translateX(0); }
     }
+
+    /* ── Node Panels & Signals Table ── */
+    .nodes-container {
+        background: transparent !important;
+    }
+    .node-panel {
+        background-color: #1a222c !important;
+        border: 1px solid rgba(255,255,255,0.05);
+        color: #e2e8f0 !important;
+    }
+    .node-panel:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+    .value-changed {
+        color: #3b82f6 !important;
+        text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    }
+    .mud-table-root .mud-table-head .mud-table-cell {
+        background-color: #1a222c !important;
+        color: #94a3b8;
+        font-weight: 500;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .session-empty {
+        border: 2px dashed rgba(255,255,255,0.1);
+        background-color: #1a222c;
+        border-radius: 12px;
+        min-height: 200px;
+    }
 </style>
 
 @code {
@@ -445,13 +586,74 @@
     private bool _isConnected = false;
     private bool _isConnecting = false;
     private bool _isSending = false;
+    private bool _isMonitoring = false;
+    private CancellationTokenSource? _monitoringCts;
     private string _payloadHex = "00 00";
     private List<LogEntry> _logs = new();
+
+    private List<Signal> _signals = new();
+    private Dictionary<int, List<Signal>> _signalsByNode = new();
+    private Dictionary<int, int> _nodeSizes = new();
+    private List<SignalValue> _currentValues = new();
+    private Dictionary<int, double> _previousValues = new();
+    private string _searchString = "";
+    private bool _isLoadingSignals = false;
+
+    private Func<SignalValue, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return true;
+        if (x.Tag.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        if (x.Nombre.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSignalsAsync();
+    }
+
+    private async Task LoadSignalsAsync()
+    {
+        _isLoadingSignals = true;
+        try
+        {
+            _signals = await DataService.GetSignalsAsync();
+            _signalsByNode = _signals.GroupBy(s => s.NodoNumero).ToDictionary(g => g.Key, g => g.ToList());
+            _nodeSizes = _signalsByNode.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.Count > 0 ? kvp.Value.Max(s => s.BytePosicion + SessionParserService.GetByteSize(s.TipoVariable)) : 0
+            );
+
+            _currentValues = _signals.Select(sig => new SignalValue
+            {
+                Id = sig.Id,
+                Tag = sig.Tag,
+                Nombre = sig.Nombre,
+                TipoVariable = sig.TipoVariable,
+                Unidad = sig.Unidad ?? "",
+                FormattedValue = FormatSignalValue(sig, sig.ValorActual),
+                RawValue = sig.ValorActual,
+                HasChanged = false,
+                IsAscii = sig.IsAscii,
+                NodoNumero = sig.NodoNumero,
+                NodoDescripcion = sig.NodoDescripcion
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar señales: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingSignals = false;
+        }
+    }
 
     private async Task ToggleConnection()
     {
         if (_isConnected)
         {
+            StopMonitoring();
             _isConnected = false;
             LogMsg("Sistema", "Desconectado. Deteniendo monitorización.", false, false);
             Snackbar.Add("Monitorización detenida", Severity.Info);
@@ -500,6 +702,7 @@
             {
                 var responseHex = SepsaProtocolClient.ToHex(response.Payload);
                 LogMsg("Respuesta", $"RX {responseHex}", false, false);
+                ProcessIncomingFrame(response.Payload);
             }
             else
             {
@@ -515,6 +718,216 @@
         {
             _isSending = false;
             StateHasChanged();
+        }
+    }
+
+    private void ToggleMonitoring()
+    {
+        if (!_isConnected) return;
+
+        if (_isMonitoring)
+        {
+            StopMonitoring();
+            LogMsg("Sistema", "Monitorización continua detenida.", false, false);
+            Snackbar.Add("Monitorización detenida", Severity.Info);
+        }
+        else
+        {
+            _isMonitoring = true;
+            _monitoringCts = new CancellationTokenSource();
+            LogMsg("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
+            Snackbar.Add("Monitorización continua iniciada", Severity.Success);
+
+            _ = RunMonitoringLoopAsync(_monitoringCts.Token);
+        }
+    }
+
+    private void StopMonitoring()
+    {
+        if (_isMonitoring)
+        {
+            _isMonitoring = false;
+            try
+            {
+                _monitoringCts?.Cancel();
+                _monitoringCts?.Dispose();
+            }
+            catch { }
+            _monitoringCts = null;
+        }
+    }
+
+    private async Task RunMonitoringLoopAsync(CancellationToken cancellationToken)
+    {
+        byte currentFrameType = 0x1A;
+
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested && _isConnected)
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                try
+                {
+                    var baseUrl = $"{_ipAddress}:{_port}";
+                    var payload = SepsaProtocolClient.ParsePayload(_payloadHex);
+                    var frame = SepsaClient.BuildFrame(payload, messageType: currentFrameType);
+
+                    LogMsg("Trama", $"TX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(frame)}", true, false);
+
+                    using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    reqCts.CancelAfter(500);
+
+                    var response = await SepsaClient.SendAsync(baseUrl, frame, reqCts.Token);
+                    if (response.IsSuccess)
+                    {
+                        var responseHex = SepsaProtocolClient.ToHex(response.Payload);
+                        LogMsg("Respuesta", $"RX [{currentFrameType:X2}] {responseHex}", false, false);
+                        ProcessIncomingFrame(response.Payload);
+                    }
+                    else
+                    {
+                        LogMsg("Error", $"Fallo en {response.Endpoint}. Código: {response.StatusCode}. {response.Error}", false, true);
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (OperationCanceledException)
+                {
+                    LogMsg("Timeout", $"Sin respuesta en trama [{currentFrameType:X2}] tras 500ms", false, true);
+                }
+                catch (Exception ex)
+                {
+                    LogMsg("Excepción", $"Error enviando trama [{currentFrameType:X2}]: {ex.Message}", false, true);
+                }
+
+                // Alternar tipo de trama: 1A -> 1D -> 1A ...
+                currentFrameType = (currentFrameType == 0x1A) ? (byte)0x1D : (byte)0x1A;
+
+                try
+                {
+                    await InvokeAsync(StateHasChanged);
+                }
+                catch { }
+
+                sw.Stop();
+                var remainingMs = (int)(100 - sw.ElapsedMilliseconds);
+                if (remainingMs > 0)
+                {
+                    await Task.Delay(remainingMs, cancellationToken);
+                }
+                else
+                {
+                    await Task.Delay(1, cancellationToken);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelación esperada
+        }
+        catch (Exception ex)
+        {
+            LogMsg("Excepción", $"Error en bucle de monitorización: {ex.Message}", false, true);
+        }
+        finally
+        {
+            _isMonitoring = false;
+            try
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+            catch { }
+        }
+    }
+
+    public void Dispose()
+    {
+        StopMonitoring();
+    }
+
+    /// <summary>
+    /// Decodifica una trama de respuesta según el formato del protocolo SEPSA:
+    ///   Byte 0:        SYNC (0xAA)
+    ///   Byte 1-2:      NBYTES (longitud total de la trama, Little Endian)
+    ///   Byte 3:        DEST (dirección nodo destino)
+    ///   Byte 4:        ORIG (dirección nodo origen)
+    ///   Byte 5:        FT   (Frame Type)
+    ///   Byte 6..N-2:   DATA (datos de señales)
+    ///   Byte N-1:      CRC  (1 byte)
+    /// Lógica idéntica a SessionParserService.Parse().
+    /// </summary>
+    private void ProcessIncomingFrame(byte[] frameData)
+    {
+        if (frameData == null || frameData.Length < 7 || _signals.Count == 0) return;
+
+        // Payload = trama completa - 6 bytes cabecera - 1 byte CRC
+        int payloadLength = frameData.Length - 7;
+        if (payloadLength <= 0) return;
+
+        // Identificar nodo por tamaño de payload (mismo algoritmo que SessionParserService)
+        int? matchingNode = null;
+        int minDiff = int.MaxValue;
+        foreach (var kvp in _nodeSizes)
+        {
+            int diff = Math.Abs(payloadLength - kvp.Value);
+            if (diff < minDiff)
+            {
+                minDiff = diff;
+                matchingNode = kvp.Key;
+            }
+        }
+
+        if (matchingNode.HasValue && _signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
+        {
+            // Extraer datos usando los 6 bytes de cabecera como offset (DATA empieza en byte 6)
+            foreach (var sig in nodeSignals)
+            {
+                int offset = sig.BytePosicion + 6;
+                if (offset + SessionParserService.GetByteSize(sig.TipoVariable) <= frameData.Length)
+                {
+                    double rawValue = SessionParserService.ReadValue(frameData, offset, sig.TipoVariable);
+                    double physValue = ApsCalculationUtils.CalculatePhysical(rawValue, sig.Escala, sig.Offset);
+
+                    var cv = _currentValues.FirstOrDefault(v => v.Id == sig.Id);
+                    if (cv != null)
+                    {
+                        bool changed = _previousValues.TryGetValue(sig.Id, out var prev) && Math.Abs(prev - physValue) > 0.00001;
+                        _previousValues[sig.Id] = physValue;
+
+                        cv.FormattedValue = FormatSignalValue(sig, physValue);
+                        cv.RawValue = rawValue;
+                        cv.HasChanged = changed;
+                    }
+                }
+            }
+        }
+    }
+
+    private static string FormatSignalValue(Signal signal, double value)
+    {
+        if (signal.IsAscii)
+        {
+            return ((char)Math.Max(0, Math.Min(255, value))).ToString();
+        }
+        else if (signal.BitCount > 1 && signal.BitTextoActivo != null && signal.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
+        {
+            var activeBits = new List<string>();
+            int intVal = (int)value;
+            for (int i = 0; i < 16; i++)
+            {
+                if ((intVal & (1 << i)) != 0 && !string.IsNullOrEmpty(signal.BitTextoActivo[i]))
+                {
+                    activeBits.Add(signal.BitTextoActivo[i]!);
+                }
+            }
+            return activeBits.Count > 0 ? string.Join(", ", activeBits) : "0 (Todo OK)";
+        }
+        else
+        {
+            return value.ToString(signal.Formato) + (string.IsNullOrEmpty(signal.Unidad) ? "" : " " + signal.Unidad);
         }
     }
 
@@ -548,5 +961,20 @@
         public string Message { get; set; } = "";
         public bool IsSent { get; set; }
         public bool IsError { get; set; }
+    }
+
+    private class SignalValue
+    {
+        public int Id { get; set; }
+        public string Tag { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string TipoVariable { get; set; } = "";
+        public string Unidad { get; set; } = "";
+        public string FormattedValue { get; set; } = "";
+        public double RawValue { get; set; }
+        public bool HasChanged { get; set; }
+        public bool IsAscii { get; set; }
+        public int NodoNumero { get; set; }
+        public string NodoDescripcion { get; set; } = "";
     }
 }

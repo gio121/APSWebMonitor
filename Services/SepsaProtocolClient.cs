@@ -19,7 +19,7 @@ public sealed class SepsaProtocolClient
         ReadOnlySpan<byte> payload,
         byte source = 0x01,
         byte destination = 0x03,
-        byte messageType = 0x1D)
+        byte messageType = 0x1A)
     {
         var frame = new byte[HeaderSize + payload.Length + ChecksumSize];
 

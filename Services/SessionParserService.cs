@@ -214,7 +214,7 @@ public class SessionParserService
     };
 
 
-    private static double ReadValue(byte[] data, int offset, string tipoVariable)
+    public static double ReadValue(byte[] data, int offset, string tipoVariable)
     {
         try
         {
@@ -236,7 +236,7 @@ public class SessionParserService
         catch { return 0; }
     }
 
-    private static int GetByteSize(string tipoVariable)
+    public static int GetByteSize(string tipoVariable)
     {
         return tipoVariable.ToUpper() switch
         {
