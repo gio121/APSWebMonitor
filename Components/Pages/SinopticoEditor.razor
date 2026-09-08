@@ -7,6 +7,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
 @inject SessionStateService SessionState
+@inject MonitorStateService MonitorState
 @inject IDialogService DialogService
 @implements IDisposable
 @rendermode InteractiveServer
@@ -64,7 +65,7 @@
                 <div class="grid-background"></div>
             }
             @{
-                var currentValues = SessionState.GetCurrentValues();
+                var currentValues = GetMergedValues();
             }
             @foreach (var el in _elements)
             {
@@ -709,6 +710,7 @@
         }
         
         SessionState.OnStateChanged += SyncValues;
+        MonitorState.OnStateChanged += SyncValues;
     }
 
     private async Task ConfigurarFallos()
@@ -735,6 +737,17 @@
     private void SyncValues()
     {
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Devuelve los valores fusionados: si hay monitorización activa, usa valores en vivo;
+    /// si hay sesión cargada, usa la sesión; si ninguno, diccionario vacío.
+    /// </summary>
+    private Dictionary<int, double> GetMergedValues()
+    {
+        if (MonitorState.IsMonitoring)
+            return MonitorState.GetCurrentValues();
+        return SessionState.GetCurrentValues();
     }
 
     private bool IsBarraVisible(SinopticoElement el, Dictionary<int, double> values)
@@ -767,7 +780,7 @@
 
     private string GetSignalValueText(int? signalId, Dictionary<int, double> currentValues)
     {
-        if (!SessionState.IsLoaded || !signalId.HasValue) return "--";
+        if (!(MonitorState.IsMonitoring || SessionState.IsLoaded) || !signalId.HasValue) return "--";
 
         if (currentValues.TryGetValue(signalId.Value, out double val))
         {
@@ -802,6 +815,7 @@
     public void Dispose()
     {
         SessionState.OnStateChanged -= SyncValues;
+        MonitorState.OnStateChanged -= SyncValues;
     }
 
     private string GetBoxColor(SinopticoElement el, Dictionary<int, double> values)

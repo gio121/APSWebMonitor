@@ -6,6 +6,7 @@
 @inject ApsDataService DataService
 @inject NavigationManager NavigationManager
 @inject SessionStateService SessionState
+@inject MonitorStateService MonitorState
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
 @implements IDisposable
@@ -13,7 +14,7 @@
 
 <div class="sinoptico-viewer-layout">
     @{
-        var currentValues = SessionState.GetCurrentValues();
+        var currentValues = GetMergedValues();
         var dialogFailures = GetActiveFailures(currentValues);
         var totalFailures = GetTotalCount(currentValues, dialogFailures);
     }
@@ -1027,6 +1028,7 @@
         }
         
         SessionState.OnStateChanged += SyncValues;
+        MonitorState.OnStateChanged += SyncValues;
     }
 
     private List<FailureCategoryConfig> GetDefaultCategories()
@@ -1035,18 +1037,21 @@
         var lvps = new FailureCategoryConfig { Name = "LVPS" };
         var chopper = new FailureCategoryConfig { Name = "Chopper" };
 
-        if (SessionState.Signals.Any())
+        // Buscar señales en sesión o en monitor
+        var signalSource = SessionState.Signals.Any()
+            ? SessionState.Signals
+            : (IReadOnlyList<Signal>)MonitorState.Signals;
+
+        if (signalSource.Any())
         {
-            // Contadores (Mantenemos estos porque son útiles y específicos)
-            inversor.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
-            chopper.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
-            lvps.CountSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+            inversor.CountSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            chopper.CountSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            lvps.CountSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
 
-            inversor.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
-            chopper.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
-            lvps.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+            inversor.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            chopper.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            lvps.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
 
-            // Dejamos las listas de señales de detalle VACÍAS por defecto para que el usuario elija exactamente cuáles quiere
             inversor.SignalIds = new List<int>();
             lvps.SignalIds = new List<int>();
             chopper.SignalIds = new List<int>();
@@ -1088,10 +1093,25 @@
         return $"{(int)ts.TotalMinutes:D2}:{ts.Seconds:D2}";
     }
 
+    /// <summary>
+    /// Devuelve los valores fusionados: si hay monitorización activa, usa valores en vivo;
+    /// si hay sesión cargada, usa la sesión; si ninguno, devuelve diccionario vacío.
+    /// </summary>
+    private Dictionary<int, double> GetMergedValues()
+    {
+        if (MonitorState.IsMonitoring)
+            return MonitorState.GetCurrentValues();
+        return SessionState.GetCurrentValues();
+    }
+
     private void SyncValues()
     {
         // Lazy auto-mapping: si la sesión se cargó después de OnInitializedAsync, mapear StatusSignalId ahora
-        if (!_statusMapped && SessionState.Signals.Any())
+        var signalSource = SessionState.Signals.Any()
+            ? SessionState.Signals
+            : (IReadOnlyList<Signal>)MonitorState.Signals;
+
+        if (!_statusMapped && signalSource.Any())
         {
             _statusMapped = true;
             foreach (var cat in _failureCategories)
@@ -1099,19 +1119,19 @@
                 if (!cat.StatusSignalId.HasValue)
                 {
                     if (cat.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
-                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+                        cat.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
                     else if (cat.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
-                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+                        cat.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
                     else if (cat.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
-                        cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+                        cat.StatusSignalId = signalSource.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
                 }
             }
         }
 
-        // Detect new failures for Last Stop tracking
+        // Detect new failures for Last Stop tracking — usa los valores activos (monitor o sesión)
         try
         {
-            var values = SessionState.GetCurrentValues();
+            var values = GetMergedValues();
             var currentFailures = GetActiveFailures(values);
             var currentKeys = new HashSet<string>();
             foreach (var kvp in currentFailures)
@@ -1131,7 +1151,11 @@
         }
         catch { /* Ignore during init */ }
 
-        InvokeAsync(StateHasChanged);
+        try
+        {
+            InvokeAsync(StateHasChanged);
+        }
+        catch { /* Componente puede estar disposed */ }
     }
 
     private bool IsBarraVisible(SinopticoElement el, Dictionary<int, double> values)
@@ -1164,11 +1188,16 @@
 
     private string GetSignalValueText(int? signalId, Dictionary<int, double> currentValues)
     {
-        if (!SessionState.IsLoaded || !signalId.HasValue) return "--";
+        // Permitir visualización tanto con sesión cargada como con monitorización activa
+        bool hasData = SessionState.IsLoaded || MonitorState.IsMonitoring;
+        if (!hasData || !signalId.HasValue) return "--";
 
         if (currentValues.TryGetValue(signalId.Value, out double val))
         {
-            var sig = SessionState.Signals.FirstOrDefault(s => s.Id == signalId.Value);
+            // Buscar metadatos de señal: primero en la sesión, luego en el monitor
+            var sig = SessionState.Signals.FirstOrDefault(s => s.Id == signalId.Value)
+                   ?? MonitorState.Signals.FirstOrDefault(s => s.Id == signalId.Value);
+
             if (sig != null)
             {
                 if (sig.IsAscii)
@@ -1192,7 +1221,7 @@
                 
                 return val.ToString(sig.Formato) + (string.IsNullOrWhiteSpace(sig.Unidad) ? "" : $" {sig.Unidad}");
             }
-            return val.ToString("0.00");
+            return val.ToString("0.##");
         }
         return "--";
     }
@@ -1200,6 +1229,7 @@
     public void Dispose()
     {
         SessionState.OnStateChanged -= SyncValues;
+        MonitorState.OnStateChanged -= SyncValues;
     }
 
     private string GetIconForType(string type) => SinopticoIconProvider.GetIcon(type);
@@ -1363,7 +1393,12 @@
     private Dictionary<string, List<ActiveFailure>> GetActiveFailures(Dictionary<int, double> values)
     {
         var categorized = new Dictionary<string, List<ActiveFailure>>();
-        if (!SessionState.IsLoaded || _window == null) return categorized;
+        if ((!SessionState.IsLoaded && !MonitorState.IsMonitoring) || _window == null) return categorized;
+
+        // Fuente de metadatos de señales: sesión si está cargada, sino monitor
+        var availableSignals = SessionState.Signals.Any()
+            ? SessionState.Signals
+            : (IReadOnlyList<Signal>)MonitorState.Signals;
 
         foreach (var category in _failureCategories)
         {
@@ -1372,7 +1407,7 @@
 
             foreach (var sigId in category.SignalIds)
             {
-                var sig = SessionState.Signals.FirstOrDefault(s => s.Id == sigId);
+                var sig = availableSignals.FirstOrDefault(s => s.Id == sigId);
                 if (sig != null && values.TryGetValue(sig.Id, out double val))
                 {
                     if (val == 0) continue;

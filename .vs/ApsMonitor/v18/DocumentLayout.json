@@ -1,105 +1,105 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\",
+  "WorkspaceRootPath": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\window.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\window.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\window.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\sessiondataset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\sessiondataset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\sessiondataset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\scadacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\scadacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\scadacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\eventmessage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\eventmessage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\eventmessage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\models\\signal.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\signal.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\signal.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\monitor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\monitor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\monitor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\wwwroot\\js\\session-analyzer.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\wwwroot\\js\\session-analyzer.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:wwwroot\\js\\session-analyzer.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\services\\apscalculationutils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\services\\apscalculationutils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:services\\apscalculationutils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\analizadorsesiones.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\analizadorsesiones.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\analizadorsesiones.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\sinopticoviewer.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\sinopticoviewer.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\sinopticoviewer.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\administracion.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\administracion.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\administracion.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\layout\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\layout\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\layout\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\sinopticoeditor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\sinopticoeditor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\sinopticoeditor.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\app.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\app.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\app.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\ventanas.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\ventanas.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\ventanas.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\update_db.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\update_db.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:update_db.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\pages\\senales.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\pages\\senales.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\pages\\senales.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\components\\dialogs\\signaldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\components\\dialogs\\signaldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:components\\dialogs\\signaldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\services\\sepsaprotocolclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\services\\sepsaprotocolclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:services\\sepsaprotocolclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\users\\ivan.indias\\source\\repos\\apswebmonitor\\services\\sessionstateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\services\\sessionstateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:services\\sessionstateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -136,11 +136,11 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Window.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Window.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\Window.cs",
               "RelativeDocumentMoniker": "Models\\Window.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Window.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\Window.cs",
               "RelativeToolTip": "Models\\Window.cs",
-              "ViewState": "AgIAADQAAAAAAAAAAAAUwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADQAAAAAAAAAAAAUwD8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-09-03T10:20:33.42Z",
               "EditorCaption": ""
@@ -149,313 +149,289 @@
               "$type": "Document",
               "DocumentIndex": 2,
               "Title": "SinopticoElement.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SinopticoElement.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SinopticoElement.cs",
               "RelativeDocumentMoniker": "Models\\SinopticoElement.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SinopticoElement.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SinopticoElement.cs",
               "RelativeToolTip": "Models\\SinopticoElement.cs",
               "ViewState": "AgIAABgAAAAAAAAAAAAiwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:29.016Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-03T10:20:29.016Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
               "Title": "SessionDataset.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SessionDataset.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SessionDataset.cs",
               "RelativeDocumentMoniker": "Models\\SessionDataset.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\SessionDataset.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SessionDataset.cs",
               "RelativeToolTip": "Models\\SessionDataset.cs",
               "ViewState": "AgIAABUAAAAAAAAAAAAmwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:26.474Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-03T10:20:26.474Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
               "Title": "ScadaCommand.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\ScadaCommand.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\ScadaCommand.cs",
               "RelativeDocumentMoniker": "Models\\ScadaCommand.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\ScadaCommand.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\ScadaCommand.cs",
               "RelativeToolTip": "Models\\ScadaCommand.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:24.33Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-03T10:20:24.33Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
               "Title": "EventMessage.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\EventMessage.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\EventMessage.cs",
               "RelativeDocumentMoniker": "Models\\EventMessage.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\EventMessage.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\EventMessage.cs",
               "RelativeToolTip": "Models\\EventMessage.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:21.265Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-03T10:20:21.265Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 8,
               "Title": "session-analyzer.js",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\js\\session-analyzer.js",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\wwwroot\\js\\session-analyzer.js",
               "RelativeDocumentMoniker": "wwwroot\\js\\session-analyzer.js",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\js\\session-analyzer.js",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\wwwroot\\js\\session-analyzer.js",
               "RelativeToolTip": "wwwroot\\js\\session-analyzer.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-09-01T09:56:45.601Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-01T09:56:45.601Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 22,
               "Title": "SignalDialog.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\SignalDialog.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Dialogs\\SignalDialog.razor",
               "RelativeDocumentMoniker": "Components\\Dialogs\\SignalDialog.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Dialogs\\SignalDialog.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Dialogs\\SignalDialog.razor",
               "RelativeToolTip": "Components\\Dialogs\\SignalDialog.razor",
               "ViewState": "AgIAAGsAAAAAAAAAAAAowHoAAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-07-14T12:56:48.039Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-14T12:56:48.039Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 16,
               "Title": "Home.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Home.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Home.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Home.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Home.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Home.razor",
               "RelativeToolTip": "Components\\Pages\\Home.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAaAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-10T11:23:33.931Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-10T11:23:33.931Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 15,
               "Title": "SinopticoEditor.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoEditor.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\SinopticoEditor.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\SinopticoEditor.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoEditor.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\SinopticoEditor.razor",
               "RelativeToolTip": "Components\\Pages\\SinopticoEditor.razor",
               "ViewState": "AgIAANUCAAAAAAAAAIAwwIwCAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-12T07:42:56.011Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-12T07:42:56.011Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "User.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\User.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\User.cs",
               "RelativeDocumentMoniker": "Models\\User.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\User.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\User.cs",
               "RelativeToolTip": "Models\\User.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-08T10:45:07.455Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-08T10:45:07.455Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 13,
               "Title": "Administracion.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Administracion.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Administracion.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Administracion.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Administracion.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Administracion.razor",
               "RelativeToolTip": "Components\\Pages\\Administracion.razor",
               "ViewState": "AgIAAHUAAAAAAAAAAIBJwD4AAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-04-14T06:54:42.121Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-14T06:54:42.121Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 9,
               "Title": "ApsCalculationUtils.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\ApsCalculationUtils.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\ApsCalculationUtils.cs",
               "RelativeDocumentMoniker": "Services\\ApsCalculationUtils.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\ApsCalculationUtils.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\ApsCalculationUtils.cs",
               "RelativeToolTip": "Services\\ApsCalculationUtils.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAABQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-15T07:13:33.558Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-15T07:13:33.558Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 10,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Program.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Program.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Program.cs",
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAFwAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-06T09:18:18.131Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-06T09:18:18.131Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 7,
               "Title": "Monitor.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Monitor.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Monitor.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Monitor.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Monitor.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Monitor.razor",
               "RelativeToolTip": "Components\\Pages\\Monitor.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-04-17T06:34:16.887Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-17T06:34:16.887Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 6,
               "Title": "Signal.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Signal.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\Signal.cs",
               "RelativeDocumentMoniker": "Models\\Signal.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Models\\Signal.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\Signal.cs",
               "RelativeToolTip": "Models\\Signal.cs",
               "ViewState": "AgIAABUAAAAAAAAAAAA2wAIAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-11T10:21:41.65Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-11T10:21:41.65Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 23,
               "Title": "SepsaProtocolClient.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SepsaProtocolClient.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\SepsaProtocolClient.cs",
               "RelativeDocumentMoniker": "Services\\SepsaProtocolClient.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SepsaProtocolClient.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\SepsaProtocolClient.cs",
               "RelativeToolTip": "Services\\SepsaProtocolClient.cs",
               "ViewState": "AgIAABIAAAAAAAAAAAAowB0AAABAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-07-07T12:27:02.95Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-07T12:27:02.95Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 17,
               "Title": "App.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\App.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\App.razor",
               "RelativeDocumentMoniker": "Components\\App.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\App.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\App.razor",
               "RelativeToolTip": "Components\\App.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAABQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-07-13T12:08:30.85Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-13T12:08:30.85Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 18,
               "Title": "Ventanas.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Ventanas.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Ventanas.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Ventanas.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Ventanas.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Ventanas.razor",
               "RelativeToolTip": "Components\\Pages\\Ventanas.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAEkAAAAlAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-06T08:24:35.401Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-06T08:24:35.401Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 11,
               "Title": "AnalizadorSesiones.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\AnalizadorSesiones.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\AnalizadorSesiones.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\AnalizadorSesiones.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\AnalizadorSesiones.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\AnalizadorSesiones.razor",
               "RelativeToolTip": "Components\\Pages\\AnalizadorSesiones.razor",
               "ViewState": "AgIAAAwAAAAAAAAAAIBJwEwAAABcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-13T07:13:15.413Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-13T07:13:15.413Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 12,
               "Title": "SinopticoViewer.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoViewer.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\SinopticoViewer.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\SinopticoViewer.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\SinopticoViewer.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\SinopticoViewer.razor",
               "RelativeToolTip": "Components\\Pages\\SinopticoViewer.razor",
               "ViewState": "AgIAALoCAAAAAAAAAIBJwA8FAABNAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-11T09:15:13.431Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-11T09:15:13.431Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 14,
               "Title": "NavMenu.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\NavMenu.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Layout\\NavMenu.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\NavMenu.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Layout\\NavMenu.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Layout\\NavMenu.razor",
               "RelativeToolTip": "Components\\Layout\\NavMenu.razor",
               "ViewState": "AgIAAAwAAAAAAAAAAIBJwBMAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-08-13T08:42:17.667Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-13T08:42:17.667Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 19,
               "Title": "update_db.py",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\update_db.py",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\update_db.py",
               "RelativeDocumentMoniker": "update_db.py",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\update_db.py",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\update_db.py",
               "RelativeToolTip": "update_db.py",
               "ViewState": "AgIAAAwAAAAAAAAAAIBJwCwAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-08-06T09:18:21.983Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-06T09:18:21.983Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 21,
               "Title": "Senales.razor",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Senales.razor",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Senales.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Senales.razor",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Components\\Pages\\Senales.razor",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Components\\Pages\\Senales.razor",
               "RelativeToolTip": "Components\\Pages\\Senales.razor",
               "ViewState": "AgIAABoBAAAAAAAAAAAMwCgBAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-04-14T06:26:26.861Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-14T06:26:26.861Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 20,
               "Title": "bootstrap-grid.css",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
               "RelativeDocumentMoniker": "wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
               "RelativeToolTip": "wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-grid.css",
               "ViewState": "AgIAAA8EAAAAAAAAAADwvyIEAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2026-07-14T12:57:08.948Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-14T12:57:08.948Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 24,
               "Title": "SessionStateService.cs",
-              "DocumentMoniker": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SessionStateService.cs",
+              "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\SessionStateService.cs",
               "RelativeDocumentMoniker": "Services\\SessionStateService.cs",
-              "ToolTip": "C:\\Users\\ivan.indias\\source\\repos\\APSWebMonitor\\Services\\SessionStateService.cs",
+              "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Services\\SessionStateService.cs",
               "RelativeToolTip": "Services\\SessionStateService.cs",
               "ViewState": "AgIAAKkAAAAAAAAAAAAIwK8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-15T09:40:13.228Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-15T09:40:13.228Z"
             }
           ]
         }

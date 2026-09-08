@@ -20,6 +20,8 @@ builder.Services.AddScoped<ApsDataService>();
 builder.Services.AddScoped<SessionStateService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
 builder.Services.AddHttpClient<SepsaProtocolClient>();
+builder.Services.AddHttpClient("SepsaMonitor"); // cliente nombrado para MonitorStateService (Singleton)
+builder.Services.AddSingleton<MonitorStateService>();
 
 // Authentication & Authorization
 builder.Services.AddAuthentication();

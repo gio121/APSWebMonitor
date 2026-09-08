@@ -10,6 +10,7 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject SessionStateService SessionState
+@inject MonitorStateService MonitorState
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-6">
@@ -156,6 +157,7 @@ else
     {
         await LoadData();
         SessionState.OnStateChanged += SyncValues;
+        MonitorState.OnStateChanged += SyncValues;
     }
 
     private void SyncValues()
@@ -165,6 +167,12 @@ else
 
     private double GetCurrentValue(Signal signal)
     {
+        // Prioridad: monitorización en vivo > sesión grabada > valor por defecto de DB
+        if (MonitorState.IsMonitoring)
+        {
+            var liveValues = MonitorState.GetCurrentValues();
+            return liveValues.TryGetValue(signal.Id, out var liveVal) ? liveVal : signal.ValorActual;
+        }
         if (SessionState.IsLoaded)
         {
             var values = SessionState.GetCurrentValues();
@@ -185,6 +193,7 @@ else
     public void Dispose()
     {
         SessionState.OnStateChanged -= SyncValues;
+        MonitorState.OnStateChanged -= SyncValues;
     }
 
     private async Task LoadData()

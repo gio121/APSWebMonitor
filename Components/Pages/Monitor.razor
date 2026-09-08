@@ -5,14 +5,14 @@
 @using ApsMonitor.Services
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
-@inject SepsaProtocolClient SepsaClient
+@inject MonitorStateService MonitorState
 @inject ApsDataService DataService
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
     <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
-    <MudChip T="string" Color="@(_isConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
-        @(_isConnected ? "Conectado" : "Desconectado")
+    <MudChip T="string" Color="@(MonitorState.IsConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+        @(MonitorState.IsConnected ? "Conectado" : "Desconectado")
     </MudChip>
 </div>
 
@@ -25,17 +25,17 @@
                 CONFIGURACIÓN DE RED
             </MudText>
 
-            <MudTextField @bind-Value="_ipAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" />
-            <MudTextField @bind-Value="_port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 80 / 8080" />
-            <MudTextField @bind-Value="_payloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
+            <MudTextField @bind-Value="MonitorState.IpAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" Disabled="@MonitorState.IsConnected" />
+            <MudTextField @bind-Value="MonitorState.Port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 80 / 8080" Disabled="@MonitorState.IsConnected" />
+            <MudTextField @bind-Value="MonitorState.PayloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
 
-            <MudButton Variant="Variant.Filled" Color="@(_isConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@_isConnecting">
-                @if (_isConnecting)
+            <MudButton Variant="Variant.Filled" Color="@(MonitorState.IsConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@MonitorState.IsConnecting">
+                @if (MonitorState.IsConnecting)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
                     <span>Conectando...</span>
                 }
-                else if (_isConnected)
+                else if (MonitorState.IsConnected)
                 {
                     <MudIcon Icon="@Icons.Material.Filled.PowerOff" Class="mr-2" />
                     <span>Desconectar</span>
@@ -47,14 +47,14 @@
                 }
             </MudButton>
 
-            @if (_isConnected)
+            @if (MonitorState.IsConnected)
             {
                 <MudButton Variant="Variant.Filled"
-                           Color="@(_isMonitoring ? Color.Warning : Color.Primary)"
+                           Color="@(MonitorState.IsMonitoring ? Color.Warning : Color.Primary)"
                            FullWidth="true"
                            OnClick="ToggleMonitoring"
                            Class="mt-2 fw-bold">
-                    @if (_isMonitoring)
+                    @if (MonitorState.IsMonitoring)
                     {
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
                         <span>Detener Monitorización</span>
@@ -70,7 +70,7 @@
             <MudDivider Class="my-4 custom-divider" />
 
             <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">Acciones de Prueba</MudText>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!_isConnected || _isSending || _isMonitoring" Class="mb-2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!MonitorState.IsConnected || _isSending || MonitorState.IsMonitoring" Class="mb-2">
                 @if (_isSending)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -96,7 +96,7 @@
                             <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" />
                         </div>
                         <span class="console-title">TRÁFICO DE RED</span>
-                        @if (_isConnected)
+                        @if (MonitorState.IsConnected)
                         {
                             <span class="console-live-dot"></span>
                             <span class="console-live-text">LIVE</span>
@@ -121,7 +121,7 @@
                 </div>
 
                 <!-- Console Body -->
-                <div class="console-output flex-grow-1">
+                <div class="console-output flex-grow-1" id="console-output">
                     <div class="console-scanlines"></div>
                     @if (_logs.Count == 0)
                     {
@@ -581,22 +581,13 @@ else
 </style>
 
 @code {
-    private string _ipAddress = "192.168.15.1";
-    private string _port = "8080";
-    private bool _isConnected = false;
-    private bool _isConnecting = false;
-    private bool _isSending = false;
-    private bool _isMonitoring = false;
-    private CancellationTokenSource? _monitoringCts;
-    private string _payloadHex = "00 00";
-    private List<LogEntry> _logs = new();
-
-    private List<Signal> _signals = new();
-    private Dictionary<int, List<Signal>> _signalsByNode = new();
-    private Dictionary<int, int> _nodeSizes = new();
+    // Vista local: snapshot de logs/valores tomado en cada re-render
+    private IReadOnlyList<MonitorLogEntry> _logs = Array.Empty<MonitorLogEntry>();
     private List<SignalValue> _currentValues = new();
-    private Dictionary<int, double> _previousValues = new();
+    private Dictionary<int, double> _previousSnapshot = new();
+
     private string _searchString = "";
+    private bool _isSending = false;
     private bool _isLoadingSignals = false;
 
     private Func<SignalValue, bool> _quickFilter => x =>
@@ -609,22 +600,54 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadSignalsAsync();
+        // Carga inicial de señales para construir la vista (aunque aún no haya valores en vivo)
+        await LoadSignalViewAsync();
+        SyncFromService();
+        MonitorState.OnStateChanged += OnMonitorStateChanged;
     }
 
-    private async Task LoadSignalsAsync()
+    /// <summary>
+    /// Callback del servicio → refresca snapshot y solicita re-render en el hilo de UI.
+    /// </summary>
+    private void OnMonitorStateChanged()
+    {
+        SyncFromService();
+        InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Copia los datos del servicio al estado local del componente para renderizarlos.
+    /// </summary>
+    private void SyncFromService()
+    {
+        _logs = MonitorState.Logs;
+
+        var liveValues = MonitorState.GetCurrentValues();
+
+        // Actualizar los SignalValue con los valores en vivo
+        foreach (var sv in _currentValues)
+        {
+            if (liveValues.TryGetValue(sv.Id, out var physVal))
+            {
+                bool changed = _previousSnapshot.TryGetValue(sv.Id, out var prev) && Math.Abs(prev - physVal) > 0.00001;
+                sv.FormattedValue = FormatSignalValue(sv, physVal);
+                sv.RawValue = physVal;
+                sv.HasChanged = changed;
+            }
+        }
+        _previousSnapshot = liveValues;
+    }
+
+    /// <summary>
+    /// Carga las señales de DB para construir la lista de SignalValue (estructura de vista).
+    /// </summary>
+    private async Task LoadSignalViewAsync()
     {
         _isLoadingSignals = true;
         try
         {
-            _signals = await DataService.GetSignalsAsync();
-            _signalsByNode = _signals.GroupBy(s => s.NodoNumero).ToDictionary(g => g.Key, g => g.ToList());
-            _nodeSizes = _signalsByNode.ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value.Count > 0 ? kvp.Value.Max(s => s.BytePosicion + SessionParserService.GetByteSize(s.TipoVariable)) : 0
-            );
-
-            _currentValues = _signals.Select(sig => new SignalValue
+            var signals = await DataService.GetSignalsAsync();
+            _currentValues = signals.Select(sig => new SignalValue
             {
                 Id = sig.Id,
                 Tag = sig.Tag,
@@ -651,67 +674,48 @@ else
 
     private async Task ToggleConnection()
     {
-        if (_isConnected)
+        if (MonitorState.IsConnected)
         {
-            StopMonitoring();
-            _isConnected = false;
-            LogMsg("Sistema", "Desconectado. Deteniendo monitorización.", false, false);
-            Snackbar.Add("Monitorización detenida", Severity.Info);
+            MonitorState.Disconnect();
+            Snackbar.Add("Desconectado", Severity.Info);
         }
         else
         {
-            if (string.IsNullOrWhiteSpace(_ipAddress))
+            if (string.IsNullOrWhiteSpace(MonitorState.IpAddress))
             {
                 Snackbar.Add("Introduce una dirección IP válida", Severity.Warning);
                 return;
             }
-
-            _isConnecting = true;
-            StateHasChanged();
-            
-            // Simulate connection delay
-            await Task.Delay(500);
-            
-            _isConnected = true;
-            _isConnecting = false;
-            
-            var baseUrl = $"http://{_ipAddress}:{_port}";
-            LogMsg("Sistema", $"Conectado a {baseUrl}. Listo para enviar/recibir.", false, false);
+            await MonitorState.ConnectAsync();
             Snackbar.Add("Conectado a la tarjeta de comunicaciones", Severity.Success);
+        }
+    }
+
+    private void ToggleMonitoring()
+    {
+        if (MonitorState.IsMonitoring)
+        {
+            MonitorState.StopMonitoring();
+            Snackbar.Add("Monitorización detenida", Severity.Info);
+        }
+        else
+        {
+            MonitorState.StartMonitoring();
+            Snackbar.Add("Monitorización continua iniciada", Severity.Success);
         }
     }
 
     private async Task TestSendPayload()
     {
-        if (!_isConnected) return;
-        
         _isSending = true;
         StateHasChanged();
-
         try
         {
-            var baseUrl = $"{_ipAddress}:{_port}";
-            var payload = SepsaProtocolClient.ParsePayload(_payloadHex);
-            var frame = SepsaClient.BuildFrame(payload);
-
-            LogMsg("Trama", $"TX {SepsaProtocolClient.ToHex(frame)}", true, false);
-
-            var response = await SepsaClient.SendAsync(baseUrl, frame);
-            
-            if (response.IsSuccess)
-            {
-                var responseHex = SepsaProtocolClient.ToHex(response.Payload);
-                LogMsg("Respuesta", $"RX {responseHex}", false, false);
-                ProcessIncomingFrame(response.Payload);
-            }
-            else
-            {
-                LogMsg("Error", $"Fallo en {response.Endpoint}. Codigo: {response.StatusCode}. {response.Error}", false, true);
-            }
+            await MonitorState.SendTestFrameAsync();
+            SyncFromService();
         }
         catch (Exception ex)
         {
-            LogMsg("Excepción", ex.Message, false, true);
             Snackbar.Add($"Error al enviar: {ex.Message}", Severity.Error);
         }
         finally
@@ -721,197 +725,23 @@ else
         }
     }
 
-    private void ToggleMonitoring()
+    private void ClearLogs()
     {
-        if (!_isConnected) return;
-
-        if (_isMonitoring)
-        {
-            StopMonitoring();
-            LogMsg("Sistema", "Monitorización continua detenida.", false, false);
-            Snackbar.Add("Monitorización detenida", Severity.Info);
-        }
-        else
-        {
-            _isMonitoring = true;
-            _monitoringCts = new CancellationTokenSource();
-            LogMsg("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
-            Snackbar.Add("Monitorización continua iniciada", Severity.Success);
-
-            _ = RunMonitoringLoopAsync(_monitoringCts.Token);
-        }
+        MonitorState.ClearLogs();
     }
 
-    private void StopMonitoring()
+    private static string FormatSignalValue(SignalValue sv, double value)
     {
-        if (_isMonitoring)
-        {
-            _isMonitoring = false;
-            try
-            {
-                _monitoringCts?.Cancel();
-                _monitoringCts?.Dispose();
-            }
-            catch { }
-            _monitoringCts = null;
-        }
-    }
+        if (sv.IsAscii)
+            return ((char)Math.Max(0, Math.Min(255, value))).ToString();
 
-    private async Task RunMonitoringLoopAsync(CancellationToken cancellationToken)
-    {
-        byte currentFrameType = 0x1A;
-
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested && _isConnected)
-            {
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-
-                try
-                {
-                    var baseUrl = $"{_ipAddress}:{_port}";
-                    var payload = SepsaProtocolClient.ParsePayload(_payloadHex);
-                    var frame = SepsaClient.BuildFrame(payload, messageType: currentFrameType);
-
-                    LogMsg("Trama", $"TX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(frame)}", true, false);
-
-                    using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    reqCts.CancelAfter(500);
-
-                    var response = await SepsaClient.SendAsync(baseUrl, frame, reqCts.Token);
-                    if (response.IsSuccess)
-                    {
-                        var responseHex = SepsaProtocolClient.ToHex(response.Payload);
-                        LogMsg("Respuesta", $"RX [{currentFrameType:X2}] {responseHex}", false, false);
-                        ProcessIncomingFrame(response.Payload);
-                    }
-                    else
-                    {
-                        LogMsg("Error", $"Fallo en {response.Endpoint}. Código: {response.StatusCode}. {response.Error}", false, true);
-                    }
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-                catch (OperationCanceledException)
-                {
-                    LogMsg("Timeout", $"Sin respuesta en trama [{currentFrameType:X2}] tras 500ms", false, true);
-                }
-                catch (Exception ex)
-                {
-                    LogMsg("Excepción", $"Error enviando trama [{currentFrameType:X2}]: {ex.Message}", false, true);
-                }
-
-                // Alternar tipo de trama: 1A -> 1D -> 1A ...
-                currentFrameType = (currentFrameType == 0x1A) ? (byte)0x1D : (byte)0x1A;
-
-                try
-                {
-                    await InvokeAsync(StateHasChanged);
-                }
-                catch { }
-
-                sw.Stop();
-                var remainingMs = (int)(100 - sw.ElapsedMilliseconds);
-                if (remainingMs > 0)
-                {
-                    await Task.Delay(remainingMs, cancellationToken);
-                }
-                else
-                {
-                    await Task.Delay(1, cancellationToken);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Cancelación esperada
-        }
-        catch (Exception ex)
-        {
-            LogMsg("Excepción", $"Error en bucle de monitorización: {ex.Message}", false, true);
-        }
-        finally
-        {
-            _isMonitoring = false;
-            try
-            {
-                await InvokeAsync(StateHasChanged);
-            }
-            catch { }
-        }
-    }
-
-    public void Dispose()
-    {
-        StopMonitoring();
-    }
-
-    /// <summary>
-    /// Decodifica una trama de respuesta según el formato del protocolo SEPSA:
-    ///   Byte 0:        SYNC (0xAA)
-    ///   Byte 1-2:      NBYTES (longitud total de la trama, Little Endian)
-    ///   Byte 3:        DEST (dirección nodo destino)
-    ///   Byte 4:        ORIG (dirección nodo origen)
-    ///   Byte 5:        FT   (Frame Type)
-    ///   Byte 6..N-2:   DATA (datos de señales)
-    ///   Byte N-1:      CRC  (1 byte)
-    /// Lógica idéntica a SessionParserService.Parse().
-    /// </summary>
-    private void ProcessIncomingFrame(byte[] frameData)
-    {
-        if (frameData == null || frameData.Length < 7 || _signals.Count == 0) return;
-
-        // Payload = trama completa - 6 bytes cabecera - 1 byte CRC
-        int payloadLength = frameData.Length - 7;
-        if (payloadLength <= 0) return;
-
-        // Identificar nodo por tamaño de payload (mismo algoritmo que SessionParserService)
-        int? matchingNode = null;
-        int minDiff = int.MaxValue;
-        foreach (var kvp in _nodeSizes)
-        {
-            int diff = Math.Abs(payloadLength - kvp.Value);
-            if (diff < minDiff)
-            {
-                minDiff = diff;
-                matchingNode = kvp.Key;
-            }
-        }
-
-        if (matchingNode.HasValue && _signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
-        {
-            // Extraer datos usando los 6 bytes de cabecera como offset (DATA empieza en byte 6)
-            foreach (var sig in nodeSignals)
-            {
-                int offset = sig.BytePosicion + 6;
-                if (offset + SessionParserService.GetByteSize(sig.TipoVariable) <= frameData.Length)
-                {
-                    double rawValue = SessionParserService.ReadValue(frameData, offset, sig.TipoVariable);
-                    double physValue = ApsCalculationUtils.CalculatePhysical(rawValue, sig.Escala, sig.Offset);
-
-                    var cv = _currentValues.FirstOrDefault(v => v.Id == sig.Id);
-                    if (cv != null)
-                    {
-                        bool changed = _previousValues.TryGetValue(sig.Id, out var prev) && Math.Abs(prev - physValue) > 0.00001;
-                        _previousValues[sig.Id] = physValue;
-
-                        cv.FormattedValue = FormatSignalValue(sig, physValue);
-                        cv.RawValue = rawValue;
-                        cv.HasChanged = changed;
-                    }
-                }
-            }
-        }
+        return value.ToString("0.##") + (string.IsNullOrEmpty(sv.Unidad) ? "" : " " + sv.Unidad);
     }
 
     private static string FormatSignalValue(Signal signal, double value)
     {
         if (signal.IsAscii)
-        {
             return ((char)Math.Max(0, Math.Min(255, value))).ToString();
-        }
         else if (signal.BitCount > 1 && signal.BitTextoActivo != null && signal.BitTextoActivo.Any(t => !string.IsNullOrEmpty(t)))
         {
             var activeBits = new List<string>();
@@ -919,48 +749,17 @@ else
             for (int i = 0; i < 16; i++)
             {
                 if ((intVal & (1 << i)) != 0 && !string.IsNullOrEmpty(signal.BitTextoActivo[i]))
-                {
                     activeBits.Add(signal.BitTextoActivo[i]!);
-                }
             }
             return activeBits.Count > 0 ? string.Join(", ", activeBits) : "0 (Todo OK)";
         }
         else
-        {
             return value.ToString(signal.Formato) + (string.IsNullOrEmpty(signal.Unidad) ? "" : " " + signal.Unidad);
-        }
     }
 
-    private void LogMsg(string prefix, string message, bool isSent, bool isError)
+    public void Dispose()
     {
-        _logs.Add(new LogEntry
-        {
-            Timestamp = DateTime.Now,
-            Message = $"[{prefix}] {message}",
-            IsSent = isSent,
-            IsError = isError
-        });
-        
-        // Keep only last 100 logs
-        if (_logs.Count > 100)
-        {
-            _logs.RemoveAt(0);
-        }
-        
-        // Use JS interop later to auto-scroll to bottom if needed. For now simple enough.
-    }
-
-    private void ClearLogs()
-    {
-        _logs.Clear();
-    }
-
-    private class LogEntry
-    {
-        public DateTime Timestamp { get; set; }
-        public string Message { get; set; } = "";
-        public bool IsSent { get; set; }
-        public bool IsError { get; set; }
+        MonitorState.OnStateChanged -= OnMonitorStateChanged;
     }
 
     private class SignalValue

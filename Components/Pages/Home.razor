@@ -5,6 +5,7 @@
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject SessionStateService SessionState
+@inject MonitorStateService MonitorState
 @inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
@@ -194,10 +195,17 @@ else
         // Use a stored delegate so we can unsubscribe the exact same handler on dispose.
         _onStateChangedHandler = () => InvokeAsync(StateHasChanged);
         SessionState.OnStateChanged += _onStateChangedHandler;
+        MonitorState.OnStateChanged += _onStateChangedHandler;
     }
 
     private double GetCurrentValue(Signal signal)
     {
+        // Prioridad: monitorización en vivo > sesión grabada > valor por defecto de DB
+        if (MonitorState.IsMonitoring)
+        {
+            var liveValues = MonitorState.GetCurrentValues();
+            return liveValues.TryGetValue(signal.Id, out var liveVal) ? liveVal : signal.ValorActual;
+        }
         if (SessionState.IsLoaded)
         {
             var values = SessionState.GetCurrentValues();
@@ -242,6 +250,9 @@ else
     public void Dispose()
     {
         if (_onStateChangedHandler != null)
+        {
             SessionState.OnStateChanged -= _onStateChangedHandler;
+            MonitorState.OnStateChanged -= _onStateChangedHandler;
+        }
     }
 }
