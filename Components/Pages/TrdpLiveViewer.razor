@@ -1,0 +1,1239 @@
+@page "/trdp-live"
+@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@rendermode InteractiveServer
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@using System.Text.Json
+@inject TrdpWebSocketService WsService
+@inject TrdpBackendService BackendService
+@inject TrdpConfigService ConfigService
+@inject TrdpPcapParserService PcapParser
+@inject MonitorStateService MonitorState
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>Visualizador TRDP en Tiempo Real y Reproductor PCAP</PageTitle>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER DE ESTADO & CONTROLES DE MODO
+══════════════════════════════════════════════════════════ -->
+<div class="trdp-live-header">
+    <div class="d-flex align-center gap-3">
+        <MudIcon Icon="@(IsPcapMode ? Icons.Material.Filled.Movie : Icons.Material.Filled.Stream)" Class="trdp-live-icon" />
+        <div>
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.h5" Class="fw-bold">
+                    @(IsPcapMode ? "Reproductor Wireshark PCAP (Offline)" : "Visualizador TRDP en Tiempo Real")
+                </MudText>
+                @if (!IsPcapMode)
+                {
+                    @if (WsService.IsConnected)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Wifi">
+                            WS Conectado
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.WifiOff">
+                            WS Desconectado
+                        </MudChip>
+                    }
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.FolderZip">
+                        Modo Captura PCAP (Filtrado ComID)
+                    </MudChip>
+                }
+            </div>
+            <MudText Typo="Typo.caption" Class="trdp-muted">
+                @(IsPcapMode ? "Reproducción local paginada con filtrado automático por ComID (.pcap, .pcapng, .json)" : $"Streaming directo vía WebSocket (ws://{_deviceHost}/ws/trdp)")
+            </MudText>
+        </div>
+    </div>
+
+    <!-- Toggle Selector Modo (En Vivo vs Reproductor PCAP) -->
+    <div class="d-flex align-center gap-3 flex-wrap">
+        <MudToggleGroup T="string" Value="_activeMode" ValueChanged="OnModeChanged" Color="Color.Primary" Size="Size.Small">
+            <MudToggleItem Value="@("live")" Text="En Vivo (WebSocket)" Icon="@Icons.Material.Filled.Sensors" />
+            <MudToggleItem Value="@("pcap")" Text="Reproductor Wireshark" Icon="@Icons.Material.Filled.PlayCircle" />
+        </MudToggleGroup>
+
+        <!-- Quick Stats (En Vivo) -->
+        @if (!IsPcapMode)
+        {
+            <div class="trdp-stat-box">
+                <span class="stat-label">FRECUENCIA</span>
+                <span class="stat-value">@WsService.RefreshRateHz.ToString("F1") Hz</span>
+            </div>
+            <div class="trdp-stat-box">
+                <span class="stat-label">PAQUETES</span>
+                <span class="stat-value">@WsService.TotalPacketsReceived</span>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     BARRA MODO EN VIVO (WEBSOCKET)
+══════════════════════════════════════════════════════════ -->
+@if (!IsPcapMode)
+{
+    <MudPaper Elevation="0" Class="pa-3 mb-4 trdp-control-bar">
+        <MudGrid Spacing="2" Class="align-center">
+            <!-- Device IP / Host -->
+            <MudItem xs="12" sm="4" md="3">
+                <MudTextField @bind-Value="_deviceHost" Label="IP / Host Placa" Placeholder="192.168.15.1:8080"
+                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Computer" />
+            </MudItem>
+
+            <!-- Configured Frame / Car Selector -->
+            <MudItem xs="12" sm="5" md="4">
+                <MudSelect T="TrdpConfiguredFrameOption" Value="_selectedFrameOption"
+                           ValueChanged="OnFrameOptionChanged"
+                           Label="Trama / Dataset Configurado" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           ToStringFunc="@(f => f?.DisplayText ?? "Seleccionar trama...")">
+                    @foreach (var opt in _frameOptions)
+                    {
+                        <MudSelectItem Value="@opt">@opt.DisplayText</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <!-- ComID Badge -->
+            <MudItem xs="6" sm="3" md="2" Class="d-flex align-center">
+                @if (_selectedFrameOption != null)
+                {
+                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Outlined">
+                        ComID: @_selectedFrameOption.ComId
+                    </MudChip>
+                }
+            </MudItem>
+
+            <!-- Action Buttons -->
+            <MudItem xs="12" sm="12" md="3" Class="d-flex gap-2 align-center justify-end">
+                @if (!WsService.IsConnected)
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="ConnectWebSocket">
+                        Conectar
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Stop" OnClick="DisconnectWebSocket">
+                        Desconectar
+                    </MudButton>
+                }
+
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="FetchSnapshotRest">
+                    REST
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        @if (!string.IsNullOrEmpty(_lastStatusMessage))
+        {
+            <div class="mt-2 text-caption trdp-muted d-flex align-center gap-1">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" Style="font-size:0.9rem;" />
+                @_lastStatusMessage
+            </div>
+        }
+    </MudPaper>
+}
+else
+{
+    <!-- ══════════════════════════════════════════════════════════
+         BARRA DE REPRODUCTOR PCAP / WIRESHARK (OFFLINE PAGINADO)
+    ══════════════════════════════════════════════════════════ -->
+    <MudPaper Elevation="0" Class="pa-3 mb-4 trdp-control-bar">
+        <MudGrid Spacing="2" Class="align-center">
+            <!-- Cargar Archivo PCAP (Hasta 5GB por streaming) -->
+            <MudItem xs="12" sm="5" md="4" Class="d-flex align-center gap-2">
+                <InputFile id="pcapInput" OnChange="OnPcapFileSelected" accept=".pcap,.pcapng,.json,.cap,.txt" style="display:none;" />
+                <label htmlFor="pcapInput" Class="mb-0">
+                    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.UploadFile" for="pcapInput" Disabled="_isLoadingFile">
+                        @if (_isLoadingFile)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="width:16px; height:16px;" />
+                            <span>Cargando (@_uploadProgressPercent%)...</span>
+                        }
+                        else
+                        {
+                            <span>Abrir Captura Wireshark</span>
+                        }
+                    </MudButton>
+                </label>
+
+                @if (!string.IsNullOrEmpty(_pcapFileName))
+                {
+                    <span class="text-caption fw-bold text-truncate" style="max-width:180px; color:#38bdf8;" title="@_pcapFileName">
+                        @_pcapFileName
+                    </span>
+                }
+            </MudItem>
+
+            <!-- Configured Frame / Dataset Decoder Selector -->
+            <MudItem xs="12" sm="7" md="4">
+                <MudSelect T="TrdpConfiguredFrameOption" Value="_selectedFrameOption"
+                           ValueChanged="OnFrameOptionChanged"
+                           Label="Filtrar y Decodificar con Dataset" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           ToStringFunc="@(f => f?.DisplayText ?? "Seleccionar trama...")">
+                    @foreach (var opt in _frameOptions)
+                    {
+                        <MudSelectItem Value="@opt">@opt.DisplayText</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <!-- Paginación de Bloques / Memoria y Trama Real Wireshark -->
+            <MudItem xs="12" sm="12" md="4" Class="d-flex align-center justify-end gap-2 flex-wrap">
+                @if (_chunkResult != null)
+                {
+                    @if (_chunkResult.TotalFrames > 0)
+                    {
+                        <div class="d-flex align-center gap-1">
+                            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Color="Color.Info"
+                                           Disabled="@(_chunkResult.CurrentChunkIndex == 0 || _isLoadingChunk)"
+                                           OnClick="PrevChunk" Title="Bloque anterior" />
+
+                            <span class="text-caption fw-bold" style="color:#a78bfa;">
+                                Bloque @(_chunkResult.CurrentChunkIndex + 1)/@_chunkResult.TotalChunks
+                            </span>
+
+                            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Info"
+                                           Disabled="@(_chunkResult.CurrentChunkIndex >= _chunkResult.TotalChunks - 1 || _isLoadingChunk)"
+                                           OnClick="NextChunk" Title="Bloque siguiente" />
+                        </div>
+
+                        <!-- Número de trama filtrada -->
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Title="Posición dentro de las tramas filtradas">
+                            Trama @(GlobalFrameNumber) / @_chunkResult.TotalFrames
+                        </MudChip>
+
+                        <!-- Número de Trama Real de Wireshark -->
+                        @if (CurrentCapturedFrame != null && CurrentCapturedFrame.WiresharkFrameNumber > 0)
+                        {
+                            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled"
+                                     Icon="@Icons.Material.Filled.Search" Class="fw-bold" 
+                                     Title="Número de trama real en el archivo Wireshark original (frame.number)">
+                                Trama Wireshark #@CurrentCapturedFrame.WiresharkFrameNumber
+                            </MudChip>
+                        }
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">
+                            Sin tramas para ComID @_selectedComId
+                        </MudChip>
+                    }
+                }
+            </MudItem>
+        </MudGrid>
+
+        <!-- Barra de Progreso de Carga en Tiempo Real con Porcentaje (%) -->
+        @if (_isLoadingFile)
+        {
+            <div class="mt-2 pa-2 trdp-upload-progress">
+                <div class="d-flex justify-space-between align-center mb-1">
+                    <span class="text-caption fw-bold" style="color:#38bdf8;">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="width:14px; height:14px;" />
+                        Cargando captura a disco: @_uploadProgressPercent%
+                    </span>
+                    <span class="text-caption trdp-muted">
+                        @FormatFileSize(_uploadBytesRead) de @FormatFileSize(_totalFileBytes)
+                    </span>
+                </div>
+                <MudProgressLinear Color="Color.Info" Value="@_uploadProgressPercent" Size="Size.Small" Rounded="true" Stripe="true" />
+            </div>
+        }
+
+        <!-- REPRODUCTOR MULTIMEDIA & SLIDER DEL BLOQUE ACTIVO -->
+        @if (_capturedFrames.Count > 0)
+        {
+            <div class="mt-3 pa-2 trdp-player-panel">
+                <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2">
+                    <!-- Botones de Control del Reproductor -->
+                    <div class="d-flex align-center gap-1">
+                        <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Color="Color.Inherit" Title="Ir al inicio del bloque" OnClick="FirstFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" Color="Color.Inherit" Title="Trama anterior" OnClick="PrevFrame" />
+
+                        @if (_isPlaying)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small" StartIcon="@Icons.Material.Filled.Pause" OnClick="TogglePlay">
+                                Pausa
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="TogglePlay">
+                                Reproducir
+                            </MudButton>
+                        }
+
+                        <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" Color="Color.Inherit" Title="Trama siguiente" OnClick="NextFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" Color="Color.Inherit" Title="Ir al final del bloque" OnClick="LastFrame" />
+                    </div>
+
+                    <!-- Timestamps -->
+                    <div class="d-flex align-center gap-3">
+                        <span class="player-time-label">
+                            REL: <span class="player-time-val">+@CurrentCapturedFrame?.RelativeTime.ToString(@"hh\:mm\:ss\.fff")</span>
+                        </span>
+                        <span class="player-time-label">
+                            HORA: <span class="player-time-val">@CurrentCapturedFrame?.Timestamp.ToString("HH:mm:ss.fff")</span>
+                        </span>
+                    </div>
+
+                    <!-- Velocidad de Reproducción -->
+                    <div class="d-flex align-center gap-1">
+                        <MudText Typo="Typo.caption" Class="trdp-muted mr-1">Velocidad:</MudText>
+                        <MudSelect T="double" Value="_playbackSpeed" ValueChanged="OnSpeedChanged"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense" Class="trdp-speed-select">
+                            <MudSelectItem Value="0.5">0.5x</MudSelectItem>
+                            <MudSelectItem Value="1.0">1.0x (Normal)</MudSelectItem>
+                            <MudSelectItem Value="2.0">2.0x</MudSelectItem>
+                            <MudSelectItem Value="5.0">5.0x</MudSelectItem>
+                            <MudSelectItem Value="10.0">10.0x</MudSelectItem>
+                        </MudSelect>
+                    </div>
+                </div>
+
+                <!-- Slider de Tiempo del Bloque -->
+                <MudSlider T="int" Value="_pcapFrameIndex" ValueChanged="OnSliderIndexChanged"
+                           Min="0" Max="@(_capturedFrames.Count - 1)" Color="Color.Info" Class="ma-0" />
+            </div>
+        }
+    </MudPaper>
+}
+
+<!-- ══════════════════════════════════════════════════════════
+     CONTENIDO PRINCIPAL (PARSED & HEX VIEW)
+══════════════════════════════════════════════════════════ -->
+@if (_latestFrame is null)
+{
+    <MudPaper Elevation="0" Class="pa-8 text-center trdp-empty-card">
+        <MudIcon Icon="@(IsPcapMode ? Icons.Material.Filled.UploadFile : Icons.Material.Filled.Inbox)" Style="font-size:64px; opacity:0.15;" />
+        <MudText Typo="Typo.h6" Class="mt-3 trdp-muted">
+            @(IsPcapMode ? "No hay tramas para mostrar en este bloque/dataset." : "Esperando datos de trama TRDP...")
+        </MudText>
+        <MudText Typo="Typo.body2" Class="trdp-muted mt-1">
+            @if (IsPcapMode)
+            {
+                <span>Pulsa <b>Abrir Captura Wireshark</b> para cargar un archivo <code>.pcap</code>, <code>.pcapng</code> o <code>.json</code>. Si ya cargaste uno, verifica que el dataset seleccionado coincida con el <code>ComID</code> de la captura.</span>
+            }
+            else
+            {
+                <span>Modo En Vivo. Pulsa <b>Conectar</b> para iniciar el streaming vía WebSocket desde la placa <code>@_deviceHost</code>.</span>
+            }
+        </MudText>
+    </MudPaper>
+}
+else
+{
+    <MudTabs Rounded="true" ApplyEffectsToContainer="true" Color="Color.Dark" Class="trdp-view-tabs" PanelClass="pt-4">
+
+        <!-- ── Tab 1: Variables Parseadas e Indicadores LED ──────────── -->
+        <MudTabPanel Text="Variables Parseadas" Icon="@Icons.Material.Filled.TableChart">
+
+            <div class="d-flex align-center justify-space-between mb-3 flex-wrap gap-2">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold">
+                        Dataset: <span style="color:#38bdf8;">@_latestFrame.Dataset</span> · ComID: <span style="color:#a78bfa;">@_latestFrame.ComId</span>
+                    </MudText>
+                    @if (_selectedFrameOption != null)
+                    {
+                        <MudText Typo="Typo.caption" Class="trdp-muted">
+                            Red: @_selectedFrameOption.NetworkName (@_selectedFrameOption.FrameName)
+                        </MudText>
+                    }
+                </div>
+                <div class="d-flex align-center gap-3">
+                    @if (IsPcapMode && CurrentCapturedFrame != null)
+                    {
+                        <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#f59e0b;">
+                            Wireshark frame.number == @CurrentCapturedFrame.WiresharkFrameNumber
+                        </MudText>
+                    }
+                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                        Tamaño payload: @_latestFrame.Size bytes @(IsPcapMode ? "(Wireshark PCAP - TRDP Header Removido)" : "")
+                    </MudText>
+                </div>
+            </div>
+
+            <!-- Bitfields Badges / LED Panel -->
+            @if (_bitFields.Count > 0)
+            {
+                <MudPaper Elevation="0" Class="pa-4 mb-4 trdp-led-panel">
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold mb-3" Style="color:#38bdf8;">
+                        <MudIcon Icon="@Icons.Material.Filled.Memory" Size="Size.Small" Class="mr-1" />
+                        Estados Lógicos Decodificados (Bit Badges)
+                    </MudText>
+
+                    @foreach (var (varName, bits) in _bitFields)
+                    {
+                        <div class="mb-3">
+                            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="color:#94a3b8;">
+                                @varName.ToUpper()
+                            </MudText>
+                            <div class="d-flex gap-2 flex-wrap">
+                                @foreach (var (bitName, val) in bits)
+                                {
+                                    bool isOn = val == 1;
+                                    <div class="trdp-led-chip @(isOn ? "led-on" : "led-off")">
+                                        <span class="led-dot"></span>
+                                        <span class="led-name">@bitName</span>
+                                        <span class="led-val">@val</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </MudPaper>
+            }
+
+            <!-- Scalar / Numeric Variables Table -->
+            <MudPaper Elevation="0" Class="pa-2 trdp-vars-table">
+                <table class="trdp-table">
+                    <thead>
+                        <tr>
+                            <th>VARIABLE</th>
+                            <th>VALOR DECODIFICADO</th>
+                            <th>TIPO DETECTADO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_scalarVariables.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center trdp-muted py-3">No se detectaron variables escalares.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var (varName, valObj) in _scalarVariables)
+                            {
+                                <tr>
+                                    <td class="fw-bold" style="color:#e2e8f0;">@varName</td>
+                                    <td>
+                                        <span class="trdp-val-badge">@FormatValue(valObj)</span>
+                                    </td>
+                                    <td class="trdp-muted" style="font-size:0.8rem;">
+                                        @valObj.ValueKind.ToString()
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </MudPaper>
+
+        </MudTabPanel>
+
+        <!-- ── Tab 2: Visor Hexadecimal / Wireshark HexDump ──────────── -->
+        <MudTabPanel Text="Visor Hexadecimal / Raw" Icon="@Icons.Material.Filled.Code">
+            <div class="d-flex justify-space-between align-center mb-3">
+                <MudText Typo="Typo.subtitle1" Class="fw-bold">Raw HexDump</MudText>
+
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyHexToClipboard">
+                    Copiar Raw Hex
+                </MudButton>
+            </div>
+
+            <MudPaper Elevation="0" Class="pa-4 trdp-hex-box">
+                <pre class="hexdump-code">@_hexDumpText</pre>
+            </MudPaper>
+        </MudTabPanel>
+
+    </MudTabs>
+}
+
+<!-- ══════════════════════════════════════════════════════════
+     STYLES
+══════════════════════════════════════════════════════════ -->
+<style>
+    .trdp-live-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .trdp-live-icon {
+        font-size: 2.2rem !important;
+        color: #38bdf8 !important;
+    }
+    .trdp-stat-box {
+        background: #1a222c;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+        padding: 6px 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    .stat-label { font-size: 0.65rem; color: #64748b; font-weight: 700; letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.1rem; color: #38bdf8; font-weight: 700; font-family: monospace; }
+    .trdp-control-bar {
+        background: #1a222c;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+    }
+    .trdp-upload-progress {
+        background: #121820;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 8px;
+    }
+    .trdp-player-panel {
+        background: #121820;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+    }
+    .player-time-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 700;
+    }
+    .player-time-val {
+        font-family: Consolas, monospace;
+        color: #38bdf8;
+        font-weight: 700;
+    }
+    .trdp-speed-select {
+        width: 110px;
+    }
+    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-empty-card {
+        background: #1a222c;
+        border: 1px dashed rgba(255,255,255,0.08);
+        border-radius: 12px;
+    }
+
+    /* LED Badges */
+    .trdp-led-panel {
+        background: #151c24;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+    }
+    .trdp-led-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .trdp-led-chip.led-on {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        color: #4ade80;
+    }
+    .trdp-led-chip.led-on .led-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 8px #22c55e;
+    }
+    .trdp-led-chip.led-off {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #64748b;
+    }
+    .trdp-led-chip.led-off .led-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #475569;
+    }
+    .led-val { font-family: monospace; font-size: 0.7rem; opacity: 0.8; }
+
+    /* Tables & Hex */
+    .trdp-vars-table {
+        background: #151c24;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+    }
+    .trdp-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .trdp-table th {
+        text-align: left;
+        padding: 8px 12px;
+        font-size: 0.72rem;
+        color: #64748b;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .trdp-table td {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .trdp-val-badge {
+        font-family: Consolas, monospace;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.08);
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    /* Hex Dump */
+    .trdp-hex-box {
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        overflow-x: auto;
+    }
+    .hexdump-code {
+        font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #38bdf8;
+        line-height: 1.5;
+        margin: 0;
+    }
+</style>
+
+@code {
+    public class TrdpConfiguredFrameOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string NetworkName { get; set; } = string.Empty;
+        public string DatasetName { get; set; } = string.Empty;
+        public long ComId { get; set; }
+        public string FrameName { get; set; } = string.Empty;
+        public string Direction { get; set; } = "Rx";
+        public string Ip { get; set; } = string.Empty;
+
+        public string DisplayText => $"[{Direction}] {DatasetName} (ComID: {ComId}) — {NetworkName} ({FrameName})";
+    }
+
+    // Modo activo: "live" | "pcap"
+    private string _activeMode = "live";
+    private bool IsPcapMode => _activeMode == "pcap";
+
+    private string _deviceHost = string.Empty;
+    private List<TrdpConfiguredFrameOption> _frameOptions = new();
+    private TrdpConfiguredFrameOption? _selectedFrameOption;
+    private TrdpSessionConfig? _activeSessionConfig;
+
+    private string _selectedDatasetName = "TCMS_PLCFrame";
+    private long _selectedComId = 1048580;
+
+    private TrdpFrameMessage? _latestFrame;
+    private DateTime? _lastFrameTime;
+    private string _hexDumpText = string.Empty;
+    private string _lastStatusMessage = string.Empty;
+
+    // Parsed fields breakdown
+    private Dictionary<string, JsonElement> _scalarVariables = new();
+    private Dictionary<string, Dictionary<string, int>> _bitFields = new();
+
+    // PCAP Chunked Player State & Progress
+    private string? _tempPcapFilePath;
+    private PcapChunkResult? _chunkResult;
+    private List<TrdpCapturedFrame> _capturedFrames = new();
+    private int _pcapFrameIndex = 0;
+    private string _pcapFileName = string.Empty;
+    
+    // Progress state
+    private bool _isLoadingFile = false;
+    private bool _isLoadingChunk = false;
+    private int _uploadProgressPercent = 0;
+    private long _uploadBytesRead = 0;
+    private long _totalFileBytes = 0;
+
+    private bool _isPlaying = false;
+    private double _playbackSpeed = 1.0;
+    private CancellationTokenSource? _playbackCts;
+
+    private int GlobalFrameNumber => _chunkResult != null 
+        ? (_chunkResult.CurrentChunkIndex * _chunkResult.ChunkSize) + _pcapFrameIndex + 1 
+        : 0;
+
+    private TrdpCapturedFrame? CurrentCapturedFrame => 
+        (_capturedFrames.Count > 0 && _pcapFrameIndex >= 0 && _pcapFrameIndex < _capturedFrames.Count) 
+            ? _capturedFrames[_pcapFrameIndex] 
+            : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Default host from MonitorState
+        if (!string.IsNullOrWhiteSpace(MonitorState.IpAddress))
+            _deviceHost = $"{MonitorState.IpAddress}:{MonitorState.Port}";
+        else
+            _deviceHost = "192.168.15.1:8080";
+
+        // Load configured frame options from active config in DB
+        await LoadConfiguredFramesAsync();
+
+        WsService.OnFrameReceived += HandleFrameReceived;
+        WsService.OnConnectionStateChanged += HandleConnectionStateChanged;
+        WsService.OnStatusMessage += HandleStatusMessage;
+
+        // IMPORTANTE: NO se realiza autoconexión automática al abrir la pantalla.
+    }
+
+    private async Task OnModeChanged(string newMode)
+    {
+        _activeMode = newMode;
+        if (IsPcapMode)
+        {
+            if (WsService.IsConnected)
+            {
+                await DisconnectWebSocket();
+            }
+            if (_capturedFrames.Count > 0)
+            {
+                DisplayCurrentPcapFrame();
+            }
+        }
+    }
+
+    private async Task LoadConfiguredFramesAsync()
+    {
+        _frameOptions.Clear();
+        try
+        {
+            var configs = await ConfigService.GetAllAsync();
+            _activeSessionConfig = configs.FirstOrDefault();
+            if (_activeSessionConfig != null)
+            {
+                // Process Networks -> Subscribers & Publishers
+                foreach (var net in _activeSessionConfig.Networks)
+                {
+                    foreach (var sub in net.Subscribers)
+                    {
+                        _frameOptions.Add(new TrdpConfiguredFrameOption
+                        {
+                            Id          = $"sub_{sub.ComId}_{sub.Dataset}",
+                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? "Red Default" : net.Name,
+                            DatasetName = sub.Dataset,
+                            ComId       = sub.ComId,
+                            FrameName   = string.IsNullOrWhiteSpace(sub.Name) ? sub.Dataset : sub.Name,
+                            Direction   = "Rx (Suscriptor)",
+                            Ip          = sub.Ip
+                        });
+                    }
+
+                    foreach (var pub in net.Publishers)
+                    {
+                        _frameOptions.Add(new TrdpConfiguredFrameOption
+                        {
+                            Id          = $"pub_{pub.ComId}_{pub.Dataset}",
+                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? "Red Default" : net.Name,
+                            DatasetName = pub.Dataset,
+                            ComId       = pub.ComId,
+                            FrameName   = string.IsNullOrWhiteSpace(pub.Name) ? pub.Dataset : pub.Name,
+                            Direction   = "Tx (Publicador)",
+                            Ip          = pub.Ip
+                        });
+                    }
+                }
+
+                // Add any extra unlisted datasets from CommsDatasets as fallbacks
+                foreach (var dsKey in _activeSessionConfig.CommsDatasets.Keys)
+                {
+                    if (!_frameOptions.Any(f => f.DatasetName == dsKey))
+                    {
+                        _frameOptions.Add(new TrdpConfiguredFrameOption
+                        {
+                            Id          = $"ds_{dsKey}",
+                            NetworkName = "Dataset General",
+                            DatasetName = dsKey,
+                            ComId       = 1048580,
+                            FrameName   = dsKey,
+                            Direction   = "Rx",
+                            Ip          = ""
+                        });
+                    }
+                }
+            }
+        }
+        catch { }
+
+        // Default fallback if no config exists in DB
+        if (_frameOptions.Count == 0)
+        {
+            _frameOptions.Add(new TrdpConfiguredFrameOption
+            {
+                Id          = "default_tcms_plcframe",
+                NetworkName = "Red Ramal 1",
+                DatasetName = "TCMS_PLCFrame",
+                ComId       = 1048580,
+                FrameName   = "TCMS_PLCFrame",
+                Direction   = "Rx (Suscriptor)"
+            });
+            _frameOptions.Add(new TrdpConfiguredFrameOption
+            {
+                Id          = "default_tcms_plcinfo",
+                NetworkName = "Red Ramal 1",
+                DatasetName = "TCMS_PlcInfo",
+                ComId       = 1048581,
+                FrameName   = "TCMS_PlcInfo",
+                Direction   = "Rx (Suscriptor)"
+            });
+        }
+
+        // Select first Rx option by default
+        _selectedFrameOption = _frameOptions.FirstOrDefault(f => f.Direction.StartsWith("Rx")) ?? _frameOptions.First();
+        _selectedDatasetName = _selectedFrameOption.DatasetName;
+        _selectedComId       = _selectedFrameOption.ComId;
+    }
+
+    private async Task OnFrameOptionChanged(TrdpConfiguredFrameOption option)
+    {
+        if (option is null) return;
+        _selectedFrameOption = option;
+        _selectedDatasetName = option.DatasetName;
+        _selectedComId       = option.ComId;
+
+        if (!IsPcapMode && WsService.IsConnected)
+        {
+            await WsService.SubscribeAsync(_selectedDatasetName, _selectedComId);
+            Snackbar.Add($"Cambiado a {_selectedDatasetName} (ComID: {_selectedComId})", Severity.Info);
+        }
+        else if (IsPcapMode && !string.IsNullOrEmpty(_tempPcapFilePath))
+        {
+            // Re-filtrar la captura por el nuevo ComID e IP del dataset seleccionado
+            await LoadChunk(0);
+            Snackbar.Add($"Filtrado por {_selectedDatasetName} (ComID: {_selectedComId})", Severity.Info);
+        }
+    }
+
+    private async Task ConnectWebSocket()
+    {
+        if (string.IsNullOrWhiteSpace(_deviceHost)) return;
+
+        await WsService.ConnectAndSubscribeAsync(_deviceHost, _selectedDatasetName, _selectedComId);
+
+        if (WsService.IsConnected)
+        {
+            Snackbar.Add($"WS Conectado a {_deviceHost}", Severity.Success);
+        }
+    }
+
+    private async Task DisconnectWebSocket()
+    {
+        await WsService.DisconnectAsync();
+        Snackbar.Add("WebSocket desconectado.", Severity.Info);
+        StateHasChanged();
+    }
+
+    private async Task FetchSnapshotRest()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedDatasetName)) return;
+
+        var result = await BackendService.GetRxLastFrameAsync(_deviceHost, _selectedDatasetName);
+        if (result.IsSuccess && result.Data != null)
+        {
+            HandleFrameReceived(result.Data);
+            Snackbar.Add("Snapshot REST obtenido.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(result.Error, Severity.Error);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // PCAP CHUNKED STREAMING & REUSABLE MEMORY PLAYER LOGIC
+    // ══════════════════════════════════════════════════════════
+    private async Task OnPcapFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        _pcapFileName = file.Name;
+        StopPlayback();
+        _isLoadingFile = true;
+        _totalFileBytes = file.Size;
+        _uploadBytesRead = 0;
+        _uploadProgressPercent = 0;
+        StateHasChanged();
+
+        // Borrar archivo temporal previo si existía
+        if (!string.IsNullOrEmpty(_tempPcapFilePath))
+        {
+            PcapParser.DeleteTempFile(_tempPcapFilePath);
+            _tempPcapFilePath = null;
+        }
+
+        try
+        {
+            // Soportar hasta 5 GB mediante streaming secuencial a archivo temporal reportando el porcentaje de carga
+            using var stream = file.OpenReadStream(maxAllowedSize: 5L * 1024 * 1024 * 1024);
+            _tempPcapFilePath = await PcapParser.SaveToTempFileAsync(stream, file.Size, (bytesRead, totalBytes) =>
+            {
+                _uploadBytesRead = bytesRead;
+                if (totalBytes > 0)
+                {
+                    _uploadProgressPercent = (int)Math.Min(100, Math.Max(0, (double)bytesRead / totalBytes * 100));
+                }
+                InvokeAsync(StateHasChanged);
+            });
+
+            // Cargar el bloque 0 filtrado por el ComID e IP del dataset seleccionado
+            string filterIp = _selectedFrameOption?.Ip ?? "";
+            _chunkResult = await PcapParser.ReadChunkAsync(_tempPcapFilePath, 0, _selectedComId, filterIp, chunkSize: 200);
+            _capturedFrames = _chunkResult.Frames;
+
+            if (_chunkResult.TotalFrames == 0)
+            {
+                _latestFrame = null;
+                Snackbar.Add($"No se encontraron tramas en la captura para el ComID {_selectedComId} ({_selectedDatasetName}). Probando sin filtro o cambiando de dataset.", Severity.Warning);
+                return;
+            }
+
+            _pcapFrameIndex = 0;
+            DisplayCurrentPcapFrame();
+
+            string sizeStr = FormatFileSize(file.Size);
+            Snackbar.Add($"Captura cargada ({sizeStr}): {_chunkResult.TotalFrames} tramas coincidentes con ComID {_selectedComId} ({_chunkResult.TotalChunks} bloques).", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al leer captura Wireshark: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingFile = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadChunk(int chunkIndex)
+    {
+        if (string.IsNullOrEmpty(_tempPcapFilePath)) return;
+
+        _isLoadingChunk = true;
+        StateHasChanged();
+
+        try
+        {
+            string filterIp = _selectedFrameOption?.Ip ?? "";
+            // Cargar el bloque filtrando por el ComID e IP del dataset seleccionado
+            _chunkResult = await PcapParser.ReadChunkAsync(_tempPcapFilePath, chunkIndex, _selectedComId, filterIp, chunkSize: 200);
+            _capturedFrames = _chunkResult.Frames;
+            _pcapFrameIndex = 0;
+
+            if (_capturedFrames.Count > 0)
+            {
+                DisplayCurrentPcapFrame();
+            }
+            else
+            {
+                _latestFrame = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar bloque de captura: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingChunk = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PrevChunk()
+    {
+        if (_chunkResult != null && _chunkResult.CurrentChunkIndex > 0)
+        {
+            StopPlayback();
+            await LoadChunk(_chunkResult.CurrentChunkIndex - 1);
+        }
+    }
+
+    private async Task NextChunk()
+    {
+        if (_chunkResult != null && _chunkResult.CurrentChunkIndex < _chunkResult.TotalChunks - 1)
+        {
+            StopPlayback();
+            await LoadChunk(_chunkResult.CurrentChunkIndex + 1);
+        }
+    }
+
+    private void DisplayCurrentPcapFrame()
+    {
+        var captured = CurrentCapturedFrame;
+        if (captured is null) return;
+
+        TrdpDataset? datasetDef = null;
+        if (_activeSessionConfig != null && _activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds))
+        {
+            datasetDef = ds;
+        }
+
+        var frameMsg = captured.ToFrameMessage(_selectedDatasetName, _selectedComId, datasetDef);
+        HandleFrameReceived(frameMsg);
+    }
+
+    private void OnSliderIndexChanged(int newIndex)
+    {
+        _pcapFrameIndex = Math.Clamp(newIndex, 0, Math.Max(0, _capturedFrames.Count - 1));
+        DisplayCurrentPcapFrame();
+    }
+
+    private void FirstFrame()
+    {
+        if (_capturedFrames.Count == 0) return;
+        _pcapFrameIndex = 0;
+        DisplayCurrentPcapFrame();
+    }
+
+    private void PrevFrame()
+    {
+        if (_capturedFrames.Count == 0) return;
+        if (_pcapFrameIndex > 0)
+        {
+            _pcapFrameIndex--;
+            DisplayCurrentPcapFrame();
+        }
+        else if (_chunkResult != null && _chunkResult.CurrentChunkIndex > 0)
+        {
+            _ = LoadChunk(_chunkResult.CurrentChunkIndex - 1);
+        }
+    }
+
+    private void NextFrame()
+    {
+        if (_capturedFrames.Count == 0) return;
+        if (_pcapFrameIndex < _capturedFrames.Count - 1)
+        {
+            _pcapFrameIndex++;
+            DisplayCurrentPcapFrame();
+        }
+        else if (_chunkResult != null && _chunkResult.CurrentChunkIndex < _chunkResult.TotalChunks - 1)
+        {
+            // Pasar al siguiente bloque automáticamente al llegar al final del bloque actual
+            _ = LoadChunk(_chunkResult.CurrentChunkIndex + 1);
+        }
+        else
+        {
+            StopPlayback();
+        }
+    }
+
+    private void LastFrame()
+    {
+        if (_capturedFrames.Count == 0) return;
+        _pcapFrameIndex = _capturedFrames.Count - 1;
+        DisplayCurrentPcapFrame();
+    }
+
+    private void TogglePlay()
+    {
+        if (_isPlaying)
+        {
+            StopPlayback();
+        }
+        else
+        {
+            StartPlayback();
+        }
+    }
+
+    private void StartPlayback()
+    {
+        if (_capturedFrames.Count == 0) return;
+        if (_pcapFrameIndex >= _capturedFrames.Count - 1 && (_chunkResult == null || _chunkResult.CurrentChunkIndex >= _chunkResult.TotalChunks - 1))
+        {
+            _pcapFrameIndex = 0;
+        }
+
+        _isPlaying = true;
+        _playbackCts = new CancellationTokenSource();
+        var token = _playbackCts.Token;
+
+        Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested && _isPlaying)
+            {
+                int delayMs = (int)(100 / _playbackSpeed);
+                await Task.Delay(delayMs, token);
+
+                await InvokeAsync(() =>
+                {
+                    NextFrame();
+                    StateHasChanged();
+                });
+            }
+
+            await InvokeAsync(() =>
+            {
+                _isPlaying = false;
+                StateHasChanged();
+            });
+        }, token);
+    }
+
+    private void StopPlayback()
+    {
+        _isPlaying = false;
+        if (_playbackCts != null)
+        {
+            _playbackCts.Cancel();
+            _playbackCts.Dispose();
+            _playbackCts = null;
+        }
+    }
+
+    private void OnSpeedChanged(double newSpeed)
+    {
+        _playbackSpeed = newSpeed;
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes >= 1024 * 1024 * 1024)
+            return $"{(bytes / (1024.0 * 1024.0 * 1024.0)):F2} GB";
+        if (bytes >= 1024 * 1024)
+            return $"{(bytes / (1024.0 * 1024.0)):F1} MB";
+        if (bytes >= 1024)
+            return $"{(bytes / 1024.0):F0} KB";
+        return $"{bytes} B";
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // SHARED FRAME PROCESSOR & HANDLERS
+    // ══════════════════════════════════════════════════════════
+    private void HandleFrameReceived(TrdpFrameMessage frame)
+    {
+        _latestFrame = frame;
+        _lastFrameTime = DateTime.Now;
+
+        ProcessParsedPayload(frame);
+        GenerateHexDump(frame);
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleConnectionStateChanged(bool isConnected)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleStatusMessage(string message)
+    {
+        _lastStatusMessage = message;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ProcessParsedPayload(TrdpFrameMessage frame)
+    {
+        _scalarVariables.Clear();
+        _bitFields.Clear();
+
+        if (frame.Parsed is null) return;
+
+        foreach (var (key, jsonEl) in frame.Parsed)
+        {
+            if (key.EndsWith("_bits") && jsonEl.ValueKind == JsonValueKind.Object)
+            {
+                var bitDict = new Dictionary<string, int>();
+                foreach (var prop in jsonEl.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Number)
+                        bitDict[prop.Name] = prop.Value.GetInt32();
+                }
+                _bitFields[key] = bitDict;
+            }
+            else if (jsonEl.ValueKind != JsonValueKind.Object)
+            {
+                _scalarVariables[key] = jsonEl;
+            }
+        }
+    }
+
+    private void GenerateHexDump(TrdpFrameMessage frame)
+    {
+        byte[] bytes = Array.Empty<byte>();
+
+        if (frame.RawBytes != null && frame.RawBytes.Count > 0)
+        {
+            bytes = frame.RawBytes.ToArray();
+        }
+        else if (!string.IsNullOrWhiteSpace(frame.RawHex))
+        {
+            try
+            {
+                var cleanHex = frame.RawHex.Replace(" ", "").Replace("-", "");
+                bytes = Enumerable.Range(0, cleanHex.Length / 2)
+                    .Select(x => Convert.ToByte(cleanHex.Substring(x * 2, 2), 16))
+                    .ToArray();
+            }
+            catch { }
+        }
+
+        if (bytes.Length == 0)
+        {
+            _hexDumpText = "(Sin datos raw disponibles)";
+            return;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < bytes.Length; i += 16)
+        {
+            sb.AppendFormat("{0:X4}  ", i);
+
+            // Hex bytes (16 bytes per line)
+            for (int j = 0; j < 16; j++)
+            {
+                if (i + j < bytes.Length)
+                    sb.AppendFormat("{0:X2} ", bytes[i + j]);
+                else
+                    sb.Append("   ");
+
+                if (j == 7) sb.Append(" ");
+            }
+
+            sb.Append(" |");
+
+            // ASCII printable
+            for (int j = 0; j < 16; j++)
+            {
+                if (i + j < bytes.Length)
+                {
+                    byte b = bytes[i + j];
+                    sb.Append(b >= 32 && b <= 126 ? (char)b : '.');
+                }
+            }
+            sb.AppendLine("|");
+        }
+
+        _hexDumpText = sb.ToString();
+    }
+
+    private string FormatValue(JsonElement el)
+    {
+        return el.ValueKind switch
+        {
+            JsonValueKind.Number => el.GetDouble().ToString("G6"),
+            JsonValueKind.String => el.GetString() ?? "",
+            JsonValueKind.True   => "1 (TRUE)",
+            JsonValueKind.False  => "0 (FALSE)",
+            _ => el.ToString()
+        };
+    }
+
+    private async Task CopyHexToClipboard()
+    {
+        if (_latestFrame != null && !string.IsNullOrWhiteSpace(_latestFrame.RawHex))
+        {
+            Snackbar.Add("Raw Hex copiado al portapapeles.", Severity.Info);
+        }
+    }
+
+    public void Dispose()
+    {
+        StopPlayback();
+        PcapParser.DeleteTempFile(_tempPcapFilePath);
+        WsService.OnFrameReceived -= HandleFrameReceived;
+        WsService.OnConnectionStateChanged -= HandleConnectionStateChanged;
+        WsService.OnStatusMessage -= HandleStatusMessage;
+    }
+}

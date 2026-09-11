@@ -1,0 +1,315 @@
+@using ApsMonitor.Models
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog Class="trdp-var-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.DataObject" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@(IsNew ? "Nueva Variable" : Variable.Id)</MudText>
+            @if (_links.Count > 0)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                    @_links.Count mapping(s)
+                </MudChip>
+            }
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudTabs @bind-ActivePanelIndex="_tab" Rounded="true" Color="Color.Dark" Class="var-dialog-tabs">
+
+            <!-- ── Tab 1: Propiedades ──────────────────────────────────── -->
+            <MudTabPanel Text="Propiedades" Icon="@Icons.Material.Filled.Tune">
+                <MudGrid Spacing="3" Class="pt-3">
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="Variable.Id" Label="ID *" Required="true"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                      Placeholder="p.ej. hv_cat_volt" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudNumericField @bind-Value="Variable.Offset" Label="Offset (bytes) *"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudSelect @bind-Value="Variable.Type" Label="Tipo *" Variant="Variant.Outlined"
+                                   Margin="Margin.Dense" FullWidth="true" T="string">
+                            @foreach (var t in _types)
+                            {
+                                <MudSelectItem Value="@t">@t</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    @if (Variable.Type == "bytes")
+                    {
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="_size" Label="Tamaño (bytes)"
+                                             Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
+                        </MudItem>
+                    }
+
+                    <MudItem xs="12" sm="@(Variable.Type == "bytes" ? 8 : 12)">
+                        <MudTextField @bind-Value="Variable.Description" Label="Descripción"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                    </MudItem>
+
+                    @if (Variable.Type is not "bytes")
+                    {
+                        <MudItem xs="12"><MudDivider /></MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="_scale" Label="Escala (scale)"
+                                             Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="_offsetVal" Label="Offset de valor"
+                                             Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="Variable.Unit" Label="Unidad"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                          Placeholder="V, A, kW, °C…" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudSelect @bind-Value="_endian" Label="Endianness" Variant="Variant.Outlined"
+                                       Margin="Margin.Dense" FullWidth="true" T="string">
+                                <MudSelectItem Value='"little"'>Little endian (por defecto)</MudSelectItem>
+                                <MudSelectItem Value='"big"'>Big endian</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" Class="d-flex align-end pb-1">
+                            <MudCheckBox @bind-Value="Variable.ReverseBits" Label="reverse_bits" Color="Color.Info" />
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudTabPanel>
+
+            <!-- ── Tab 2: Mappings ─────────────────────────────────────── -->
+            <MudTabPanel Icon="@Icons.Material.Filled.AccountTree"
+                         Text="@($"Mappings ({_links.Count})")">
+                <div class="d-flex justify-space-between align-center mt-3 mb-3">
+                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                        Links que escriben en <strong>@Variable.Id</strong> cuando el motor TRDP procesa la trama de control.
+                    </MudText>
+                    <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddLink">
+                        Añadir mapping
+                    </MudButton>
+                </div>
+
+                @if (_links.Count == 0)
+                {
+                    <MudPaper Elevation="0" Class="pa-6 text-center"
+                              Style="background:#111827; border:1px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                        <MudIcon Icon="@Icons.Material.Filled.LinkOff" Style="font-size:2.5rem; opacity:.2;" />
+                        <MudText Typo="Typo.body2" Class="trdp-muted mt-2">Sin mappings. Esta variable no se rellenará automáticamente.</MudText>
+                    </MudPaper>
+                }
+                else
+                {
+                    @foreach (var (lnk, idx) in _links.Select((l, i) => (l, i)))
+                    {
+                        <MudPaper Elevation="0" Class="mapping-row pa-3 mb-2">
+                            <!-- Type badge -->
+                            <div class="d-flex align-center gap-2 flex-wrap">
+                                <MudChip T="string" Size="Size.Small" Color="@LinkTypeColor(lnk.Type)"
+                                         Variant="Variant.Outlined" Class="mr-1">
+                                    @lnk.Type
+                                </MudChip>
+                                <div class="flex-grow-1">
+                                    @RenderLinkSummary(lnk)
+                                </div>
+                                @if (lnk.Comment is { Length: > 0 })
+                                {
+                                    <MudText Typo="Typo.caption" Class="trdp-muted mapping-comment">@lnk.Comment</MudText>
+                                }
+                                <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                               OnClick="@(() => EditLink(idx))" />
+                                <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                               Color="Color.Error" OnClick="@(() => _links.RemoveAt(idx))" />
+                            </div>
+                        </MudPaper>
+                    }
+                }
+            </MudTabPanel>
+        </MudTabs>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
+                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .trdp-muted           { color: #94a3b8 !important; }
+    .trdp-var-dialog .mud-dialog-content { max-height: 82vh; overflow-y: auto; }
+    .var-dialog-tabs .mud-tabs-toolbar   { background: transparent !important; }
+    .mapping-row {
+        background: #111827;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+        transition: border-color .15s;
+    }
+    .mapping-row:hover { border-color: rgba(56,189,248,.3); }
+    .mapping-comment   { opacity: .7; font-style: italic; }
+</style>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public TrdpDatasetVariable Variable { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; } = true;
+    /// <summary>All existing variable_links for this dataset, pre-filtered to this variable's Id.</summary>
+    [Parameter] public List<TrdpVariableLink> ExistingLinks { get; set; } = new();
+    [Parameter] public List<string> ControlVarTags { get; set; } = new();
+
+    // ── Internal state ─────────────────────────────────────────────────────
+    private int _tab = 0;
+    private List<TrdpVariableLink> _links = new();
+
+    private static readonly string[] _types =
+        { "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "bytes" };
+
+    // Nullable bridges for Variable properties
+    private double _scale     { get => Variable.Scale     ?? 1.0;  set => Variable.Scale     = value == 1.0   ? null : value; }
+    private double _offsetVal { get => Variable.OffsetVal ?? 0.0;  set => Variable.OffsetVal = value == 0.0   ? null : value; }
+    private int    _size      { get => Variable.Size      ?? 1;     set => Variable.Size      = value; }
+    private string _endian
+    {
+        get => Variable.Endian ?? "little";
+        set => Variable.Endian = value == "little" ? null : value;
+    }
+
+    protected override void OnInitialized()
+    {
+        // Deep-clone the links so we don't mutate the parent until save
+        _links = ExistingLinks
+            .Select(l => CloneJson(l))
+            .ToList();
+    }
+
+    // ── Mappings ───────────────────────────────────────────────────────────
+
+    private async Task AddLink()
+    {
+        var newLink = new TrdpVariableLink
+        {
+            Type           = "analog",
+            TargetCommsVar = Variable.Id
+        };
+        var result = await OpenLinkDialog(newLink, isNew: true);
+        if (result is not null)
+        {
+            result.TargetCommsVar = Variable.Id;
+            _links.Add(result);
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditLink(int idx)
+    {
+        var clone = CloneJson(_links[idx]);
+        var result = await OpenLinkDialog(clone, isNew: false);
+        if (result is not null)
+        {
+            result.TargetCommsVar = Variable.Id;
+            _links[idx] = result;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<TrdpVariableLink?> OpenLinkDialog(TrdpVariableLink link, bool isNew)
+    {
+        var dlg = await DialogService.ShowAsync<TrdpVariableLinkDialog>(
+            isNew ? "Nuevo Mapping" : "Editar Mapping",
+            new DialogParameters
+            {
+                ["Link"]           = link,
+                ["IsNew"]          = isNew,
+                ["FixedTarget"]    = Variable.Id,
+                ["ControlVarTags"] = ControlVarTags
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var r = await dlg.Result;
+        return r is { Canceled: false, Data: TrdpVariableLink saved } ? saved : null;
+    }
+
+    // ── Submit / Cancel ────────────────────────────────────────────────────
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Variable.Id))
+        {
+            Snackbar.Add("El ID de la variable es obligatorio.", Severity.Warning);
+            return;
+        }
+        if (Variable.Type == "bytes") Variable.Size = _size;
+
+        // Ensure all returned links point to this variable
+        foreach (var l in _links) l.TargetCommsVar = Variable.Id;
+
+        MudDialog.Close(DialogResult.Ok(new TrdpVarEditResult
+        {
+            Variable = Variable,
+            Links    = _links
+        }));
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    private static T CloneJson<T>(T obj)
+        => System.Text.Json.JsonSerializer.Deserialize<T>(
+               System.Text.Json.JsonSerializer.Serialize(obj, TrdpJsonOptions.Default),
+               TrdpJsonOptions.Default)!;
+
+    private static Color LinkTypeColor(string type) => type switch
+    {
+        "analog"           => Color.Info,
+        "bit_to_bit"       => Color.Warning,
+        "condition_to_bit" => Color.Secondary,
+        "logic_to_bit"     => Color.Error,
+        "constant"         => Color.Dark,
+        "direct_copy"      => Color.Tertiary,
+        "sequence"         => Color.Success,
+        _                  => Color.Default
+    };
+
+    private RenderFragment RenderLinkSummary(TrdpVariableLink lnk) => __builder =>
+    {
+        switch (lnk.Type)
+        {
+            case "sequence":
+                __builder.AddContent(0, "Contador 0..255");
+                break;
+            case "constant":
+                __builder.AddContent(0, $"= {lnk.Value}");
+                break;
+            case "analog":
+                __builder.AddContent(0, $"{lnk.SourceControlVar} × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                break;
+            case "direct_copy":
+                __builder.AddContent(0, $"{lnk.SourceControlVar}  →  {lnk.Length} byte(s)");
+                break;
+            case "bit_to_bit":
+                __builder.AddContent(0, $"{lnk.SourceControlVar}[{lnk.SourceBit}]  →  bit {lnk.TargetBit}{(lnk.SetOnly ? " (set_only)" : "")}");
+                break;
+            case "condition_to_bit" when lnk.Condition == "equals":
+                __builder.AddContent(0, $"{lnk.SourceControlVar} == {lnk.Value}  →  bit {lnk.TargetBit}");
+                break;
+            case "condition_to_bit":
+                var vals = lnk.Values != null ? string.Join(",", lnk.Values.Select(v => (int)v)) : "…";
+                __builder.AddContent(0, $"{lnk.SourceControlVar} in [{vals}]  →  bit {lnk.TargetBit}");
+                break;
+            case "logic_to_bit":
+                var op = lnk.Operator ?? "OR";
+                var count = lnk.Inputs?.Count ?? 0;
+                __builder.AddContent(0, $"{op} de {count} entradas  →  bit {lnk.TargetBit}");
+                break;
+            default:
+                __builder.AddContent(0, lnk.SourceControlVar ?? "—");
+                break;
+        }
+    };
+}

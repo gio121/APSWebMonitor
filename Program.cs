@@ -19,8 +19,13 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
 builder.Services.AddScoped<ApsDataService>();
 builder.Services.AddScoped<SessionStateService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
+builder.Services.AddScoped<TrdpConfigService>();
 builder.Services.AddHttpClient<SepsaProtocolClient>();
 builder.Services.AddHttpClient("SepsaMonitor"); // cliente nombrado para MonitorStateService (Singleton)
+builder.Services.AddHttpClient("TrdpBackend");  // cliente nombrado para TrdpBackendService
+builder.Services.AddScoped<TrdpBackendService>();
+builder.Services.AddScoped<TrdpWebSocketService>();
+builder.Services.AddScoped<TrdpPcapParserService>();
 builder.Services.AddSingleton<MonitorStateService>();
 
 // Authentication & Authorization
@@ -100,6 +105,19 @@ using (var scope = app.Services.CreateScope())
         // --- Seeding: asegurar usuarios por defecto ---
         EnsureDefaultUser(command, "admin", "admin", "Administrador", "Administrador");
         EnsureDefaultUser(command, "mantenimiento", "mantenimiento", "Mantenimiento", "Mantenimiento");
+
+        // --- Crear tabla TrdpConfigs si no existe ---
+        command.CommandText = @"CREATE TABLE IF NOT EXISTS TrdpConfigs (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Nombre TEXT NOT NULL DEFAULT '',
+            Descripcion TEXT NOT NULL DEFAULT '',
+            UltimaModificacion TEXT NOT NULL DEFAULT '',
+            UseDynamicMapping INTEGER NOT NULL DEFAULT 1,
+            ControlFrameJson TEXT NOT NULL DEFAULT '{}',
+            CommsDatasetsJson TEXT NOT NULL DEFAULT '{}',
+            NetworksJson TEXT NOT NULL DEFAULT '[]'
+        )";
+        command.ExecuteNonQuery();
     }
     catch (Exception ex)
     {

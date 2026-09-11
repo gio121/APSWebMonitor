@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\window.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\window.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|solutionrelative:models\\sinopticoelement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{4CD3A33E-D3C6-E325-E66B-435CFCB483A4}|ApsMonitor.csproj|c:\\repo\\monitores\\antigravity\\apsmonitor\\models\\sessiondataset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -110,7 +110,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Bookmark",
@@ -134,7 +134,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Window.cs",
               "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\Window.cs",
               "RelativeDocumentMoniker": "Models\\Window.cs",
@@ -142,20 +142,20 @@
               "RelativeToolTip": "Models\\Window.cs",
               "ViewState": "AgIAADQAAAAAAAAAAAAUwD8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:33.42Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-09-03T10:20:33.42Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "SinopticoElement.cs",
               "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SinopticoElement.cs",
               "RelativeDocumentMoniker": "Models\\SinopticoElement.cs",
               "ToolTip": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\SinopticoElement.cs",
               "RelativeToolTip": "Models\\SinopticoElement.cs",
-              "ViewState": "AgIAABgAAAAAAAAAAAAiwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABYAAAAAAAAAAAAywAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-03T10:20:29.016Z"
+              "WhenOpened": "2026-09-03T10:20:29.016Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -243,7 +243,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "User.cs",
               "DocumentMoniker": "C:\\REPO\\Monitores\\Antigravity\\ApsMonitor\\Models\\User.cs",
               "RelativeDocumentMoniker": "Models\\User.cs",
