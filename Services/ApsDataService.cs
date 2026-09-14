@@ -98,6 +98,12 @@ public class ApsDataService
         return await context.Events.OrderByDescending(e => e.Fecha).Take(10).ToListAsync();
     }
 
+    public async Task<List<EventMessage>> GetAllEventsAsync()
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        return await context.Events.OrderByDescending(e => e.Fecha).ToListAsync();
+    }
+
     public async Task AddEventAsync(EventMessage evento)
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
