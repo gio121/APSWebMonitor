@@ -1,0 +1,923 @@
+@page "/trdp"
+@attribute [Authorize(Roles = "Administrador")]
+@rendermode InteractiveServer
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@using ApsMonitor.Components.Dialogs
+@using System.Text.Json
+@inject TrdpConfigService TrdpService
+@inject TrdpBackendService BackendService
+@inject MonitorStateService MonitorState
+@inject ApsDataService DataService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@implements IDisposable
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════ -->
+<div class="trdp-header">
+    <div class="d-flex align-center gap-2">
+        <MudIcon Icon="@Icons.Material.Filled.Router" Class="trdp-icon-header" />
+        <div>
+            <MudText Typo="Typo.h5" Class="fw-bold">Configuración TRDP</MudText>
+            <MudText Typo="Typo.caption" Class="trdp-muted">Train Real-time Data Protocol – IEC 61375</MudText>
+        </div>
+    </div>
+    <div class="d-flex gap-2 align-center flex-wrap">
+        @if (_activeConfig is not null)
+        {
+            <!-- Device URL field -->
+            <MudTextField @bind-Value="_deviceUrl"
+                          Placeholder="IP dispositivo  (p.ej. 192.168.1.100)"
+                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Style="min-width:200px; max-width:260px;"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Router"
+                          AdornmentColor="Color.Info" />
+
+            <MudTooltip Text="Leer config del dispositivo">
+                <MudIconButton Icon="@Icons.Material.Filled.CloudDownload"
+                               Color="Color.Info" Variant="Variant.Outlined"
+                               Size="Size.Medium" OnClick="OpenReceiveDialog" />
+            </MudTooltip>
+            <MudTooltip Text="Enviar config al dispositivo">
+                <MudIconButton Icon="@Icons.Material.Filled.Send"
+                               Color="Color.Success" Variant="Variant.Outlined"
+                               Size="Size.Medium" OnClick="OpenSendDialog"
+                               Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
+            </MudTooltip>
+            <MudTooltip Text="Cambiar modo dynamic/legacy en el dispositivo">
+                <MudIconButton Icon="@Icons.Material.Filled.Tune"
+                               Color="Color.Warning" Variant="Variant.Outlined"
+                               Size="Size.Medium" OnClick="OpenSetModeDialog"
+                               Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
+            </MudTooltip>
+
+            <MudDivider Vertical="true" FlexItem="true" Class="mx-1" />
+
+            <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircle">
+                @_activeConfig.Nombre
+            </MudChip>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                       StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="Deselect">
+                Cambiar
+            </MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Save" OnClick="SaveConfig"
+                       Disabled="@_isSaving">
+                @(_isSaving ? "Guardando…" : "Guardar")
+            </MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.FileDownload" OnClick="ExportJson">
+                Exportar JSON
+            </MudButton>
+        }
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Info" Indeterminate="true" Size="Size.Large" />
+    </div>
+}
+else if (_activeConfig is null)
+{
+    <!-- ══ Config list ══ -->
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.subtitle1" Class="trdp-muted">Selecciona o crea una configuración TRDP</MudText>
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Outlined" Color="Color.Info"
+                       StartIcon="@Icons.Material.Filled.Upload" OnClick="OpenImportDialog">
+                Importar JSON
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Info"
+                       StartIcon="@Icons.Material.Filled.Add" OnClick="CreateNew">
+                Nueva Config
+            </MudButton>
+        </div>
+    </div>
+
+    @if (_configs.Count == 0)
+    {
+        <MudPaper Elevation="0" Class="pa-8 text-center trdp-empty-card">
+            <MudIcon Icon="@Icons.Material.Filled.Router" Style="font-size:64px; opacity:0.15;" />
+            <MudText Typo="Typo.h6" Class="mt-4 trdp-muted">No hay configuraciones TRDP</MudText>
+            <MudText Typo="Typo.body2" Class="trdp-muted mt-1">
+                Crea una nueva o importa un archivo JSON de configuración.
+            </MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var cfg in _configs)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudPaper Elevation="0" Class="trdp-config-card pa-4 h-100 d-flex flex-column">
+                        <div class="d-flex align-start justify-space-between">
+                            <div>
+                                <MudText Typo="Typo.subtitle1" Class="fw-bold">@cfg.Nombre</MudText>
+                                <MudText Typo="Typo.body2" Class="trdp-muted">@cfg.Descripcion</MudText>
+                            </div>
+                            <MudIcon Icon="@Icons.Material.Filled.Router" Class="trdp-card-icon" />
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap mt-2">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                                @cfg.Networks.Count redes
+                            </MudChip>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">
+                                @cfg.CommsDatasets.Count datasets
+                            </MudChip>
+                            @if (cfg.UseDynamicMapping)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                    Dynamic mapping
+                                </MudChip>
+                            }
+                        </div>
+                        <MudText Typo="Typo.caption" Class="trdp-muted mt-2">
+                            Modificado: @cfg.UltimaModificacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </MudText>
+                        <div class="d-flex gap-2 mt-auto pt-3 flex-wrap">
+                            <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info"
+                                       StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => SelectConfig(cfg))">
+                                Editar
+                            </MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="@(() => DuplicateConfig(cfg))">
+                                Duplicar
+                            </MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteConfig(cfg))"
+                                       Class="ml-auto">
+                                Eliminar
+                            </MudButton>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+else
+{
+    <!-- ══ Editor de Config ══ -->
+    <MudTabs @bind-ActivePanelIndex="_editorTab" Rounded="true" ApplyEffectsToContainer="true"
+             Color="Color.Dark" Class="trdp-editor-tabs" PanelClass="pt-4">
+
+        <!-- ─── Tab 1: Opciones ─────────────────────────────────────── -->
+        <MudTabPanel Text="Opciones" Icon="@Icons.Material.Filled.Settings">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="8">
+                    <MudTextField @bind-Value="_activeConfig.Nombre" Label="Nombre de la configuración *"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="12" sm="4" Class="d-flex align-end pb-1">
+                    <MudCheckBox @bind-Value="_activeConfig.UseDynamicMapping"
+                                 Label="use_dynamic_mapping" Color="Color.Info" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_activeConfig.Descripcion" Label="Descripción"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Lines="2" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold mt-2" Style="color:#38bdf8">Trama de Control</MudText>
+                </MudItem>
+
+                <MudItem xs="12" sm="5">
+                    <MudTextField Value="_activeConfig.ControlFrame.Name"
+                                  ValueChanged="@((string v) => { var cf = _activeConfig.ControlFrame; cf.Name = v; PersistControlFrame(cf); })"
+                                  Label="Nombre de trama" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudNumericField Value="_activeConfig.ControlFrame.Size"
+                                     ValueChanged="@((int v) => { var cf = _activeConfig.ControlFrame; cf.Size = v; PersistControlFrame(cf); })"
+                                     Label="Tamaño (bytes)" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField Value="_activeConfig.ControlFrame.Description"
+                                  ValueChanged="@((string v) => { var cf = _activeConfig.ControlFrame; cf.Description = v; PersistControlFrame(cf); })"
+                                  Label="Descripción" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                        Variables de trama de control: @_activeConfig.ControlFrame.Variables.Count
+                        (se asocian con los Tags de las señales cargadas en la sección Señales)
+                    </MudText>
+                </MudItem>
+
+                <!-- Control frame variables table -->
+                <MudItem xs="12">
+                    <MudDataGrid T="TrdpControlVariable" Items="_activeConfig.ControlFrame.Variables" Dense="true"
+                                 Hover="true" Elevation="0" Class="trdp-grid">
+                        <Columns>
+                            <PropertyColumn Property="x => x.Id"          Title="ID" />
+                            <PropertyColumn Property="x => x.Offset"      Title="Offset" />
+                            <PropertyColumn Property="x => x.Type"        Title="Tipo" />
+                            <PropertyColumn Property="x => x.Description" Title="Descripción" />
+                        </Columns>
+                    </MudDataGrid>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        <!-- ─── Tab 2: Redes ────────────────────────────────────────── -->
+        <MudTabPanel Text="Redes" Icon="@Icons.Material.Filled.Hub">
+            <div class="d-flex justify-space-between align-center mb-4">
+                <MudText Typo="Typo.subtitle2" Class="trdp-muted">
+                    @_activeConfig.Networks.Count red(es) configurada(s)
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" OnClick="AddNetwork">
+                    Nueva Red
+                </MudButton>
+            </div>
+
+            @foreach (var (net, nIdx) in _activeConfig.Networks.Select((n, i) => (n, i)))
+            {
+                <MudPaper Elevation="0" Class="trdp-net-card pa-4 mb-4">
+                    <div class="d-flex align-center justify-space-between mb-3">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Hub" Style="color:#38bdf8;" />
+                            <div>
+                                <MudText Typo="Typo.subtitle1" Class="fw-bold">@net.Name</MudText>
+                                <MudText Typo="Typo.caption" Class="trdp-muted">Escucha en: @net.ReceivedIp</MudText>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                           OnClick="@(() => EditNetwork(nIdx))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           Color="Color.Error" OnClick="@(() => RemoveNetwork(nIdx))" />
+                        </div>
+                    </div>
+
+                    <MudGrid Spacing="2">
+                        <!-- Publishers -->
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#38bdf8;">
+                                PUBLISHERS (@net.Publishers.Count)
+                            </MudText>
+                            @foreach (var pub in net.Publishers)
+                            {
+                                <div class="trdp-endpoint-row">
+                                    <MudIcon Icon="@Icons.Material.Filled.Upload" Size="Size.Small" Style="color:#38bdf8;min-width:16px" />
+                                    <div class="flex-grow-1">
+                                        <span class="trdp-ep-name">@pub.Name</span>
+                                        <span class="trdp-ep-detail">@pub.Ip · ComID: @pub.ComId · @pub.Dataset · @pub.Interval µs</span>
+                                    </div>
+                                </div>
+                            }
+                        </MudItem>
+                        <!-- Subscribers -->
+                        <MudItem xs="12" sm="6">
+                            <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#a78bfa;">
+                                SUBSCRIBERS (@net.Subscribers.Count)
+                            </MudText>
+                            @foreach (var sub in net.Subscribers)
+                            {
+                                <div class="trdp-endpoint-row">
+                                    <MudIcon Icon="@Icons.Material.Filled.Download" Size="Size.Small" Style="color:#a78bfa;min-width:16px" />
+                                    <div class="flex-grow-1">
+                                        <span class="trdp-ep-name">@sub.Name</span>
+                                        <span class="trdp-ep-detail">@sub.Ip · ComID: @sub.ComId · @sub.Dataset</span>
+                                    </div>
+                                </div>
+                            }
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+        </MudTabPanel>
+
+        <!-- ─── Tab 3: Datasets ──────────────────────────────────────── -->
+        <MudTabPanel Text="Datasets" Icon="@Icons.Material.Filled.Storage">
+            <MudTabs @bind-ActivePanelIndex="_datasetTab" Rounded="false" Color="Color.Dark" Class="mb-4">
+                @foreach (var (dsName, ds) in _activeConfig.CommsDatasets)
+                {
+                    <MudTabPanel Text="@dsName">
+                        <div class="d-flex align-center justify-space-between mb-3 mt-2 flex-wrap gap-2">
+                            <div>
+                                <MudText Typo="Typo.body2" Class="trdp-muted">@ds.Description</MudText>
+                                <MudText Typo="Typo.caption" Class="trdp-muted">
+                                    Tamaño: @ds.Size bytes · Variables: @ds.Variables.Count · Reglas Control: @ds.ControlCommands.Count
+                                </MudText>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Success"
+                                           StartIcon="@Icons.Material.Filled.Stream"
+                                           Href="/trdp-live">
+                                    Ver en Tiempo Real
+                                </MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                           StartIcon="@Icons.Material.Filled.Add"
+                                           OnClick="@(() => AddDatasetVar(dsName))">
+                                    Nueva Variable
+                                </MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info"
+                                           StartIcon="@Icons.Material.Filled.Rule"
+                                           OnClick="@(() => AddControlCommandRule(dsName))">
+                                    Nueva Regla Control
+                                </MudButton>
+                            </div>
+                        </div>
+
+                        <!-- Sub-tabs for Variables vs Control Commands -->
+                        <MudTabs Rounded="true" Color="Color.Dark" Class="trdp-subtabs">
+
+                            <!-- SubTab 1: Variables -->
+                            <MudTabPanel Text="@($"Variables ({ds.Variables.Count})")" Icon="@Icons.Material.Filled.List">
+                                <MudDataGrid T="TrdpDatasetVariable" Items="ds.Variables" Dense="true"
+                                             Hover="true" Elevation="0" Class="trdp-grid mt-2">
+                                    <Columns>
+                                        <PropertyColumn Property="x => x.Id"          Title="ID" />
+                                        <PropertyColumn Property="x => x.Offset"      Title="Offset" />
+                                        <PropertyColumn Property="x => x.Type"        Title="Tipo" />
+                                        <TemplateColumn Title="Escala / Offset">
+                                            <CellTemplate>
+                                                @if (context.Item.Scale.HasValue || context.Item.OffsetVal.HasValue)
+                                                {
+                                                    <MudText Typo="Typo.caption">
+                                                        ×@(context.Item.Scale?.ToString("G4") ?? "1")
+                                                        @(context.Item.OffsetVal.HasValue ? $" + {context.Item.OffsetVal:G4}" : "")
+                                                    </MudText>
+                                                }
+                                            </CellTemplate>
+                                        </TemplateColumn>
+                                        <TemplateColumn Title="Flags">
+                                            <CellTemplate>
+                                                @if (context.Item.Endian == "big")
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">BE</MudChip>
+                                                }
+                                                @if (context.Item.ReverseBits)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">rev</MudChip>
+                                                }
+                                            </CellTemplate>
+                                        </TemplateColumn>
+                                        <PropertyColumn Property="x => x.Unit"        Title="Unidad" />
+                                        <TemplateColumn Title="Mappings">
+                                            <CellTemplate>
+                                                @{
+                                                    var linkCount = ds.VariableLinks.Count(l => l.TargetCommsVar == context.Item.Id);
+                                                }
+                                                @if (linkCount > 0)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@linkCount</MudChip>
+                                                }
+                                                else
+                                                {
+                                                    <MudText Typo="Typo.caption" Class="trdp-muted">—</MudText>
+                                                }
+                                            </CellTemplate>
+                                        </TemplateColumn>
+                                        <PropertyColumn Property="x => x.Description" Title="Descripción" />
+                                        <TemplateColumn Title="Acciones">
+                                            <CellTemplate>
+                                                <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                                               OnClick="@(() => EditDatasetVar(dsName, context.Item))" />
+                                                <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                                               Color="Color.Error"
+                                                               OnClick="@(() => RemoveDatasetVar(dsName, context.Item))" />
+                                            </CellTemplate>
+                                        </TemplateColumn>
+                                    </Columns>
+                                </MudDataGrid>
+                            </MudTabPanel>
+
+                            <!-- SubTab 2: Control Commands (Reglas a Control) -->
+                            <MudTabPanel Text="@($"Reglas a Control ({ds.ControlCommands.Count})")" Icon="@Icons.Material.Filled.Rule">
+                                @if (ds.ControlCommands.Count == 0)
+                                {
+                                    <div class="pa-6 text-center trdp-muted">
+                                        No hay reglas <code>control_commands</code> definidas para este dataset.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudDataGrid T="TrdpControlCommandRule" Items="ds.ControlCommands" Dense="true"
+                                                 Hover="true" Elevation="0" Class="trdp-grid mt-2">
+                                        <Columns>
+                                            <PropertyColumn Property="x => x.Id" Title="ID Regla" />
+                                            <TemplateColumn Title="Disparador">
+                                                <CellTemplate>
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                                                        @context.Item.Trigger
+                                                    </MudChip>
+                                                </CellTemplate>
+                                            </TemplateColumn>
+                                            <TemplateColumn Title="Var Origen (Bit)">
+                                                <CellTemplate>
+                                                    <span class="fw-bold">@context.Item.SrcVar</span>
+                                                    @if (context.Item.Bit.HasValue)
+                                                    {
+                                                        <span class="trdp-muted" style="font-size:0.8rem;"> [bit @context.Item.Bit.Value]</span>
+                                                    }
+                                                    @if (context.Item.InvertBit)
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">NOT</MudChip>
+                                                    }
+                                                </CellTemplate>
+                                            </TemplateColumn>
+                                            <TemplateColumn Title="Condiciones Control">
+                                                <CellTemplate>
+                                                    @if (context.Item.ControlConditions.Count > 0)
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">
+                                                            @context.Item.ControlConditions.Count (@context.Item.LogicOp)
+                                                        </MudChip>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="trdp-muted">—</span>
+                                                    }
+                                                </CellTemplate>
+                                            </TemplateColumn>
+                                            <PropertyColumn Property="x => x.MinIntervalMs" Title="Min (ms)" />
+                                            <TemplateColumn Title="Comando Destino">
+                                                <CellTemplate>
+                                                    <span style="font-family:monospace; color:#38bdf8;">
+                                                        @context.Item.Command.FrameType / @context.Item.Command.SubCmd
+                                                    </span>
+                                                    @if (!string.IsNullOrEmpty(context.Item.Command.DataFromVar))
+                                                    {
+                                                        <span class="trdp-muted" style="font-size:0.75rem;"> (@context.Item.Command.DataFromVar)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="trdp-muted" style="font-size:0.75rem;"> (val: @context.Item.Command.Data)</span>
+                                                    }
+                                                </CellTemplate>
+                                            </TemplateColumn>
+                                            <PropertyColumn Property="x => x.Description" Title="Descripción" />
+                                            <TemplateColumn Title="Acciones">
+                                                <CellTemplate>
+                                                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                                                   OnClick="@(() => EditControlCommandRule(dsName, context.Item))" />
+                                                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                                                   Color="Color.Error"
+                                                                   OnClick="@(() => RemoveControlCommandRule(dsName, context.Item))" />
+                                                </CellTemplate>
+                                            </TemplateColumn>
+                                        </Columns>
+                                    </MudDataGrid>
+                                }
+                            </MudTabPanel>
+
+                        </MudTabs>
+
+                    </MudTabPanel>
+                }
+            </MudTabs>
+        </MudTabPanel>
+
+    </MudTabs>
+}
+
+<!-- Hidden link for JSON export -->
+<a id="trdp-export-link" style="display:none"></a>
+<InputFile id="trdp-import-file" OnChange="HandleImportFile" Accept=".json" style="display:none" />
+
+<!-- ══════════════════════════════════════════════════════════
+     STYLES
+══════════════════════════════════════════════════════════ -->
+<style>
+    .trdp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .trdp-icon-header {
+        font-size: 2.2rem !important;
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-config-card {
+        background: #1a222c;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+        transition: border-color .2s, transform .15s;
+    }
+    .trdp-config-card:hover {
+        border-color: rgba(56,189,248,.35);
+        transform: translateY(-2px);
+    }
+    .trdp-card-icon {
+        color: #38bdf8 !important;
+        opacity: 0.25;
+        font-size: 2rem !important;
+    }
+    .trdp-empty-card {
+        background: #1a222c;
+        border: 1px dashed rgba(255,255,255,0.08);
+        border-radius: 12px;
+    }
+    .trdp-net-card {
+        background: #1a222c;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+        transition: border-color .2s;
+    }
+    .trdp-net-card:hover { border-color: rgba(56,189,248,.25); }
+    .trdp-endpoint-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .trdp-endpoint-row:last-child { border-bottom: none; }
+    .trdp-ep-name   { display: block; font-size: .8rem; font-weight: 600; color: #e2e8f0; }
+    .trdp-ep-detail { display: block; font-size: .72rem; color: #64748b; }
+    .trdp-grid { background: transparent !important; }
+    .trdp-grid .mud-table-head .mud-table-cell {
+        background: #131a22 !important;
+        color: #64748b;
+        font-size: .75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .trdp-grid .mud-table-body .mud-table-row:hover td { background: rgba(56,189,248,.04) !important; }
+    .trdp-editor-tabs .mud-tabs-toolbar { background: transparent !important; }
+</style>
+
+@code {
+    // ── State ──────────────────────────────────────────────────────────────
+    private List<TrdpSessionConfig> _configs = new();
+    private TrdpSessionConfig? _activeConfig;
+    private bool _isLoading  = true;
+    private bool _isSaving   = false;
+    private int  _editorTab  = 0;
+    private int  _datasetTab = 0;
+
+    // Control var tags (from Signals in DB)
+    private List<string> _controlVarTags = new();
+
+    // Device URL for backend communication
+    private string _deviceUrl = string.Empty;
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        _configs = await TrdpService.GetAllAsync();
+        var signals = await DataService.GetSignalsAsync();
+        _controlVarTags = signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
+        // Pre-fill device URL from the active monitor connection
+        if (string.IsNullOrWhiteSpace(_deviceUrl) && !string.IsNullOrWhiteSpace(MonitorState.IpAddress))
+            _deviceUrl = $"{MonitorState.IpAddress}:{MonitorState.Port}";
+        _isLoading = false;
+    }
+
+    // ── Config list actions ────────────────────────────────────────────────
+    private void SelectConfig(TrdpSessionConfig cfg)
+    {
+        _activeConfig = cfg;
+    }
+
+    private void Deselect() => _activeConfig = null;
+
+    private void CreateNew()
+    {
+        var cfg = new TrdpSessionConfig
+        {
+            Nombre      = "Nueva Config TRDP",
+            Descripcion = "Configuración TRDP personalizada",
+            UseDynamicMapping = true
+        };
+        SelectConfig(cfg);
+    }
+
+    private async Task SaveConfig()
+    {
+        if (_activeConfig is null) return;
+        _isSaving = true;
+        try
+        {
+            _activeConfig = await TrdpService.SaveAsync(_activeConfig);
+            _configs = await TrdpService.GetAllAsync();
+            Snackbar.Add("Configuración guardada correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+        }
+        finally { _isSaving = false; }
+    }
+
+    private async Task DeleteConfig(TrdpSessionConfig cfg)
+    {
+        bool? ok = await DialogService.ShowMessageBoxAsync(
+            "Eliminar", $"¿Eliminar '{cfg.Nombre}'?", yesText: "Eliminar", cancelText: "Cancelar");
+        if (ok == true)
+        {
+            await TrdpService.DeleteAsync(cfg.Id);
+            _configs.Remove(cfg);
+            Snackbar.Add("Configuración eliminada.", Severity.Info);
+            StateHasChanged();
+        }
+    }
+
+    private async Task DuplicateConfig(TrdpSessionConfig cfg)
+    {
+        var copy = await TrdpService.DuplicateAsync(cfg.Id);
+        _configs = await TrdpService.GetAllAsync();
+        Snackbar.Add($"'{cfg.Nombre}' duplicada.", Severity.Success);
+        StateHasChanged();
+    }
+
+    // ── Import / Export ────────────────────────────────────────────────────
+    private async Task OpenImportDialog()
+    {
+        await JS.InvokeVoidAsync("eval", "document.getElementById('trdp-import-file').click()");
+    }
+
+    private async Task HandleImportFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+        try
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var nombre = System.IO.Path.GetFileNameWithoutExtension(file.Name);
+            var cfg = TrdpService.ImportFromJson(json, nombre);
+            cfg = await TrdpService.SaveAsync(cfg);
+            _configs = await TrdpService.GetAllAsync();
+            Snackbar.Add($"Importado '{cfg.Nombre}' con éxito.", Severity.Success);
+            SelectConfig(cfg);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al importar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportJson()
+    {
+        if (_activeConfig is null) return;
+        var json = TrdpService.ExportToJson(_activeConfig);
+        var b64  = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+        var name = (_activeConfig.Nombre.Length > 0 ? _activeConfig.Nombre : "trdp_config").Replace(" ", "_") + ".json";
+        await JS.InvokeVoidAsync("eval",
+            $"(function(){{var a=document.getElementById('trdp-export-link');a.href='data:application/json;base64,{b64}';a.download='{name}';a.click();}})()");
+        Snackbar.Add("JSON exportado.", Severity.Info);
+    }
+
+    // ── Backend: Deploy / Receive ──────────────────────────────────────────
+
+    private async Task OpenSendDialog()
+    {
+        if (_activeConfig is null) return;
+        var dlg = await DialogService.ShowAsync<TrdpDeployDialog>("Enviar al dispositivo",
+            new DialogParameters
+            {
+                ["Mode"]       = TrdpDeployDialog.DeployMode.Send,
+                ["Config"]     = _activeConfig,
+                ["DefaultUrl"] = _deviceUrl
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        await dlg.Result; // result is bool (true = success), nothing to do except let user see it
+    }
+
+    private async Task OpenReceiveDialog()
+    {
+        var dlg = await DialogService.ShowAsync<TrdpDeployDialog>("Leer del dispositivo",
+            new DialogParameters
+            {
+                ["Mode"]       = TrdpDeployDialog.DeployMode.Receive,
+                ["DefaultUrl"] = _deviceUrl
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dlg.Result;
+        // If user confirmed a received config, the dialog already closed with the imported cfg
+        if (result is { Canceled: false, Data: TrdpSessionConfig imported })
+        {
+            var saved = await TrdpService.SaveAsync(imported);
+            _configs  = await TrdpService.GetAllAsync();
+            Snackbar.Add($"Configuración del dispositivo importada: '{saved.Nombre}'", Severity.Success);
+            SelectConfig(saved);
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenSetModeDialog()
+    {
+        if (_activeConfig is null) return;
+        var dlg = await DialogService.ShowAsync<TrdpDeployDialog>("Cambiar modo en dispositivo",
+            new DialogParameters
+            {
+                ["Mode"]       = TrdpDeployDialog.DeployMode.SetMode,
+                ["NewMode"]    = _activeConfig.UseDynamicMapping,
+                ["DefaultUrl"] = _deviceUrl
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        await dlg.Result;
+    }
+
+    // ── Networks ───────────────────────────────────────────────────────────
+    private async Task AddNetwork()
+    {
+        if (_activeConfig is null) return;
+        var net = new TrdpNetwork { Name = "nueva_red", ReceivedIp = "10.0.0.1" };
+        var dialog = await DialogService.ShowAsync<TrdpNetworkDialog>("Nueva Red",
+            new DialogParameters { ["Network"] = net },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: TrdpNetwork saved })
+        {
+            var nets = _activeConfig.Networks;
+            nets.Add(saved);
+            _activeConfig.Networks = nets;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditNetwork(int idx)
+    {
+        if (_activeConfig is null) return;
+        var nets = _activeConfig.Networks;
+        var clone = CloneJson(nets[idx]);
+        var dialog = await DialogService.ShowAsync<TrdpNetworkDialog>("Editar Red",
+            new DialogParameters { ["Network"] = clone },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: TrdpNetwork saved })
+        {
+            nets[idx] = saved;
+            _activeConfig.Networks = nets;
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveNetwork(int idx)
+    {
+        if (_activeConfig is null) return;
+        var nets = _activeConfig.Networks;
+        nets.RemoveAt(idx);
+        _activeConfig.Networks = nets;
+        StateHasChanged();
+    }
+
+    // ── Dataset Variables ──────────────────────────────────────────────────
+
+    private async Task AddDatasetVar(string dsName)
+    {
+        if (_activeConfig is null) return;
+        var v = new TrdpDatasetVariable { Id = "nueva_var", Offset = 0, Type = "uint16" };
+        var result = await OpenVarDialog(dsName, v, isNew: true);
+        if (result is not null)
+        {
+            var datasets = _activeConfig.CommsDatasets;
+            datasets[dsName].Variables.Add(result.Variable);
+            // No links yet (new variable)
+            _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditDatasetVar(string dsName, TrdpDatasetVariable variable)
+    {
+        if (_activeConfig is null) return;
+        var datasets       = _activeConfig.CommsDatasets;
+        var ds             = datasets[dsName];
+        // Extract this variable's existing links
+        var varLinks       = ds.VariableLinks.Where(l => l.TargetCommsVar == variable.Id).ToList();
+        var varClone       = CloneJson(variable);
+        var linksClone     = varLinks.Select(l => CloneJson(l)).ToList();
+
+        var result = await OpenVarDialog(dsName, varClone, isNew: false, existingLinks: linksClone);
+        if (result is not null)
+        {
+            var vars = ds.Variables;
+            var idx  = vars.FindIndex(v => v.Id == variable.Id);
+            if (idx >= 0) vars[idx] = result.Variable;
+
+            // Reconcile links: remove old ones for this var, add updated ones
+            ds.VariableLinks.RemoveAll(l => l.TargetCommsVar == variable.Id);
+            ds.VariableLinks.AddRange(result.Links);
+
+            _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<TrdpVarEditResult?> OpenVarDialog(
+        string dsName,
+        TrdpDatasetVariable variable,
+        bool isNew,
+        List<TrdpVariableLink>? existingLinks = null)
+    {
+        var dlg = await DialogService.ShowAsync<TrdpDatasetVarDialog>(
+            isNew ? "Nueva Variable" : $"Editar – {variable.Id}",
+            new DialogParameters
+            {
+                ["Variable"]      = variable,
+                ["IsNew"]         = isNew,
+                ["ExistingLinks"] = existingLinks ?? new List<TrdpVariableLink>(),
+                ["ControlVarTags"] = _controlVarTags
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dlg.Result;
+        return result is { Canceled: false, Data: TrdpVarEditResult r } ? r : null;
+    }
+
+    private void RemoveDatasetVar(string dsName, TrdpDatasetVariable variable)
+    {
+        if (_activeConfig is null) return;
+        var datasets = _activeConfig.CommsDatasets;
+        datasets[dsName].Variables.Remove(variable);
+        // Also remove orphaned links
+        datasets[dsName].VariableLinks.RemoveAll(l => l.TargetCommsVar == variable.Id);
+        _activeConfig.CommsDatasets = datasets;
+        StateHasChanged();
+    }
+
+    // ── Control Commands Rules ──────────────────────────────────────────────
+
+    private async Task AddControlCommandRule(string dsName)
+    {
+        if (_activeConfig is null) return;
+        var rule = new TrdpControlCommandRule
+        {
+            Id = $"rule_{DateTime.UtcNow.Ticks % 10000}",
+            Trigger = "rising_edge",
+            MinIntervalMs = 1000
+        };
+        await EditControlCommandRule(dsName, rule, isNew: true);
+    }
+
+    private async Task EditControlCommandRule(string dsName, TrdpControlCommandRule rule, bool isNew = false)
+    {
+        if (_activeConfig is null) return;
+        var datasets = _activeConfig.CommsDatasets;
+        var ds = datasets[dsName];
+        var ctrlVars = _activeConfig.ControlFrame.Variables.Select(v => v.Id).ToList();
+        var ruleClone = CloneJson(rule);
+
+        var dlg = await DialogService.ShowAsync<TrdpControlCommandRuleDialog>(
+            isNew ? "Nueva Regla a Control" : $"Editar Regla – {rule.Id}",
+            new DialogParameters
+            {
+                ["Rule"]             = ruleClone,
+                ["DatasetVariables"] = ds.Variables,
+                ["ControlVariables"] = ctrlVars,
+                ["IsNew"]            = isNew
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+
+        var result = await dlg.Result;
+        if (result is { Canceled: false, Data: TrdpControlCommandRule savedRule })
+        {
+            if (isNew)
+            {
+                ds.ControlCommands.Add(savedRule);
+            }
+            else
+            {
+                var idx = ds.ControlCommands.FindIndex(r => r.Id == rule.Id);
+                if (idx >= 0) ds.ControlCommands[idx] = savedRule;
+                else ds.ControlCommands.Add(savedRule);
+            }
+
+            _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveControlCommandRule(string dsName, TrdpControlCommandRule rule)
+    {
+        if (_activeConfig is null) return;
+        var datasets = _activeConfig.CommsDatasets;
+        datasets[dsName].ControlCommands.Remove(rule);
+        _activeConfig.CommsDatasets = datasets;
+        StateHasChanged();
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    private void PersistControlFrame(TrdpControlFrameConfig cf)
+    {
+        if (_activeConfig is null) return;
+        _activeConfig.ControlFrame = cf;
+    }
+
+    private static T CloneJson<T>(T obj)
+        => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(obj, TrdpJsonOptions.Default), TrdpJsonOptions.Default)!;
+
+    public void Dispose() { }
+}
+

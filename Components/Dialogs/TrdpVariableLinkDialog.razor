@@ -1,0 +1,365 @@
+@using ApsMonitor.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Class="trdp-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.AccountTree" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@(IsNew ? "Nuevo Mapping" : "Editar Mapping")</MudText>
+            @if (!string.IsNullOrEmpty(FixedTarget))
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">→ @FixedTarget</MudChip>
+            }
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <!-- Tipo -->
+            <MudItem xs="12">
+                <MudSelect Value="Link.Type" Label="Tipo de mapping *" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" FullWidth="true" AnchorOrigin="Origin.BottomCenter"
+                           T="string" ValueChanged="OnTypeChanged">
+                    <MudSelectItem Value='"analog"'>Analog – escalar variable analógica</MudSelectItem>
+                    <MudSelectItem Value='"bit_to_bit"'>Bit to bit – copiar un bit</MudSelectItem>
+                    <MudSelectItem Value='"condition_to_bit"'>Condition to bit – condición → bit</MudSelectItem>
+                    <MudSelectItem Value='"logic_to_bit"'>Logic to bit – OR/AND de múltiples fuentes</MudSelectItem>
+                    <MudSelectItem Value='"constant"'>Constant – valor fijo</MudSelectItem>
+                    <MudSelectItem Value='"direct_copy"'>Direct copy – copia directa de bytes</MudSelectItem>
+                    <MudSelectItem Value='"sequence"'>Sequence – life-counter incremental</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <!-- Source (single-source types) -->
+            @if (Link.Type is "analog" or "bit_to_bit" or "condition_to_bit" or "direct_copy")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete @bind-Value="Link.SourceControlVar"
+                                     Label="Variable de control (source)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                     SearchFunc="SearchControlVars" ShowProgressIndicator="true"
+                                     Placeholder="Escribir tag de señal…" MaxItems="40" T="string" />
+                </MudItem>
+            }
+
+            <!-- Source bit (bit_to_bit) -->
+            @if (Link.Type is "bit_to_bit")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_sourceBit" Label="Bit origen (0-15)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
+                </MudItem>
+            }
+
+            <!-- Target bit (bit-based types) -->
+            @if (Link.Type is "bit_to_bit" or "condition_to_bit" or "logic_to_bit")
+            {
+                <MudItem xs="12" sm="@(Link.Type == "logic_to_bit" ? 12 : 6)">
+                    <MudNumericField @bind-Value="_targetBit" Label="Bit destino (0-15)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
+                </MudItem>
+            }
+
+            <!-- Analog fields -->
+            @if (Link.Type == "analog")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_scale" Label="Escala (scale)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_offset" Label="Offset"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
+                </MudItem>
+            }
+
+            <!-- Constant value -->
+            @if (Link.Type == "constant")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_constValue" Label="Valor constante"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                </MudItem>
+            }
+
+            <!-- Direct copy length -->
+            @if (Link.Type == "direct_copy")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_length" Label="Longitud (bytes)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
+                </MudItem>
+            }
+
+            <!-- Condition to bit -->
+            @if (Link.Type == "condition_to_bit")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Link.Condition" Label="Condición" Variant="Variant.Outlined"
+                               Margin="Margin.Dense" FullWidth="true" T="string">
+                        <MudSelectItem Value='"equals"'>equals – igual a valor</MudSelectItem>
+                        <MudSelectItem Value='"in_list"'>in_list – está en lista de valores</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                @if (Link.Condition == "equals")
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="_condValue" Label="Valor de comparación"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+                    </MudItem>
+                }
+                else if (Link.Condition == "in_list")
+                {
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_valuesText" Label="Lista de valores (separados por coma)"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                      Placeholder="1, 76, 77, 78" HelperText="Enteros separados por coma" />
+                    </MudItem>
+                }
+            }
+
+            <!-- set_only flag -->
+            @if (Link.Type is "bit_to_bit" or "condition_to_bit")
+            {
+                <MudItem xs="12">
+                    <MudCheckBox @bind-Value="Link.SetOnly" Label="set_only (solo activar, no resetear)" Color="Color.Info" />
+                </MudItem>
+            }
+
+            <!-- ── logic_to_bit ─────────────────────────────────────────── -->
+            @if (Link.Type == "logic_to_bit")
+            {
+                <MudItem xs="12">
+                    <div class="d-flex align-center gap-3 mb-2">
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">Operador lógico</MudText>
+                        <MudSelect @bind-Value="Link.Operator" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   Style="max-width:140px" T="string">
+                            <MudSelectItem Value='"OR"'>OR (cualquiera)</MudSelectItem>
+                            <MudSelectItem Value='"AND"'>AND (todas)</MudSelectItem>
+                        </MudSelect>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">
+                            Entradas (@(Link.Inputs?.Count ?? 0))
+                        </MudText>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                   StartIcon="@Icons.Material.Filled.Add" OnClick="AddInput">
+                            Añadir entrada
+                        </MudButton>
+                    </div>
+
+                    @if (Link.Inputs is { Count: > 0 })
+                    {
+                        @foreach (var (inp, idx) in Link.Inputs.Select((x, i) => (x, i)))
+                        {
+                            <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                                <MudGrid Spacing="2">
+                                    <!-- Modo: bit o condición -->
+                                    <MudItem xs="12" sm="3">
+                                        <MudSelect Value="@(inp.SourceBit.HasValue ? "bit" : "condition")"
+                                                   ValueChanged="@((string m) => OnInputModeChanged(inp, m))"
+                                                   Label="Modo" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" T="string">
+                                            <MudSelectItem Value='"bit"'>Bit de control</MudSelectItem>
+                                            <MudSelectItem Value='"condition"'>Condición</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+
+                                    <!-- Source var -->
+                                    <MudItem xs="12" sm="4">
+                                        <MudAutocomplete Value="inp.SourceControlVar"
+                                                         ValueChanged="@((string v) => inp.SourceControlVar = v)"
+                                                         Label="Variable control" Variant="Variant.Outlined"
+                                                         Margin="Margin.Dense" FullWidth="true"
+                                                         SearchFunc="SearchControlVars" MaxItems="40" T="string" />
+                                    </MudItem>
+
+                                    @if (inp.SourceBit.HasValue)
+                                    {
+                                        <!-- Bit mode -->
+                                        <MudItem xs="12" sm="4">
+                                            <MudNumericField Value="@(inp.SourceBit ?? 0)"
+                                                             ValueChanged="@((int b) => inp.SourceBit = b)"
+                                                             Label="Bit (0-15)" Variant="Variant.Outlined"
+                                                             Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
+                                        </MudItem>
+                                    }
+                                    else
+                                    {
+                                        <!-- Condition mode -->
+                                        <MudItem xs="12" sm="2">
+                                            <MudSelect Value="@(inp.Condition ?? "equals")"
+                                                       ValueChanged="@((string c) => inp.Condition = c)"
+                                                       Label="Cond." Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" T="string">
+                                                <MudSelectItem Value='"equals"'>==</MudSelectItem>
+                                                <MudSelectItem Value='"in_list"'>in</MudSelectItem>
+                                            </MudSelect>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="5">
+                                            @if (inp.Condition == "in_list")
+                                            {
+                                                <MudTextField Value="@ValuesToText(inp.Values)"
+                                                              ValueChanged="@((string t) => inp.Values = TextToValues(t))"
+                                                              Label="Valores (coma)" Variant="Variant.Outlined"
+                                                              Margin="Margin.Dense" FullWidth="true"
+                                                              Placeholder="1, 76, 77" />
+                                            }
+                                            else
+                                            {
+                                                <MudNumericField Value="@(inp.Value ?? 0)"
+                                                                 ValueChanged="@((double v) => inp.Value = v)"
+                                                                 Label="Valor" Variant="Variant.Outlined"
+                                                                 Margin="Margin.Dense" FullWidth="true" />
+                                            }
+                                        </MudItem>
+                                    }
+
+                                    <MudItem xs="12" sm="1" Class="d-flex align-center justify-end">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                       Size="Size.Small" OnClick="@(() => Link.Inputs!.RemoveAt(idx))" />
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Class="trdp-muted">Sin entradas. Añade al menos 2.</MudText>
+                    }
+                </MudItem>
+            }
+
+            <!-- Comment -->
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Link.Comment" Label="Comentario (opcional)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
+                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-dialog .mud-dialog-content { max-height: 80vh; overflow-y: auto; }
+</style>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public TrdpVariableLink Link { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; } = true;
+    /// <summary>Pre-set target_comms_var (shown read-only). If empty, the target is free.</summary>
+    [Parameter] public string FixedTarget { get; set; } = string.Empty;
+    [Parameter] public List<string> ControlVarTags { get; set; } = new();
+
+    // Numeric helpers
+    private double _scale      { get => Link.Scale    ?? 1.0; set => Link.Scale    = value; }
+    private double _offset     { get => Link.Offset   ?? 0.0; set => Link.Offset   = value; }
+    private double _constValue { get => Link.Value    ?? 0.0; set => Link.Value    = value; }
+    private double _condValue  { get => Link.Value    ?? 0.0; set => Link.Value    = value; }
+    private int    _sourceBit  { get => Link.SourceBit  ?? 0; set => Link.SourceBit  = value; }
+    private int    _targetBit  { get => Link.TargetBit  ?? 0; set => Link.TargetBit  = value; }
+    private int    _length     { get => Link.Length   ?? 1;   set => Link.Length   = value; }
+    private string _valuesText = "";
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(FixedTarget))
+            Link.TargetCommsVar = FixedTarget;
+
+        // Init condition text for in_list
+        _valuesText = Link.Values is { Count: > 0 }
+            ? string.Join(", ", Link.Values.Select(v => ((int)v).ToString()))
+            : "";
+
+        // Default logic_to_bit
+        if (Link.Type == "logic_to_bit")
+        {
+            Link.Operator ??= "OR";
+            Link.Inputs ??= new();
+        }
+    }
+
+    private void OnTypeChanged(string newType)
+    {
+        Link.Type = newType;
+        if (newType is "constant" or "sequence")        Link.SourceControlVar = null;
+        if (newType is not ("bit_to_bit" or "condition_to_bit" or "logic_to_bit"))
+        { Link.SourceBit = null; Link.TargetBit = null; Link.SetOnly = false; }
+        if (newType != "analog")        { Link.Scale = null; Link.Offset = null; }
+        if (newType != "constant")      Link.Value = null;
+        if (newType != "direct_copy")   Link.Length = null;
+        if (newType != "condition_to_bit") { Link.Condition = null; Link.Values = null; }
+        if (newType == "logic_to_bit")  { Link.Operator ??= "OR"; Link.Inputs ??= new(); }
+        else                            { Link.Operator = null; Link.Inputs = null; }
+    }
+
+    private void AddInput()
+    {
+        Link.Inputs ??= new();
+        Link.Inputs.Add(new TrdpLogicInput { SourceControlVar = "", Condition = "equals", Value = 0 });
+        StateHasChanged();
+    }
+
+    private void OnInputModeChanged(TrdpLogicInput inp, string mode)
+    {
+        if (mode == "bit") { inp.SourceBit = 0; inp.Condition = null; inp.Value = null; inp.Values = null; }
+        else               { inp.SourceBit = null; inp.Condition = "equals"; inp.Value = 0; }
+        StateHasChanged();
+    }
+
+    private Task<IEnumerable<string>> SearchControlVars(string value, CancellationToken ct)
+    {
+        var results = string.IsNullOrWhiteSpace(value)
+            ? ControlVarTags
+            : ControlVarTags.Where(t => t.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(results.Take(40));
+    }
+
+    private static string ValuesToText(List<double>? vals)
+        => vals is { Count: > 0 } ? string.Join(", ", vals.Select(v => ((int)v).ToString())) : "";
+
+    private static List<double> TextToValues(string text)
+        => text.Split(',', StringSplitOptions.RemoveEmptyEntries)
+               .Select(s => double.TryParse(s.Trim(), out var d) ? d : 0)
+               .ToList();
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (!string.IsNullOrEmpty(FixedTarget))
+            Link.TargetCommsVar = FixedTarget;
+
+        if (string.IsNullOrWhiteSpace(Link.TargetCommsVar))
+        {
+            Snackbar.Add("La variable de dataset destino es obligatoria.", Severity.Warning);
+            return;
+        }
+        if (Link.Type == "logic_to_bit" && (Link.Inputs == null || Link.Inputs.Count < 2))
+        {
+            Snackbar.Add("logic_to_bit requiere al menos 2 entradas.", Severity.Warning);
+            return;
+        }
+
+        // Sync in_list values for condition_to_bit
+        if (Link.Type == "condition_to_bit" && Link.Condition == "in_list")
+        {
+            Link.Values = TextToValues(_valuesText);
+            Link.Value  = null;
+        }
+        else if (Link.Type == "condition_to_bit" && Link.Condition == "equals")
+        {
+            Link.Values = null;
+        }
+
+        MudDialog.Close(DialogResult.Ok(Link));
+    }
+}

@@ -1,0 +1,318 @@
+@using ApsMonitor.Models
+@using ApsMonitor.Services
+@inject ISnackbar Snackbar
+@inject TrdpBackendService BackendService
+@inject TrdpConfigService TrdpConfigService
+
+<MudDialog Class="trdp-deploy-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@_titleIcon" Style="@_titleIconStyle" />
+            <MudText Typo="Typo.h6">@_title</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+
+        @if (_phase == Phase.Form)
+        {
+            <MudGrid Spacing="3">
+                <!-- Device IP -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_deviceUrl"
+                                  Label="IP o URL del dispositivo"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                  Placeholder="192.168.1.100  ó  http://192.168.1.100:8080"
+                                  HelperText="Puerto 8080 por defecto. Acepta IP, hostname o URL completa."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Router" />
+                </MudItem>
+
+                @if (Mode == DeployMode.Send)
+                {
+                    <!-- Restart option -->
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <div class="d-flex align-center gap-3">
+                                <MudCheckBox @bind-Value="_restartService" Color="Color.Warning" />
+                                <div>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">Reiniciar servicio ecnmanager</MudText>
+                                    <MudText Typo="Typo.caption" Style="color:#94a3b8;">
+                                        El backend ejecutará <code>systemctl restart ecnmanager</code> tras guardar.
+                                        La configuración se aplicará inmediatamente.
+                                    </MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+
+                    <!-- Config summary -->
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#0f172a; border:1px solid rgba(255,255,255,0.04); border-radius:8px;">
+                            <MudText Typo="Typo.caption" Style="color:#64748b;" Class="mb-1">CONFIGURACIÓN A ENVIAR</MudText>
+                            <div class="d-flex gap-2 flex-wrap mt-1">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                                    @Config!.Networks.Count redes
+                                </MudChip>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined">
+                                    @Config!.CommsDatasets.Count datasets
+                                </MudChip>
+                                @if (Config!.UseDynamicMapping)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                        dynamic_mapping
+                                    </MudChip>
+                                }
+                                <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Outlined">
+                                    @Config!.Nombre
+                                </MudChip>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+
+                    <!-- Warning -->
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="rounded-lg">
+                            El archivo <code>/etc/sepsa/ecnmanager.json</code> en el dispositivo será
+                            sobreescrito. El backend generará una copia de seguridad <code>.bak</code> automáticamente.
+                        </MudAlert>
+                    </MudItem>
+                }
+                else if (Mode == DeployMode.Receive)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="rounded-lg">
+                            Se leerá <code>/etc/sepsa/ecnmanager.json</code> del dispositivo y se importará
+                            como nueva configuración en la base de datos local.
+                        </MudAlert>
+                    </MudItem>
+                }
+                else if (Mode == DeployMode.SetMode)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <MudText Typo="Typo.body2" Class="mb-2 fw-bold">Nuevo modo:</MudText>
+                            <div class="d-flex gap-3">
+                                <MudChip T="string"
+                                         Color="@(NewMode ? Color.Success : Color.Default)"
+                                         Variant="@(NewMode ? Variant.Filled : Variant.Outlined)"
+                                         Size="Size.Medium"
+                                         OnClick="@(() => NewMode = true)">
+                                    <MudIcon Icon="@Icons.Material.Filled.AutoMode" Class="mr-1" />
+                                    Dynamic mapping
+                                </MudChip>
+                                <MudChip T="string"
+                                         Color="@(!NewMode ? Color.Warning : Color.Default)"
+                                         Variant="@(!NewMode ? Variant.Filled : Variant.Outlined)"
+                                         Size="Size.Medium"
+                                         OnClick="@(() => NewMode = false)">
+                                    <MudIcon Icon="@Icons.Material.Filled.SettingsInputComponent" Class="mr-1" />
+                                    Legacy
+                                </MudChip>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else if (_phase == Phase.Working)
+        {
+            <div class="d-flex flex-column align-center py-6 gap-4">
+                <MudProgressCircular Color="Color.Info" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.body1" Style="color:#94a3b8;">@_workingMessage</MudText>
+            </div>
+        }
+        else if (_phase == Phase.Done)
+        {
+            <div class="d-flex flex-column align-center py-4 gap-3">
+                <MudIcon Icon="@(_resultOk ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)"
+                         Style="@($"font-size:3.5rem; color:{(_resultOk ? "#22c55e" : "#ef4444")}")" />
+                <MudText Typo="Typo.h6" Style="@($"color:{(_resultOk ? "#22c55e" : "#ef4444")}")">
+                    @(_resultOk ? "Operación completada" : "Error")
+                </MudText>
+                <MudText Typo="Typo.body2" Style="color:#94a3b8; text-align:center; max-width:440px; white-space:pre-wrap; word-break:break-all;">
+                    @_resultMessage
+                </MudText>
+                @if (_resultOk && Mode == DeployMode.Send && _restartService)
+                {
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.RestartAlt">
+                        Servicio reiniciado
+                    </MudChip>
+                }
+            </div>
+        }
+
+    </DialogContent>
+    <DialogActions>
+        @if (_phase == Phase.Form)
+        {
+            <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+            <MudButton Color="Color.Info" Variant="Variant.Filled"
+                       StartIcon="@_actionIcon" OnClick="Execute"
+                       Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)">
+                @_actionLabel
+            </MudButton>
+        }
+        else if (_phase == Phase.Done)
+        {
+            <MudButton OnClick="Close" Variant="Variant.Filled"
+                       Color="@(_resultOk ? Color.Success : Color.Default)">
+                Cerrar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .trdp-deploy-dialog .mud-dialog-content { min-width: 480px; }
+    code {
+        background: rgba(255,255,255,0.07);
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: .82em;
+        color: #7dd3fc;
+    }
+</style>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    public enum DeployMode { Send, Receive, SetMode }
+
+    [Parameter] public DeployMode Mode    { get; set; } = DeployMode.Send;
+    [Parameter] public TrdpSessionConfig? Config { get; set; }
+    /// <summary>Initial value for the mode toggle (only used in SetMode).</summary>
+    [Parameter] public bool NewMode       { get; set; } = true;
+    [Parameter] public string DefaultUrl  { get; set; } = string.Empty;
+
+    // ── Internal state ─────────────────────────────────────────────────────
+    private enum Phase { Form, Working, Done }
+    private Phase  _phase          = Phase.Form;
+    private string _deviceUrl      = string.Empty;
+    private bool   _restartService = false;
+    private string _workingMessage = "Conectando…";
+    private bool   _resultOk;
+    private string _resultMessage  = string.Empty;
+
+    // ── Computed UI strings ────────────────────────────────────────────────
+    private string _title => Mode switch
+    {
+        DeployMode.Send    => "Enviar configuración al dispositivo",
+        DeployMode.Receive => "Leer configuración del dispositivo",
+        DeployMode.SetMode => "Cambiar modo de mapping",
+        _                  => "Backend TRDP"
+    };
+    private string _titleIcon => Mode switch
+    {
+        DeployMode.Send    => Icons.Material.Filled.Upload,
+        DeployMode.Receive => Icons.Material.Filled.Download,
+        DeployMode.SetMode => Icons.Material.Filled.Tune,
+        _                  => Icons.Material.Filled.Hub
+    };
+    private string _titleIconStyle => "color:#38bdf8; font-size:1.6rem;";
+    private string _actionIcon => Mode switch
+    {
+        DeployMode.Send    => Icons.Material.Filled.Send,
+        DeployMode.Receive => Icons.Material.Filled.CloudDownload,
+        DeployMode.SetMode => Icons.Material.Filled.SettingsInputComponent,
+        _                  => Icons.Material.Filled.Done
+    };
+    private string _actionLabel => Mode switch
+    {
+        DeployMode.Send    => "Enviar",
+        DeployMode.Receive => "Leer y importar",
+        DeployMode.SetMode => "Aplicar modo",
+        _                  => "Ejecutar"
+    };
+
+    protected override void OnInitialized()
+    {
+        _deviceUrl = DefaultUrl;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Close()  => MudDialog.Close(DialogResult.Ok(_resultOk));
+
+    private async Task Execute()
+    {
+        _phase          = Phase.Working;
+        _workingMessage = Mode switch
+        {
+            DeployMode.Send    => "Enviando configuración…",
+            DeployMode.Receive => "Leyendo configuración del dispositivo…",
+            DeployMode.SetMode => "Aplicando modo…",
+            _                  => "Procesando…"
+        };
+        StateHasChanged();
+
+        switch (Mode)
+        {
+            case DeployMode.Send:
+                await ExecuteSend();
+                break;
+            case DeployMode.Receive:
+                await ExecuteReceive();
+                break;
+            case DeployMode.SetMode:
+                await ExecuteSetMode();
+                break;
+        }
+
+        _phase = Phase.Done;
+        StateHasChanged();
+    }
+
+    private async Task ExecuteSend()
+    {
+        if (Config is null) { Fail("No hay configuración seleccionada."); return; }
+        var result = await BackendService.SendConfigAsync(_deviceUrl, Config, _restartService);
+        if (result.IsSuccess)
+        {
+            _resultOk      = true;
+            _resultMessage = result.Data?.Message ?? "Configuración enviada correctamente.";
+        }
+        else
+        {
+            Fail(result.Error);
+        }
+    }
+
+    private async Task ExecuteReceive()
+    {
+        var result = await BackendService.GetConfigAsync(_deviceUrl);
+        if (!result.IsSuccess) { Fail(result.Error); return; }
+
+        try
+        {
+            var cfg = TrdpConfigService.ImportFromJson(result.Data!, $"Dispositivo {_deviceUrl}");
+            _resultOk      = true;
+            _resultMessage = $"Configuración importada desde el dispositivo: {cfg.Networks.Count} redes, {cfg.CommsDatasets.Count} datasets.";
+            MudDialog.Close(DialogResult.Ok(cfg));
+            return;
+        }
+        catch (Exception ex)
+        {
+            Fail($"El JSON recibido no es válido: {ex.Message}");
+        }
+    }
+
+    private async Task ExecuteSetMode()
+    {
+        var result = await BackendService.SetModeAsync(_deviceUrl, NewMode);
+        if (result.IsSuccess)
+        {
+            _resultOk      = true;
+            _resultMessage = result.Data?.Message
+                ?? $"Modo cambiado a {(NewMode ? "dynamic" : "legacy")} correctamente.";
+        }
+        else
+        {
+            Fail(result.Error);
+        }
+    }
+
+    private void Fail(string msg)
+    {
+        _resultOk      = false;
+        _resultMessage = msg;
+    }
+}

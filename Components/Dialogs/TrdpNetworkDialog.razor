@@ -1,0 +1,150 @@
+@using ApsMonitor.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Class="trdp-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Hub" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@(Network.Name == "" ? "Nueva Red TRDP" : $"Editar Red – {Network.Name}")</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <!-- Basic info -->
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Network.Name"
+                              Label="Nombre de red *"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Required="true" Placeholder="p.ej. aps1_r1" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Network.ReceivedIp"
+                              Label="IP de escucha (received_ip) *"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Required="true" Placeholder="10.0.68.98" />
+            </MudItem>
+
+            <MudItem xs="12"><MudDivider /></MudItem>
+
+            <!-- Publishers -->
+            <MudItem xs="12">
+                <div class="d-flex justify-space-between align-center mb-2">
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8">
+                        <MudIcon Icon="@Icons.Material.Filled.Upload" Size="Size.Small" Class="mr-1" />Publishers
+                    </MudText>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddPublisher">Añadir</MudButton>
+                </div>
+
+                @foreach (var (pub, idx) in Network.Publishers.Select((p, i) => (p, i)))
+                {
+                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#1a222c; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="pub.Name" Label="Nombre" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="pub.Ip" Label="IP multicast" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" Placeholder="239.255.4.98" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudNumericField @bind-Value="pub.ComId" Label="Com ID" Variant="Variant.Outlined"
+                                                 Margin="Margin.Dense" FullWidth="true" Min="0" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField @bind-Value="pub.Dataset" Label="Dataset" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" Placeholder="TelemetryAPS" />
+                            </MudItem>
+                            <MudItem xs="12" sm="3">
+                                <MudNumericField @bind-Value="pub.Interval" Label="Intervalo (µs)" Variant="Variant.Outlined"
+                                                 Margin="Margin.Dense" FullWidth="true" Min="0" />
+                            </MudItem>
+                            <MudItem xs="12" sm="1" Class="d-flex align-center justify-end">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" OnClick="@(() => Network.Publishers.RemoveAt(idx))" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                }
+            </MudItem>
+
+            <MudItem xs="12"><MudDivider /></MudItem>
+
+            <!-- Subscribers -->
+            <MudItem xs="12">
+                <div class="d-flex justify-space-between align-center mb-2">
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#a78bfa">
+                        <MudIcon Icon="@Icons.Material.Filled.Download" Size="Size.Small" Class="mr-1" />Subscribers
+                    </MudText>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddSubscriber">Añadir</MudButton>
+                </div>
+
+                @foreach (var (sub, idx) in Network.Subscribers.Select((s, i) => (s, i)))
+                {
+                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#1a222c; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="sub.Name" Label="Nombre" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="sub.Ip" Label="IP multicast" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" Placeholder="239.255.0.16" />
+                            </MudItem>
+                            <MudItem xs="12" sm="5">
+                                <MudNumericField @bind-Value="sub.ComId" Label="Com ID" Variant="Variant.Outlined"
+                                                 Margin="Margin.Dense" FullWidth="true" Min="0" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="sub.Dataset" Label="Dataset" Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" FullWidth="true" Placeholder="TCMS_PLCFrame" />
+                            </MudItem>
+                            <MudItem xs="12" sm="1" Class="d-flex align-center justify-end">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" OnClick="@(() => Network.Subscribers.RemoveAt(idx))" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                }
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
+                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public TrdpNetwork Network { get; set; } = new();
+
+    private void AddPublisher()
+        => Network.Publishers.Add(new TrdpPublisher { Name = "Nuevo_Publisher", Ip = "239.255.0.0", Dataset = "TelemetryAPS" });
+
+    private void AddSubscriber()
+        => Network.Subscribers.Add(new TrdpSubscriber { Name = "Nuevo_Subscriber", Ip = "239.255.0.16", Dataset = "TCMS_PLCFrame" });
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Network.Name) || string.IsNullOrWhiteSpace(Network.ReceivedIp))
+        {
+            Snackbar.Add("El nombre y la IP de escucha son obligatorios.", Severity.Warning);
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(Network));
+    }
+}
+
+<style>
+    .trdp-dialog .mud-dialog-content {
+        max-height: 78vh;
+        overflow-y: auto;
+    }
+</style>
