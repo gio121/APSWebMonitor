@@ -4,11 +4,20 @@
 
 <MudDialog Class="trdp-rule-dialog">
     <TitleContent>
-        <div class="d-flex align-center gap-2">
-            <MudIcon Icon="@Icons.Material.Filled.Rule" Color="Color.Info" />
-            <MudText Typo="Typo.h6" Class="fw-bold">
-                @(IsNew ? "Nueva Regla a Control (control_commands)" : $"Editar Regla '{Rule.Id}'")
-            </MudText>
+        <div class="d-flex align-center justify-space-between gap-2 flex-wrap">
+            <div class="d-flex align-center gap-2">
+                <MudIcon Icon="@Icons.Material.Filled.Rule" Color="Color.Info" />
+                <MudText Typo="Typo.h6" Class="fw-bold">
+                    @(IsNew ? "Nueva Regla a Control (control_commands)" : $"Editar Regla '{Rule.Id}'")
+                </MudText>
+                @if (!Rule.Deletable)
+                {
+                    <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined">
+                        Sistema / No eliminable
+                    </MudChip>
+                }
+            </div>
+            <MudCheckBox @bind-Value="Rule.Enabled" Label="Regla Habilitada (enabled)" Color="Color.Success" />
         </div>
     </TitleContent>
 
@@ -22,6 +31,7 @@
                         <MudItem xs="12" sm="6">
                             <MudTextField @bind-Value="Rule.Id" Label="ID de la regla *" Required="true"
                                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                                          Disabled="@(!Rule.Deletable && !IsNew)"
                                           Placeholder="ej. stop_ac" FullWidth="true" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
@@ -31,7 +41,7 @@
                                 <MudSelectItem Value="@("on_change")">on_change (Al cambiar valor)</MudSelectItem>
                                 <MudSelectItem Value="@("condition_true")">condition_true / level_high (Mientras sea verdadero)</MudSelectItem>
                                 <MudSelectItem Value="@("condition_false")">condition_false / level_low (Mientras sea falso)</MudSelectItem>
-                                <MudSelectItem Value="@("always")">always (En cada paquete recibido)</MudSelectItem>
+                                <MudSelectItem Value="@("always")">always (En cada paquete recibido / continuo)</MudSelectItem>
                             </MudSelect>
                         </MudItem>
 
@@ -47,7 +57,8 @@
                         </MudItem>
 
                         <MudItem xs="12" sm="6">
-                            <MudSelect @bind-Value="Rule.SrcVar" Label="Variable Origen (src_var) *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true">
+                            <MudSelect @bind-Value="Rule.SrcVar" Label="@(Rule.ActionType == "rtc_update" ? "Variable Origen (opcional para rtc_update)" : "Variable Origen (src_var) *")"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" FullWidth="true">
                                 @foreach (var v in DatasetVariables)
                                 {
                                     <MudSelectItem Value="@v.Id">@v.Id (@v.Type)</MudSelectItem>
@@ -143,24 +154,28 @@
                 </MudTabPanel>
 
                 <!-- ─── Tab 3: Acción y Temporizador ─────────────────────── -->
-                <MudTabPanel Text="Acción y Debounce" Icon="@Icons.Material.Filled.Send">
+                <MudTabPanel Text="Acción y Temporizador" Icon="@Icons.Material.Filled.Send">
                     <MudGrid Spacing="2" Class="pt-3">
                         <MudItem xs="12" sm="6">
-                            <MudNumericField @bind-Value="Rule.MinIntervalMs" Label="Inhibición / Min Intervalo (ms) *" Required="true"
+                            <MudNumericField Value="Rule.MinIntervalMs" ValueChanged="@((int v) => { Rule.MinIntervalMs = v; Rule.IntervalMs = v; })"
+                                             Label="Intervalo / Min Intervalo (min_interval_ms) *" Required="true"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0"
-                                             HelperText="Milisegundos mínimos entre envíos consecutivos para evitar saturar el bus" />
+                                             HelperText="Milisegundos de envío / intervalo entre transmisiones consecutivas a Control" />
                         </MudItem>
 
                         <MudItem xs="12" sm="6">
-                            <MudSelect @bind-Value="Rule.ActionType" Label="Tipo de Acción *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true">
+                            <MudSelect Value="Rule.ActionType" ValueChanged="@((string a) => OnActionTypeChanged(a))"
+                                       Label="Tipo de Acción *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true">
                                 <MudSelectItem Value="@("send_scmd")">send_scmd (Comando SCMD a Control)</MudSelectItem>
-                                <MudSelectItem Value="@("rtc_update")">rtc_update (Sincronización Horaria)</MudSelectItem>
+                                <MudSelectItem Value="@("rtc_update")">rtc_update (Sincronización Horaria RTC)</MudSelectItem>
                             </MudSelect>
                         </MudItem>
 
                         <MudItem xs="12">
                             <MudDivider Class="my-2" />
-                            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">Parámetros del Comando SCMD</MudText>
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">
+                                @(Rule.ActionType == "rtc_update" ? "Parámetros de Actualización Horaria RTC" : "Parámetros del Comando SCMD")
+                            </MudText>
                         </MudItem>
 
                         <MudItem xs="12" sm="4">
@@ -170,33 +185,37 @@
 
                         <MudItem xs="12" sm="4">
                             <MudTextField @bind-Value="Rule.Command.SubCmd" Label="Subcomando (Sub Cmd) *"
-                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Placeholder="0x0005" />
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                          Placeholder="@(Rule.ActionType == "rtc_update" ? "0xFE01" : "0x0005")" />
                         </MudItem>
 
-                        <MudItem xs="12" sm="4" Class="d-flex align-center pt-2">
-                            <MudCheckBox @bind-Value="Rule.Command.Use16BitData" Label="Usar dato de 16-bits" Color="Color.Info" />
-                        </MudItem>
-
-                        <MudItem xs="12" sm="6">
-                            <MudNumericField @bind-Value="Rule.Command.Data" Label="Dato Constante (Data)"
-                                             Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G"
-                                             Disabled="@(!string.IsNullOrEmpty(Rule.Command.DataFromVar))" />
-                        </MudItem>
-
-                        <MudItem xs="12" sm="6">
-                            <MudSelect @bind-Value="Rule.Command.DataFromVar" Label="Dato dinámico de variable (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" FullWidth="true">
-                                <MudSelectItem Value="@("")">(Ninguna - Usar constante)</MudSelectItem>
-                                @foreach (var v in DatasetVariables)
-                                {
-                                    <MudSelectItem Value="@v.Id">@v.Id</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-
-                        @if (Rule.ActionType == "rtc_update")
+                        @if (Rule.ActionType != "rtc_update")
                         {
+                            <MudItem xs="12" sm="4" Class="d-flex align-center pt-2">
+                                <MudCheckBox @bind-Value="Rule.Command.Use16BitData" Label="Usar dato de 16-bits" Color="Color.Info" />
+                            </MudItem>
+
                             <MudItem xs="12" sm="6">
-                                <MudSelect @bind-Value="Rule.Command.TimeVar" Label="Variable de Tiempo (time_var)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" FullWidth="true">
+                                <MudNumericField @bind-Value="Rule.Command.Data" Label="Dato Constante (Data)"
+                                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G"
+                                                 Disabled="@(!string.IsNullOrEmpty(Rule.Command.DataFromVar))" />
+                            </MudItem>
+
+                            <MudItem xs="12" sm="6">
+                                <MudSelect @bind-Value="Rule.Command.DataFromVar" Label="Dato dinámico de variable (opcional)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" FullWidth="true">
+                                    <MudSelectItem Value="@("")">(Ninguna - Usar constante)</MudSelectItem>
+                                    @foreach (var v in DatasetVariables)
+                                    {
+                                        <MudSelectItem Value="@v.Id">@v.Id</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        }
+                        else
+                        {
+                            <MudItem xs="12" sm="4">
+                                <MudSelect Value="@(Rule.TimeVar ?? Rule.Command.TimeVar)" ValueChanged="@((string s) => { Rule.TimeVar = s; Rule.Command.TimeVar = s; })"
+                                           Label="Variable de Tiempo (time_var)" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" FullWidth="true">
                                     @foreach (var v in DatasetVariables)
                                     {
                                         <MudSelectItem Value="@v.Id">@v.Id</MudSelectItem>
@@ -240,8 +259,30 @@
         Rule.Command ??= new TrdpScmdAction();
         Rule.ControlConditions ??= new List<TrdpControlCondition>();
 
+        if (Rule.ActionType == "rtc_update" && string.IsNullOrWhiteSpace(Rule.Command.SubCmd))
+        {
+            Rule.Command.SubCmd = "0xFE01";
+        }
+
         if (Rule.ValueList != null && Rule.ValueList.Count > 0)
             _valueListText = string.Join(", ", Rule.ValueList);
+    }
+
+    private void OnActionTypeChanged(string actionType)
+    {
+        Rule.ActionType = actionType;
+        if (actionType == "rtc_update")
+        {
+            Rule.Trigger = "always";
+            if (string.IsNullOrWhiteSpace(Rule.Command.SubCmd) || Rule.Command.SubCmd == "0x0005")
+            {
+                Rule.Command.SubCmd = "0xFE01";
+            }
+            if (string.IsNullOrWhiteSpace(Rule.Command.FrameType))
+            {
+                Rule.Command.FrameType = "0x7A";
+            }
+        }
     }
 
     private void UpdateValueList(string text)
@@ -284,7 +325,7 @@
             Snackbar.Add("El ID de la regla es obligatorio.", Severity.Error);
             return;
         }
-        if (string.IsNullOrWhiteSpace(Rule.SrcVar))
+        if (Rule.ActionType != "rtc_update" && string.IsNullOrWhiteSpace(Rule.SrcVar))
         {
             Snackbar.Add("Debe seleccionar una variable origen.", Severity.Error);
             return;

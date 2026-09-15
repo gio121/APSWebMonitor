@@ -36,6 +36,10 @@ public class MonitorStateService : IDisposable
         get { lock (_logsLock) { return _logs.ToList(); } }
     }
 
+    public int TotalTxCount { get; private set; }
+    public int TotalRxCount { get; private set; }
+    public int TotalErCount { get; private set; }
+
     // ── Valores de señales en tiempo real ───────────────────────────────────────
     private readonly object _valuesLock = new();
     private Dictionary<int, double> _currentValues = new();
@@ -174,7 +178,13 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public void ClearLogs()
     {
-        lock (_logsLock) { _logs.Clear(); }
+        lock (_logsLock)
+        {
+            _logs.Clear();
+            TotalTxCount = 0;
+            TotalRxCount = 0;
+            TotalErCount = 0;
+        }
         NotifyStateChanged();
     }
 
@@ -346,6 +356,13 @@ public class MonitorStateService : IDisposable
     {
         lock (_logsLock)
         {
+            if (isSent)
+                TotalTxCount++;
+            else if (isError)
+                TotalErCount++;
+            else if (prefix != "Sistema")
+                TotalRxCount++;
+
             _logs.Add(new MonitorLogEntry
             {
                 Timestamp = DateTime.Now,

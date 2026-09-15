@@ -91,6 +91,7 @@ public sealed class TrdpBackendService
             {
                 restart_service     = restartService,
                 use_dynamic_mapping = config.UseDynamicMapping,
+                tcms_ok             = config.TcmsOk,
                 control_frame       = config.ControlFrame,
                 comms_datasets      = config.CommsDatasets,
                 networks            = config.Networks
@@ -126,16 +127,18 @@ public sealed class TrdpBackendService
 
     /// <summary>
     /// Conmuta rápidamente entre modo dinámico y legacy sin reenviar la configuración completa.
+    /// Por defecto reinicia el servicio ecnmanager para que el cambio surta efecto inmediatamente.
     /// </summary>
     public async Task<TrdpBackendResult<TrdpSaveResponse>> SetModeAsync(
         string deviceBaseUrl,
         bool useDynamicMapping,
+        bool restartService = true,
         CancellationToken ct = default)
     {
         try
         {
             var payload = JsonSerializer.Serialize(
-                new { use_dynamic_mapping = useDynamicMapping },
+                new { use_dynamic_mapping = useDynamicMapping, restart_service = restartService },
                 TrdpJsonOptions.Default);
 
             using var content  = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
@@ -151,7 +154,7 @@ public sealed class TrdpBackendService
                     parsed?.Message ?? $"HTTP {(int)response.StatusCode}: {body}");
 
             return TrdpBackendResult<TrdpSaveResponse>.Ok(
-                parsed ?? new TrdpSaveResponse("ok", "Modo actualizado", false));
+                parsed ?? new TrdpSaveResponse("ok", "Modo actualizado", restartService));
         }
         catch (Exception ex)
         {

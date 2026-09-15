@@ -111,6 +111,25 @@
                             </div>
                         </MudPaper>
                     </MudItem>
+                    <!-- Restart option -->
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <div class="d-flex align-center gap-3">
+                                <MudCheckBox @bind-Value="_restartService" Color="Color.Warning" />
+                                <div>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">Reiniciar servicio ecnmanager</MudText>
+                                    <MudText Typo="Typo.caption" Style="color:#94a3b8;">
+                                        El backend ejecutará <code>systemctl restart ecnmanager</code> para aplicar el cambio de modo inmediatamente.
+                                    </MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="rounded-lg">
+                            El cambio de modo requiere reiniciar el servicio para que surta efecto en el dispositivo.
+                        </MudAlert>
+                    </MudItem>
                 }
             </MudGrid>
         }
@@ -132,10 +151,10 @@
                 <MudText Typo="Typo.body2" Style="color:#94a3b8; text-align:center; max-width:440px; white-space:pre-wrap; word-break:break-all;">
                     @_resultMessage
                 </MudText>
-                @if (_resultOk && Mode == DeployMode.Send && _restartService)
+                @if (_resultOk && (Mode == DeployMode.Send || Mode == DeployMode.SetMode) && _restartService)
                 {
                     <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.RestartAlt">
-                        Servicio reiniciado
+                        ecnmanager reiniciado
                     </MudChip>
                 }
             </div>
@@ -227,6 +246,8 @@
     protected override void OnInitialized()
     {
         _deviceUrl = DefaultUrl;
+        // El cambio de modo siempre necesita reiniciar ecnmanager; el envío de config es opcional
+        _restartService = (Mode == DeployMode.SetMode);
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -297,12 +318,20 @@
 
     private async Task ExecuteSetMode()
     {
-        var result = await BackendService.SetModeAsync(_deviceUrl, NewMode);
+        var modeLabel = NewMode ? "dynamic mapping" : "legacy";
+        if (_restartService)
+            _workingMessage = $"Aplicando modo {modeLabel} y reiniciando ecnmanager…";
+        StateHasChanged();
+
+        var result = await BackendService.SetModeAsync(_deviceUrl, NewMode, _restartService);
         if (result.IsSuccess)
         {
-            _resultOk      = true;
-            _resultMessage = result.Data?.Message
-                ?? $"Modo cambiado a {(NewMode ? "dynamic" : "legacy")} correctamente.";
+            _resultOk = true;
+            var baseMsg = result.Data?.Message
+                ?? $"Modo cambiado a {modeLabel} correctamente.";
+            _resultMessage = _restartService
+                ? $"{baseMsg}\nEl servicio ecnmanager ha sido reiniciado y el nuevo modo está activo."
+                : baseMsg;
         }
         else
         {

@@ -14,6 +14,8 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
+<ErrorBoundary @ref="_errorBoundary">
+    <ChildContent>
 <!-- ══════════════════════════════════════════════════════════
      HEADER
 ══════════════════════════════════════════════════════════ -->
@@ -186,22 +188,67 @@ else
 
                 <MudItem xs="12">
                     <MudDivider Class="my-2" />
+                    <div class="d-flex align-center justify-space-between mt-2 flex-wrap gap-2">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Favorite" Style="color:#ef4444;" />
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#ef4444">
+                                Comando Periódico TCMS_OK (Heartbeat a Control)
+                            </MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
+                                No eliminable (deletable: false)
+                            </MudChip>
+                        </div>
+                        <MudSwitch @bind-Value="_activeConfig.TcmsOk.Enabled"
+                                   Label="@(_activeConfig.TcmsOk.Enabled ? "Habilitado" : "Deshabilitado")"
+                                   Color="Color.Success" />
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" sm="3">
+                    <MudNumericField @bind-Value="_activeConfig.TcmsOk.IntervalMs"
+                                     Label="Intervalo (interval_ms) *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1"
+                                     HelperText="Milisegundos de envío periódico" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_activeConfig.TcmsOk.FrameType"
+                                  Label="Frame Type *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Placeholder="0x7A" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_activeConfig.TcmsOk.SubCmd"
+                                  Label="Sub Cmd *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Placeholder="0x0705" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudTextField @bind-Value="_activeConfig.TcmsOk.Data"
+                                  Label="Data" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Placeholder="0x00" />
+                </MudItem>
+
+                <MudItem xs="12" sm="9">
+                    <MudTextField @bind-Value="_activeConfig.TcmsOk.HexCommand"
+                                  Label="Trama Hexadecimal (hex_command) *" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                  HelperText="Formato: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK] (ej: AA0802037A050793)" />
+                </MudItem>
+                <MudItem xs="12" sm="3" Class="d-flex align-center">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Calculate" OnClick="RecalculateTcmsOkHex" FullWidth="true">
+                        Recalcular Hex
+                    </MudButton>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
                     <MudText Typo="Typo.subtitle2" Class="fw-bold mt-2" Style="color:#38bdf8">Trama de Control</MudText>
                 </MudItem>
 
                 <MudItem xs="12" sm="5">
-                    <MudTextField Value="_activeConfig.ControlFrame.Name"
-                                  ValueChanged="@((string v) => { var cf = _activeConfig.ControlFrame; cf.Name = v; PersistControlFrame(cf); })"
+                    <MudTextField @bind-Value="_activeConfig.ControlFrame.Name"
                                   Label="Nombre de trama" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
                 </MudItem>
                 <MudItem xs="12" sm="3">
-                    <MudNumericField Value="_activeConfig.ControlFrame.Size"
-                                     ValueChanged="@((int v) => { var cf = _activeConfig.ControlFrame; cf.Size = v; PersistControlFrame(cf); })"
+                    <MudNumericField @bind-Value="_activeConfig.ControlFrame.Size"
                                      Label="Tamaño (bytes)" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudTextField Value="_activeConfig.ControlFrame.Description"
-                                  ValueChanged="@((string v) => { var cf = _activeConfig.ControlFrame; cf.Description = v; PersistControlFrame(cf); })"
+                    <MudTextField @bind-Value="_activeConfig.ControlFrame.Description"
                                   Label="Descripción" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
                 </MudItem>
 
@@ -405,7 +452,19 @@ else
                                     <MudDataGrid T="TrdpControlCommandRule" Items="ds.ControlCommands" Dense="true"
                                                  Hover="true" Elevation="0" Class="trdp-grid mt-2">
                                         <Columns>
-                                            <PropertyColumn Property="x => x.Id" Title="ID Regla" />
+                                            <TemplateColumn Title="ID Regla">
+                                                <CellTemplate>
+                                                    <div class="d-flex align-center gap-1">
+                                                         <MudSwitch @bind-Value="context.Item.Enabled"
+                                                                    Color="Color.Success" Size="Size.Small" />
+                                                        <span class="fw-bold">@context.Item.Id</span>
+                                                        @if (!context.Item.Deletable)
+                                                        {
+                                                            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Sistema</MudChip>
+                                                        }
+                                                    </div>
+                                                </CellTemplate>
+                                            </TemplateColumn>
                                             <TemplateColumn Title="Disparador">
                                                 <CellTemplate>
                                                     <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
@@ -419,7 +478,7 @@ else
                                                     @if (context.Item.Bit.HasValue)
                                                     {
                                                         <span class="trdp-muted" style="font-size:0.8rem;"> [bit @context.Item.Bit.Value]</span>
-                                                    }
+                                                     }
                                                     @if (context.Item.InvertBit)
                                                     {
                                                         <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">NOT</MudChip>
@@ -450,6 +509,10 @@ else
                                                     {
                                                         <span class="trdp-muted" style="font-size:0.75rem;"> (@context.Item.Command.DataFromVar)</span>
                                                     }
+                                                    else if (context.Item.ActionType == "rtc_update")
+                                                    {
+                                                        <span class="trdp-muted" style="font-size:0.75rem;"> (RTC)</span>
+                                                    }
                                                     else
                                                     {
                                                         <span class="trdp-muted" style="font-size:0.75rem;"> (val: @context.Item.Command.Data)</span>
@@ -462,7 +525,7 @@ else
                                                     <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
                                                                    OnClick="@(() => EditControlCommandRule(dsName, context.Item))" />
                                                     <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
-                                                                   Color="Color.Error"
+                                                                   Color="Color.Error" Disabled="@(!context.Item.Deletable)"
                                                                    OnClick="@(() => RemoveControlCommandRule(dsName, context.Item))" />
                                                 </CellTemplate>
                                             </TemplateColumn>
@@ -484,6 +547,16 @@ else
 <!-- Hidden link for JSON export -->
 <a id="trdp-export-link" style="display:none"></a>
 <InputFile id="trdp-import-file" OnChange="HandleImportFile" Accept=".json" style="display:none" />
+    </ChildContent>
+    <ErrorContent Context="ex">
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="my-4">
+            Se produjo un error al renderizar la vista TRDP: @ex.Message
+            <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Small" Class="ml-4" OnClick="ResetError">
+                Reintentar
+            </MudButton>
+        </MudAlert>
+    </ErrorContent>
+</ErrorBoundary>
 
 <!-- ══════════════════════════════════════════════════════════
      STYLES
@@ -561,6 +634,8 @@ else
     private TrdpSessionConfig? _activeConfig;
     private bool _isLoading  = true;
     private bool _isSaving   = false;
+    private bool _initError  = false;
+    private string _initErrorMessage = string.Empty;
     private int  _editorTab  = 0;
     private int  _datasetTab = 0;
 
@@ -573,18 +648,31 @@ else
     // ── Init ───────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
-        _configs = await TrdpService.GetAllAsync();
-        var signals = await DataService.GetSignalsAsync();
-        _controlVarTags = signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
-        // Pre-fill device URL from the active monitor connection
-        if (string.IsNullOrWhiteSpace(_deviceUrl) && !string.IsNullOrWhiteSpace(MonitorState.IpAddress))
-            _deviceUrl = $"{MonitorState.IpAddress}:{MonitorState.Port}";
-        _isLoading = false;
+        try
+        {
+            _configs = await TrdpService.GetAllAsync();
+            var signals = await DataService.GetSignalsAsync();
+            _controlVarTags = signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
+            // Pre-fill device URL from the active monitor connection
+            if (string.IsNullOrWhiteSpace(_deviceUrl) && !string.IsNullOrWhiteSpace(MonitorState.IpAddress))
+                _deviceUrl = $"{MonitorState.IpAddress}:{MonitorState.Port}";
+        }
+        catch (Exception ex)
+        {
+            _initError = true;
+            _initErrorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     // ── Config list actions ────────────────────────────────────────────────
     private void SelectConfig(TrdpSessionConfig cfg)
     {
+        _editorTab = 0;
+        _datasetTab = 0;
         _activeConfig = cfg;
     }
 
@@ -840,11 +928,13 @@ else
     {
         if (_activeConfig is null) return;
         var datasets = _activeConfig.CommsDatasets;
-        datasets[dsName].Variables.Remove(variable);
-        // Also remove orphaned links
-        datasets[dsName].VariableLinks.RemoveAll(l => l.TargetCommsVar == variable.Id);
-        _activeConfig.CommsDatasets = datasets;
-        StateHasChanged();
+        if (datasets.TryGetValue(dsName, out var ds))
+        {
+            ds.Variables.RemoveAll(v => v.Id == variable.Id || v == variable);
+            ds.VariableLinks.RemoveAll(l => l.TargetCommsVar == variable.Id);
+            _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
     }
 
     // ── Control Commands Rules ──────────────────────────────────────────────
@@ -901,11 +991,68 @@ else
 
     private void RemoveControlCommandRule(string dsName, TrdpControlCommandRule rule)
     {
-        if (_activeConfig is null) return;
+        if (_activeConfig is null || !rule.Deletable) return;
         var datasets = _activeConfig.CommsDatasets;
-        datasets[dsName].ControlCommands.Remove(rule);
-        _activeConfig.CommsDatasets = datasets;
+        if (datasets.TryGetValue(dsName, out var ds))
+        {
+            ds.ControlCommands.RemoveAll(r => r.Id == rule.Id || r == rule);
+            _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
+    }
+
+    // ── TCMS_OK Helpers ─────────────────────────────────────────────────────
+
+    private void AutoUpdateTcmsOkHex()
+    {
+        if (_activeConfig is null) return;
+        _activeConfig.TcmsOk.HexCommand = ComputeTcmsOkHex(
+            _activeConfig.TcmsOk.FrameType,
+            _activeConfig.TcmsOk.SubCmd,
+            _activeConfig.TcmsOk.Data);
         StateHasChanged();
+    }
+
+    private void RecalculateTcmsOkHex()
+    {
+        AutoUpdateTcmsOkHex();
+        Snackbar.Add("Trama hexadecimal recalculada.", Severity.Info);
+    }
+
+    private static string ComputeTcmsOkHex(string frameTypeHex, string subCmdHex, string dataHex = "0x00")
+    {
+        try
+        {
+            byte ft = ParseHexByte(frameTypeHex, 0x7A);
+            ushort sc = ParseHexUshort(subCmdHex, 0x0705);
+            byte scLow = (byte)(sc & 0xFF);
+            byte scHigh = (byte)((sc >> 8) & 0xFF);
+
+            byte[] bytes = new byte[7] { 0xAA, 0x08, 0x02, 0x03, ft, scLow, scHigh };
+            int sum = 0;
+            foreach (var b in bytes) sum += b;
+            byte chk = (byte)((sum + 0x56) & 0xFF);
+
+            return $"{0xAA:X2}{0x08:X2}{0x02:X2}{0x03:X2}{ft:X2}{scLow:X2}{scHigh:X2}{chk:X2}";
+        }
+        catch
+        {
+            return "AA0802037A050793";
+        }
+    }
+
+    private static byte ParseHexByte(string hex, byte defaultVal)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return defaultVal;
+        var s = hex.Trim().Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        return byte.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var val) ? val : defaultVal;
+    }
+
+    private static ushort ParseHexUshort(string hex, ushort defaultVal)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return defaultVal;
+        var s = hex.Trim().Replace("0x", "", StringComparison.OrdinalIgnoreCase);
+        return ushort.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out var val) ? val : defaultVal;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -917,6 +1064,9 @@ else
 
     private static T CloneJson<T>(T obj)
         => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(obj, TrdpJsonOptions.Default), TrdpJsonOptions.Default)!;
+
+    private ErrorBoundary? _errorBoundary;
+    private void ResetError() => _errorBoundary?.Recover();
 
     public void Dispose() { }
 }

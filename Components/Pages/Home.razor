@@ -98,12 +98,15 @@ else
                         @foreach (var signal in _signals)
                         {
                             var currentVal = GetCurrentValue(signal);
+                            bool isAsciiSignal = signal.IsAscii
+                                || (signal.Nombre != null && signal.Nombre.Contains("ASCII", StringComparison.OrdinalIgnoreCase))
+                                || (signal.Tag != null && signal.Tag.Contains("ASCII", StringComparison.OrdinalIgnoreCase));
                             <tr>
                                 <td class="border-b-0 py-3">
                                     <MudText Typo="MudBlazor.Typo.body2" Class="fw-bold">@signal.Nombre <span class="text-muted fw-normal">[@signal.Tag]</span></MudText>
                                 </td>
                                 <td class="border-b-0 text-end py-3">
-                                    @if (signal.TipoVariable == "UINT8")
+                                    @if (!isAsciiSignal && signal.TipoVariable == "UINT8")
                                     {
                                         <MudChip T="string" Size="MudBlazor.Size.Small" Color="@(currentVal == 1 ? MudBlazor.Color.Success : MudBlazor.Color.Dark)" Variant="MudBlazor.Variant.Filled" Class="rounded">
                                             @(currentVal == 1 ? "ON" : "OFF")
@@ -221,6 +224,16 @@ else
 
     private string FormatValue(double value, Signal signal)
     {
+        bool isAsciiSignal = signal.IsAscii
+            || (signal.Nombre != null && signal.Nombre.Contains("ASCII", StringComparison.OrdinalIgnoreCase))
+            || (signal.Tag != null && signal.Tag.Contains("ASCII", StringComparison.OrdinalIgnoreCase));
+
+        if (isAsciiSignal)
+        {
+            if (value == 0) return "-";
+            char c = (char)Math.Max(0, Math.Min(255, value));
+            return char.IsControl(c) ? $"0x{(byte)c:X2}" : c.ToString();
+        }
         return value.ToString(signal.Formato) + (string.IsNullOrWhiteSpace(signal.Unidad) ? "" : $" {signal.Unidad}");
     }
 

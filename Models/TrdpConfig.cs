@@ -28,30 +28,108 @@ public class TrdpSessionConfig
     public bool UseDynamicMapping { get; set; } = true;
 
     // ── Secciones (serializadas como JSON) ────────────────────────────────
-    public string ControlFrameJson    { get; set; } = "{}";
-    public string CommsDatasetsJson   { get; set; } = "{}";
-    public string NetworksJson        { get; set; } = "[]";
+    private string _controlFrameJson  = "{}";
+    private string _commsDatasetsJson = "{}";
+    private string _networksJson      = "[]";
+    private string _tcmsOkJson        = "{}";
+
+    public string ControlFrameJson
+    {
+        get
+        {
+            if (_controlFrame != null)
+                _controlFrameJson = JsonSerializer.Serialize(_controlFrame, TrdpJsonOptions.Default);
+            return _controlFrameJson;
+        }
+        set { _controlFrameJson = value; _controlFrame = null; }
+    }
+    public string CommsDatasetsJson
+    {
+        get
+        {
+            if (_commsDatasets != null)
+                _commsDatasetsJson = JsonSerializer.Serialize(_commsDatasets, TrdpJsonOptions.Default);
+            return _commsDatasetsJson;
+        }
+        set { _commsDatasetsJson = value; _commsDatasets = null; }
+    }
+    public string NetworksJson
+    {
+        get
+        {
+            if (_networks != null)
+                _networksJson = JsonSerializer.Serialize(_networks, TrdpJsonOptions.Default);
+            return _networksJson;
+        }
+        set { _networksJson = value; _networks = null; }
+    }
+    public string TcmsOkJson
+    {
+        get
+        {
+            if (_tcmsOk != null)
+                _tcmsOkJson = JsonSerializer.Serialize(_tcmsOk, TrdpJsonOptions.Default);
+            return _tcmsOkJson;
+        }
+        set { _tcmsOkJson = value; _tcmsOk = null; }
+    }
 
     // ── Helpers de deserialización (no mapeados a columna) ───────────────
+    private TrdpControlFrameConfig? _controlFrame;
+    private Dictionary<string, TrdpDataset>? _commsDatasets;
+    private List<TrdpNetwork>? _networks;
+    private TrdpTcmsOkConfig? _tcmsOk;
+
+    public void SyncJsonFields()
+    {
+        if (_tcmsOk != null) _tcmsOkJson = JsonSerializer.Serialize(_tcmsOk, TrdpJsonOptions.Default);
+        if (_controlFrame != null) _controlFrameJson = JsonSerializer.Serialize(_controlFrame, TrdpJsonOptions.Default);
+        if (_commsDatasets != null) _commsDatasetsJson = JsonSerializer.Serialize(_commsDatasets, TrdpJsonOptions.Default);
+        if (_networks != null) _networksJson = JsonSerializer.Serialize(_networks, TrdpJsonOptions.Default);
+    }
+
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public TrdpTcmsOkConfig TcmsOk
+    {
+        get => _tcmsOk ??= (TryDeserialize<TrdpTcmsOkConfig>(_tcmsOkJson) ?? new());
+        set
+        {
+            _tcmsOk = value;
+            _tcmsOkJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        }
+    }
+
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public TrdpControlFrameConfig ControlFrame
     {
-        get => TryDeserialize<TrdpControlFrameConfig>(ControlFrameJson) ?? new();
-        set => ControlFrameJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        get => _controlFrame ??= (TryDeserialize<TrdpControlFrameConfig>(_controlFrameJson) ?? new());
+        set
+        {
+            _controlFrame = value;
+            _controlFrameJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        }
     }
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public Dictionary<string, TrdpDataset> CommsDatasets
     {
-        get => TryDeserialize<Dictionary<string, TrdpDataset>>(CommsDatasetsJson) ?? new();
-        set => CommsDatasetsJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        get => _commsDatasets ??= (TryDeserialize<Dictionary<string, TrdpDataset>>(_commsDatasetsJson) ?? new());
+        set
+        {
+            _commsDatasets = value;
+            _commsDatasetsJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        }
     }
 
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public List<TrdpNetwork> Networks
     {
-        get => TryDeserialize<List<TrdpNetwork>>(NetworksJson) ?? new();
-        set => NetworksJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        get => _networks ??= (TryDeserialize<List<TrdpNetwork>>(_networksJson) ?? new());
+        set
+        {
+            _networks = value;
+            _networksJson = JsonSerializer.Serialize(value, TrdpJsonOptions.Default);
+        }
     }
 
     private static T? TryDeserialize<T>(string json)
@@ -76,8 +154,13 @@ public class TrdpControlFrameConfig
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
+    private List<TrdpControlVariable>? _variables;
     [JsonPropertyName("variables")]
-    public List<TrdpControlVariable> Variables { get; set; } = new();
+    public List<TrdpControlVariable> Variables
+    {
+        get => _variables ??= new();
+        set => _variables = value ?? new();
+    }
 }
 
 public class TrdpControlVariable
@@ -111,14 +194,29 @@ public class TrdpDataset
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
+    private List<TrdpDatasetVariable>? _variables;
     [JsonPropertyName("variables")]
-    public List<TrdpDatasetVariable> Variables { get; set; } = new();
+    public List<TrdpDatasetVariable> Variables
+    {
+        get => _variables ??= new();
+        set => _variables = value ?? new();
+    }
 
+    private List<TrdpVariableLink>? _variableLinks;
     [JsonPropertyName("variable_links")]
-    public List<TrdpVariableLink> VariableLinks { get; set; } = new();
+    public List<TrdpVariableLink> VariableLinks
+    {
+        get => _variableLinks ??= new();
+        set => _variableLinks = value ?? new();
+    }
 
+    private List<TrdpControlCommandRule>? _controlCommands;
     [JsonPropertyName("control_commands")]
-    public List<TrdpControlCommandRule> ControlCommands { get; set; } = new();
+    public List<TrdpControlCommandRule> ControlCommands
+    {
+        get => _controlCommands ??= new();
+        set => _controlCommands = value ?? new();
+    }
 }
 
 public class TrdpDatasetVariable
@@ -282,11 +380,21 @@ public class TrdpNetwork
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    private List<TrdpPublisher>? _publishers;
     [JsonPropertyName("publishers")]
-    public List<TrdpPublisher> Publishers { get; set; } = new();
+    public List<TrdpPublisher> Publishers
+    {
+        get => _publishers ??= new();
+        set => _publishers = value ?? new();
+    }
 
+    private List<TrdpSubscriber>? _subscribers;
     [JsonPropertyName("subscribers")]
-    public List<TrdpSubscriber> Subscribers { get; set; } = new();
+    public List<TrdpSubscriber> Subscribers
+    {
+        get => _subscribers ??= new();
+        set => _subscribers = value ?? new();
+    }
 }
 
 public class TrdpPublisher
@@ -323,6 +431,40 @@ public class TrdpSubscriber
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TCMS_OK Periodic Command Config
+// ─────────────────────────────────────────────────────────────────────────────
+
+public class TrdpTcmsOkConfig
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "tcms_ok";
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = "Comando periodico TCMS_OK hacia Control";
+
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("deletable")]
+    public bool Deletable { get; set; } = false;
+
+    [JsonPropertyName("interval_ms")]
+    public int IntervalMs { get; set; } = 1000;
+
+    [JsonPropertyName("frame_type")]
+    public string FrameType { get; set; } = "0x7A";
+
+    [JsonPropertyName("sub_cmd")]
+    public string SubCmd { get; set; } = "0x0705";
+
+    [JsonPropertyName("data")]
+    public string Data { get; set; } = "0x00";
+
+    [JsonPropertyName("hex_command")]
+    public string HexCommand { get; set; } = "AA0802037A050793";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Control Commands (Reglas a Control)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -333,6 +475,12 @@ public class TrdpControlCommandRule
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
+
+    [JsonPropertyName("enabled")]
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("deletable")]
+    public bool Deletable { get; set; } = true;
 
     [JsonPropertyName("trigger")]
     public string Trigger { get; set; } = "rising_edge";
@@ -360,23 +508,46 @@ public class TrdpControlCommandRule
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<double>? ValueList { get; set; }
 
+    private List<TrdpControlCondition>? _controlConditions;
     [JsonPropertyName("control_conditions")]
-    public List<TrdpControlCondition> ControlConditions { get; set; } = new();
+    public List<TrdpControlCondition> ControlConditions
+    {
+        get => _controlConditions ??= new();
+        set => _controlConditions = value ?? new();
+    }
 
     [JsonPropertyName("logic_op")]
     public string LogicOp { get; set; } = "AND";
 
+    private List<TrdpControlCondition>? _conditions;
     [JsonPropertyName("conditions")]
-    public List<TrdpControlCondition> Conditions { get; set; } = new();
+    public List<TrdpControlCondition> Conditions
+    {
+        get => _conditions ??= new();
+        set => _conditions = value ?? new();
+    }
 
     [JsonPropertyName("min_interval_ms")]
     public int MinIntervalMs { get; set; } = 1000;
 
+    [JsonPropertyName("interval_ms")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? IntervalMs { get; set; }
+
     [JsonPropertyName("action_type")]
     public string ActionType { get; set; } = "send_scmd";
 
+    [JsonPropertyName("time_var")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TimeVar { get; set; }
+
+    private TrdpScmdAction? _command;
     [JsonPropertyName("command")]
-    public TrdpScmdAction Command { get; set; } = new();
+    public TrdpScmdAction Command
+    {
+        get => _command ??= new();
+        set => _command = value ?? new();
+    }
 }
 
 public class TrdpControlCondition
@@ -411,6 +582,10 @@ public class TrdpScmdAction
     [JsonPropertyName("time_var")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? TimeVar { get; set; }
+
+    [JsonPropertyName("hex_command")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HexCommand { get; set; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

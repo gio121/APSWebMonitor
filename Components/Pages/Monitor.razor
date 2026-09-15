@@ -105,15 +105,15 @@
                     <div class="console-header-right">
                         <div class="console-stat stat-tx">
                             <span class="stat-badge">TX</span>
-                            <span class="stat-count">@_logs.Count(l => l.IsSent)</span>
+                            <span class="stat-count">@MonitorState.TotalTxCount</span>
                         </div>
                         <div class="console-stat stat-rx">
                             <span class="stat-badge">RX</span>
-                            <span class="stat-count">@_logs.Count(l => !l.IsSent && !l.IsError)</span>
+                            <span class="stat-count">@MonitorState.TotalRxCount</span>
                         </div>
                         <div class="console-stat stat-er">
                             <span class="stat-badge">ER</span>
-                            <span class="stat-count">@_logs.Count(l => l.IsError)</span>
+                            <span class="stat-count">@MonitorState.TotalErCount</span>
                         </div>
                         <div class="console-header-divider"></div>
                         <MudIconButton Icon="@Icons.Material.Filled.ClearAll" Size="Size.Small" Class="console-clear-btn" OnClick="ClearLogs" Title="Limpiar Consola" />

@@ -77,8 +77,11 @@ else
                                     <CellTemplate>
                                         @{
                                             var currentVal = GetCurrentValue(context.Item);
+                                            bool isAsciiSignal = context.Item.IsAscii 
+                                                || (context.Item.Nombre != null && context.Item.Nombre.Contains("ASCII", StringComparison.OrdinalIgnoreCase))
+                                                || (context.Item.Tag != null && context.Item.Tag.Contains("ASCII", StringComparison.OrdinalIgnoreCase));
                                         }
-                                        @if (context.Item.TipoVariable == "UINT8")
+                                        @if (!isAsciiSignal && context.Item.TipoVariable == "UINT8")
                                         {
                                             <MudChip T="string" Size="Size.Small" Color="@(currentVal == 1 ? Color.Success : Color.Dark)" Variant="Variant.Filled">
                                                 @(currentVal == 1 ? "ON" : "OFF")
@@ -183,9 +186,15 @@ else
 
     private string FormatValue(double value, Signal signal)
     {
-        if (signal.IsAscii)
+        bool isAsciiSignal = signal.IsAscii
+            || (signal.Nombre != null && signal.Nombre.Contains("ASCII", StringComparison.OrdinalIgnoreCase))
+            || (signal.Tag != null && signal.Tag.Contains("ASCII", StringComparison.OrdinalIgnoreCase));
+
+        if (isAsciiSignal)
         {
-            return ((char)Math.Max(0, Math.Min(255, value))).ToString();
+            if (value == 0) return "-";
+            char c = (char)Math.Max(0, Math.Min(255, value));
+            return char.IsControl(c) ? $"0x{(byte)c:X2}" : c.ToString();
         }
         return value.ToString(signal.Formato) + (string.IsNullOrWhiteSpace(signal.Unidad) ? "" : $" {signal.Unidad}");
     }
@@ -311,6 +320,11 @@ else
                     var infoType = infoNode?.Element("type")?.Value ?? "";
                     if (infoType.ToUpper() == "BITFIELD") tipoVariable = "UINT16";
 
+                    bool isAscii = (valType != null && valType.ToUpper().Contains("ASCII"))
+                        || (units != null && units.Equals("ASCII", StringComparison.OrdinalIgnoreCase))
+                        || (descEs != null && descEs.Contains("ASCII", StringComparison.OrdinalIgnoreCase))
+                        || (keyname != null && keyname.Contains("ASCII", StringComparison.OrdinalIgnoreCase));
+
                     var signal = new Signal
                     {
                         Nombre = descEs ?? keyname,
@@ -323,6 +337,7 @@ else
                         Offset = offset,
                         Unidad = units ?? "",
                         Formato = tipoVariable == "FLOAT32" ? "0.01" : "0",
+                        IsAscii = isAscii,
                         NodoNumero = nodeNumber,
                         NodoDescripcion = nodeDescription
                     };

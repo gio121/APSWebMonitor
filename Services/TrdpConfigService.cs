@@ -33,6 +33,7 @@ public class TrdpConfigService
 
     public async Task<TrdpSessionConfig> SaveAsync(TrdpSessionConfig config)
     {
+        config.SyncJsonFields();
         config.UltimaModificacion = DateTime.UtcNow;
         using var ctx = await _dbContextFactory.CreateDbContextAsync();
 
@@ -78,6 +79,17 @@ public class TrdpConfigService
         if (root.TryGetProperty("use_dynamic_mapping", out var dynMap))
             config.UseDynamicMapping = dynMap.GetBoolean();
 
+        // tcms_ok
+        if (root.TryGetProperty("tcms_ok", out var tcmsEl))
+        {
+            try
+            {
+                var tcms = JsonSerializer.Deserialize<TrdpTcmsOkConfig>(tcmsEl.GetRawText(), TrdpJsonOptions.Default);
+                if (tcms != null) config.TcmsOk = tcms;
+            }
+            catch { }
+        }
+
         // control_frame
         if (root.TryGetProperty("control_frame", out var cfEl))
         {
@@ -116,6 +128,7 @@ public class TrdpConfigService
         var doc = new
         {
             use_dynamic_mapping = config.UseDynamicMapping,
+            tcms_ok             = config.TcmsOk,
             control_frame       = config.ControlFrame,
             comms_datasets      = config.CommsDatasets,
             networks            = config.Networks
@@ -133,6 +146,7 @@ public class TrdpConfigService
             Nombre             = original.Nombre + " (copia)",
             Descripcion        = original.Descripcion,
             UseDynamicMapping  = original.UseDynamicMapping,
+            TcmsOkJson         = original.TcmsOkJson,
             ControlFrameJson   = original.ControlFrameJson,
             CommsDatasetsJson  = original.CommsDatasetsJson,
             NetworksJson       = original.NetworksJson,

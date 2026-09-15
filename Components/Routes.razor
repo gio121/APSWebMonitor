@@ -4,6 +4,12 @@
             <NotAuthorized>
                 <RedirectToLogin />
             </NotAuthorized>
+            <Authorizing>
+                <div class="d-flex justify-center align-center pa-12">
+                    <MudProgressCircular Color="Color.Info" Indeterminate="true" Size="Size.Medium" />
+                    <MudText Typo="Typo.body2" Class="ml-3 text-muted">Cargando permisos...</MudText>
+                </div>
+            </Authorizing>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>

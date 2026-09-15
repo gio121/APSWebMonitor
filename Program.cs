@@ -42,7 +42,7 @@ using (var scope = app.Services.CreateScope())
 {
     var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApsDbContext>>();
     using var context = contextFactory.CreateDbContext();
-    context.Database.EnsureCreated();
+    context.Database.EnsureCreated(); // Crea tablas si la BD no existe aún
 
     // Migración manual de columnas
     try
@@ -115,8 +115,38 @@ using (var scope = app.Services.CreateScope())
             UseDynamicMapping INTEGER NOT NULL DEFAULT 1,
             ControlFrameJson TEXT NOT NULL DEFAULT '{}',
             CommsDatasetsJson TEXT NOT NULL DEFAULT '{}',
-            NetworksJson TEXT NOT NULL DEFAULT '[]'
+            NetworksJson TEXT NOT NULL DEFAULT '[]',
+            TcmsOkJson TEXT NOT NULL DEFAULT '{}'
         )";
+        command.ExecuteNonQuery();
+
+        // --- Añadir columna TcmsOkJson a TrdpConfigs si no existe ---
+        command.CommandText = "PRAGMA table_info(TrdpConfigs)";
+        using var trdpReader = command.ExecuteReader();
+        bool hasTcmsOkJson = false;
+        while (trdpReader.Read())
+        {
+            if (trdpReader.GetString(1) == "TcmsOkJson") { hasTcmsOkJson = true; }
+        }
+        trdpReader.Close();
+        if (!hasTcmsOkJson)
+        {
+            command.CommandText = "ALTER TABLE TrdpConfigs ADD COLUMN TcmsOkJson TEXT NOT NULL DEFAULT '{}'";
+            command.ExecuteNonQuery();
+        }
+
+        // --- Registrar migraciones en __EFMigrationsHistory para sincronizar con EF ---
+        command.CommandText = @"CREATE TABLE IF NOT EXISTS __EFMigrationsHistory (
+            MigrationId TEXT NOT NULL PRIMARY KEY,
+            ProductVersion TEXT NOT NULL
+        )";
+        command.ExecuteNonQuery();
+
+        command.CommandText = @"INSERT OR IGNORE INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES
+            ('20260325103158_InitialCreate', '10.0.11'),
+            ('20260325112758_AddBitTexts', '10.0.11'),
+            ('20260325115335_AddWindowContentJson', '10.0.11'),
+            ('20260914121829_AddTrdpConfig', '10.0.11')";
         command.ExecuteNonQuery();
     }
     catch (Exception ex)
@@ -124,6 +154,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("Error al migrar DB manual: " + ex.Message);
     }
 }
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
