@@ -1,0 +1,120 @@
+@page "/logs"
+@attribute [Authorize(Roles = "Administrador")]
+@rendermode InteractiveServer
+@using System.Text
+@using ApsMonitor.Models
+@inject ApsDataService DataService
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<div class="d-flex justify-space-between align-center mb-6">
+    <div class="d-flex align-center">
+        <div class="event-heading-icon mr-3"><MudIcon Icon="@Icons.Material.Filled.ReceiptLong" /></div>
+        <div>
+            <MudText Typo="Typo.h5" Class="fw-bold">Logs</MudText>
+            <MudText Typo="Typo.body2" Class="text-muted">Historial operativo del monitor y de los comandos ejecutados</MudText>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="OpenLogsAsync" Disabled="@_isLoading">Abrir</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadAsync" Disabled="@(!_filteredEvents.Any())">Descargar</MudButton>
+    </div>
+</div>
+
+<MudPaper Class="filter-panel pa-4 mb-5" Elevation="0">
+    <div class="d-flex align-center mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.FilterAlt" Color="Color.Info" Size="Size.Small" Class="mr-2" />
+        <MudText Typo="Typo.subtitle2" Class="filter-heading">FILTROS DE REGISTRO</MudText>
+        @if (HasActiveFilters)
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Class="ml-auto" OnClick="ClearFilters">Limpiar filtros</MudButton>
+        }
+    </div>
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="5"><MudTextField @bind-Value="_searchText" @bind-Value:after="ApplyFilters" Immediate="true" Label="Buscar en los registros" Placeholder="Texto, proceso o estado..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" /></MudItem>
+        <MudItem xs="12" sm="6" md="3"><MudDatePicker @bind-Date="_startDate" @bind-Date:after="ApplyFilters" Label="Fecha de inicio" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" /></MudItem>
+        <MudItem xs="12" sm="6" md="3"><MudDatePicker @bind-Date="_endDate" @bind-Date:after="ApplyFilters" Label="Fecha de fin" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" /></MudItem>
+        <MudItem xs="12" md="1" Class="d-flex align-center"><MudTooltip Text="Actualizar resultados"><MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Info" OnClick="OpenLogsAsync" /></MudTooltip></MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudPaper Class="event-log-panel" Elevation="0">
+    <div class="event-log-header px-4 py-3 d-flex justify-space-between align-center">
+        <div class="d-flex align-center"><MudIcon Icon="@Icons.Material.Filled.Subject" Size="Size.Small" Class="mr-2" /><MudText Typo="Typo.subtitle2" Class="fw-bold">EVENTOS</MudText></div>
+        <MudText Typo="Typo.caption" Class="text-muted">@_filteredEvents.Count registro@(_filteredEvents.Count == 1 ? "" : "s")</MudText>
+    </div>
+    @if (_isLoading)
+    { <div class="pa-8 d-flex justify-center"><MudProgressCircular Indeterminate="true" Color="Color.Primary" /></div> }
+    else if (!_filteredEvents.Any())
+    {
+        <div class="event-empty"><MudIcon Icon="@Icons.Material.Filled.FindInPage" Size="Size.Large" /><MudText Typo="Typo.subtitle1" Class="mt-3">No hay registros para mostrar</MudText><MudText Typo="Typo.body2" Class="text-muted">Modifica los filtros o abre el historial de eventos.</MudText></div>
+    }
+    else
+    {
+        <MudTable Items="_filteredEvents" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Class="event-table">
+            <HeaderContent><MudTh>FECHA</MudTh><MudTh>HORA</MudTh><MudTh>PROCESO</MudTh><MudTh>DESCRIPCIÓN</MudTh><MudTh>ESTADO</MudTh></HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Fecha" Class="event-date">@context.Fecha.ToString("dd/MM/yyyy")</MudTd>
+                <MudTd DataLabel="Hora" Class="event-time">@context.Fecha.ToString("HH:mm:ss")</MudTd>
+                <MudTd DataLabel="Proceso"><span class="process-tag">@GetProcess(context)</span></MudTd>
+                <MudTd DataLabel="Descripción" Class="event-description">@context.Mensaje</MudTd>
+                <MudTd DataLabel="Estado"><MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Estado)" Variant="Variant.Text">@context.Estado</MudChip></MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+<style>
+    .event-heading-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #60a5fa; background: rgba(59,130,246,.13); border: 1px solid rgba(96,165,250,.2); border-radius: 10px; }
+    .text-muted { color: #94a3b8 !important; }
+    .filter-panel, .event-log-panel { background: #1a222c; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; }
+    .filter-heading { color: #94a3b8; font-size: .7rem; font-weight: 700; letter-spacing: 1.2px; }
+    .event-log-header { border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(0,0,0,.12); border-radius: 10px 10px 0 0; }
+    .event-table { background: transparent; }
+    .event-table .mud-table-head .mud-table-cell { background: #151c26; color: #94a3b8; font-size: .68rem; font-weight: 700; letter-spacing: .8px; border-color: rgba(255,255,255,.06); }
+    .event-table .mud-table-cell { border-color: rgba(255,255,255,.06); padding-top: 13px; padding-bottom: 13px; }
+    .event-date, .event-time { color: #cbd5e1; font-family: Consolas, 'Courier New', monospace; font-size: .78rem; white-space: nowrap; }
+    .event-time { color: #64748b; }
+    .event-description { color: #e2e8f0; }
+    .process-tag { color: #93c5fd; background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.14); border-radius: 4px; padding: 3px 7px; font-family: Consolas, 'Courier New', monospace; font-size: .7rem; white-space: nowrap; }
+    .event-empty { min-height: 310px; color: #475569; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+</style>
+
+@code {
+    private List<EventMessage> _events = new();
+    private List<EventMessage> _filteredEvents = new();
+    private string _searchText = string.Empty;
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private bool _isLoading = true;
+    private bool HasActiveFilters => !string.IsNullOrWhiteSpace(_searchText) || _startDate.HasValue || _endDate.HasValue;
+
+    protected override async Task OnInitializedAsync() => await LoadEventsAsync();
+    private async Task OpenLogsAsync() { await LoadEventsAsync(); Snackbar.Add("Registro de eventos actualizado.", Severity.Success); }
+    private async Task LoadEventsAsync()
+    {
+        _isLoading = true;
+        try { _events = await DataService.GetAllEventsAsync(); ApplyFilters(); }
+        catch (Exception ex) { Snackbar.Add($"No se pudieron cargar los registros: {ex.Message}", Severity.Error); }
+        finally { _isLoading = false; }
+    }
+    private void ApplyFilters()
+    {
+        var query = _events.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(_searchText)) query = query.Where(e => e.Mensaje.Contains(_searchText, StringComparison.OrdinalIgnoreCase) || e.Estado.Contains(_searchText, StringComparison.OrdinalIgnoreCase) || GetProcess(e).Contains(_searchText, StringComparison.OrdinalIgnoreCase));
+        if (_startDate.HasValue) query = query.Where(e => e.Fecha.Date >= _startDate.Value.Date);
+        if (_endDate.HasValue) query = query.Where(e => e.Fecha.Date <= _endDate.Value.Date);
+        _filteredEvents = query.ToList();
+    }
+    private void ClearFilters() { _searchText = string.Empty; _startDate = null; _endDate = null; ApplyFilters(); }
+    private async Task DownloadAsync()
+    {
+        var csv = new StringBuilder("Fecha;Hora;Proceso;Descripción;Estado\r\n");
+        foreach (var item in _filteredEvents) csv.AppendLine(string.Join(';', Csv(item.Fecha.ToString("dd/MM/yyyy")), Csv(item.Fecha.ToString("HH:mm:ss")), Csv(GetProcess(item)), Csv(item.Mensaje), Csv(item.Estado)));
+        var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();
+        await JS.InvokeVoidAsync("apsMonitor.downloadBase64File", $"registro-eventos-{DateTime.Now:yyyyMMdd-HHmm}.csv", "text/csv;charset=utf-8", Convert.ToBase64String(bytes));
+    }
+    private static string Csv(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
+    private static string GetProcess(EventMessage item) => item.Mensaje.StartsWith("Ejecutado comando", StringComparison.OrdinalIgnoreCase) ? "COMANDOS" : "MONITOR";
+    private static Color GetStatusColor(string? status) => string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase) ? Color.Success : Color.Error;
+}
