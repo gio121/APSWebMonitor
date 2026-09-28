@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -76,12 +77,38 @@ public class NetworkAdapterService
 
         try
         {
-            if (!IPAddress.TryParse(ipAddress, out _))
+            if (!IPAddress.TryParse(ipAddress, out var parsedIp))
                 return (false, "Dirección IP inválida.");
-            if (!IPAddress.TryParse(subnetMask, out _))
+            if (!IPAddress.TryParse(subnetMask, out var parsedMask))
                 return (false, "Máscara de subred inválida.");
 
-            string gwArg = string.IsNullOrWhiteSpace(gateway) ? "" : $" gateway={gateway} gwmetric=1";
+            // Validar que la puerta de enlace pertenezca a la misma subred si se especificó
+            string gwArg = "";
+            if (!string.IsNullOrWhiteSpace(gateway) && IPAddress.TryParse(gateway, out var parsedGw))
+            {
+                var ipBytes = parsedIp.GetAddressBytes();
+                var gwBytes = parsedGw.GetAddressBytes();
+                var maskBytes = parsedMask.GetAddressBytes();
+                bool sameSubnet = true;
+                for (int i = 0; i < 4; i++)
+                {
+                    if ((ipBytes[i] & maskBytes[i]) != (gwBytes[i] & maskBytes[i]))
+                    {
+                        sameSubnet = false;
+                        break;
+                    }
+                }
+
+                if (sameSubnet)
+                {
+                    gwArg = $" gateway={gateway} gwmetric=1";
+                }
+                else
+                {
+                    Console.WriteLine($"[NetworkAdapterService] Gateway {gateway} no coincide con subred {ipAddress}/{subnetMask}. Omitiendo gateway.");
+                }
+            }
+
             string args = $"interface ipv4 set address name=\"{adapterName}\" static {ipAddress} {subnetMask}{gwArg}";
 
             var psi = new ProcessStartInfo
@@ -89,19 +116,23 @@ public class NetworkAdapterService
                 FileName = "netsh",
                 Arguments = args,
                 UseShellExecute = true,
-                CreateNoWindow = true,
+                Verb = "runas", // Solicitar elevación UAC de Administrador a Windows
                 WindowStyle = ProcessWindowStyle.Hidden
             };
 
             using var process = Process.Start(psi);
-            process?.WaitForExit(5000);
+            process?.WaitForExit(10000);
 
             if (process != null && process.ExitCode == 0)
             {
-                return (true, $"IP {ipAddress} y máscara {subnetMask} configuradas en '{adapterName}'.");
+                return (true, $"IP {ipAddress} y máscara {subnetMask} configuradas con éxito en '{adapterName}'.");
             }
 
-            return (false, $"netsh finalizó con código {process?.ExitCode}. Verifique permisos de administrador.");
+            return (false, $"netsh finalizó con código {process?.ExitCode}. Compruebe permisos de Administrador.");
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return (false, "Operación cancelada por el usuario (se canceló la elevación de Administrador UAC).");
         }
         catch (Exception ex)
         {
@@ -123,19 +154,23 @@ public class NetworkAdapterService
                 FileName = "netsh",
                 Arguments = $"interface ipv4 set address name=\"{adapterName}\" dhcp",
                 UseShellExecute = true,
-                CreateNoWindow = true,
+                Verb = "runas", // Solicitar elevación UAC de Administrador a Windows
                 WindowStyle = ProcessWindowStyle.Hidden
             };
 
             using var process = Process.Start(psi);
-            process?.WaitForExit(5000);
+            process?.WaitForExit(10000);
 
             if (process != null && process.ExitCode == 0)
             {
                 return (true, $"Interfaz '{adapterName}' configurada en cliente DHCP.");
             }
 
-            return (false, $"Error netsh código {process?.ExitCode}.");
+            return (false, $"netsh finalizó con código {process?.ExitCode}.");
+        }
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return (false, "Operación cancelada por el usuario (se canceló la elevación de Administrador UAC).");
         }
         catch (Exception ex)
         {
