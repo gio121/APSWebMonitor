@@ -1,8 +1,11 @@
 @page "/configuracion-red"
 @using ApsMonitor.Services
+@using ApsMonitor.Components.Dialogs
+@using System.Net.NetworkInformation
 @using MudBlazor
 @inject NetworkAdapterService AdapterService
 @inject DhcpServerService DhcpService
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @implements IDisposable
 
@@ -20,8 +23,12 @@
     </div>
     <div class="d-flex align-center gap-2">
         <MudChip T="string" Color="@(DhcpService.IsRunning ? Color.Success : Color.Default)" Variant="Variant.Filled" Size="Size.Small">
-            DHCP: @(DhcpService.IsRunning ? "ACTIVO (Puerto 67)" : "DETENIDO")
+            DHCP: @(DhcpService.IsRunning ? $"ACTIVO en {DhcpService.Config.InterfaceName}" : "DETENIDO")
         </MudChip>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.FastForward" OnClick="OpenPacketSenderDialog">
+            Ventana Packet Sender
+        </MudButton>
         <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small"
                    StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshAdapters">
             Actualizar Interfaces
@@ -64,21 +71,24 @@
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
                             @(_selectedAdapter.IsDhcpEnabled ? "DHCP Cliente Activado" : "IP Estática")
                         </MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Dark">
+                            Index: @_selectedAdapter.InterfaceIndex
+                        </MudChip>
                     </div>
 
                     <MudGrid Spacing="2">
                         <MudItem xs="12" sm="6">
-                            <MudTextField @bind-Value="_ipAddress" Label="Dirección IP de la Interfaz"
+                            <MudTextField T="string" Value="_ipAddress" ValueChanged="OnIpAddressChanged" Label="Dirección IP de la Interfaz"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                          Placeholder="192.168.1.10" />
+                                          Placeholder="192.168.1.10" HelperText="Al escribir o modificar, actualiza en tiempo real el servidor DHCP" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
-                            <MudTextField @bind-Value="_subnetMask" Label="Máscara de Subred"
+                            <MudTextField T="string" Value="_subnetMask" ValueChanged="OnSubnetMaskChanged" Label="Máscara de Subred"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                                           Placeholder="255.255.255.0" />
                         </MudItem>
                         <MudItem xs="12">
-                            <MudTextField @bind-Value="_gateway" Label="Puerta de Enlace (Opcional)"
+                            <MudTextField T="string" Value="_gateway" ValueChanged="OnGatewayChanged" Label="Puerta de Enlace (Opcional)"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                                           Placeholder="192.168.1.1" />
                         </MudItem>
@@ -110,10 +120,18 @@
         <MudCard Elevation="2" Class="pa-4 rounded-lg h-100" Style="background:#19212d; border:1px solid rgba(255,255,255,0.05);">
             <MudCardHeader>
                 <CardHeaderContent>
-                    <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#4ade80;">
-                        <MudIcon Icon="@Icons.Material.Filled.Dns" />
-                        Servidor DHCP Embebido
-                    </MudText>
+                    <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+                        <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#4ade80;">
+                            <MudIcon Icon="@Icons.Material.Filled.Dns" />
+                            Servidor DHCP Embebido
+                        </MudText>
+                        @if (!string.IsNullOrEmpty(_selectedAdapterName))
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                                Interfaz: @_selectedAdapterName
+                            </MudChip>
+                        }
+                    </div>
                 </CardHeaderContent>
             </MudCardHeader>
             <MudCardContent>
@@ -162,7 +180,7 @@
                     {
                         <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
                                    StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartDhcp">
-                            Iniciar Servidor DHCP
+                            Iniciar Servidor DHCP en @(_selectedAdapterName)
                         </MudButton>
                     }
                 </div>
@@ -175,12 +193,26 @@
         <MudCard Elevation="2" Class="pa-4 rounded-lg" Style="background:#19212d; border:1px solid rgba(255,255,255,0.05);">
             <MudCardHeader>
                 <CardHeaderContent>
-                    <div class="d-flex justify-space-between align-center">
-                        <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2">
-                            <MudIcon Icon="@Icons.Material.Filled.Devices" Color="Color.Info" />
-                            Direcciones IP Entregadas / Concesiones Activas (@_activeLeases.Count)
-                        </MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" OnClick="RefreshLeases" />
+                    <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+                        <div class="d-flex align-center gap-2">
+                            <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Devices" Color="Color.Info" />
+                                Direcciones IP Entregadas / Concesiones Activas (@_activeLeases.Count)
+                            </MudText>
+                            @if (!string.IsNullOrEmpty(_selectedAdapterName))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">
+                                    Filtradas para @_selectedAdapterName
+                                </MudChip>
+                            }
+                        </div>
+                        <div class="d-flex align-center gap-2">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.DeleteSweep" OnClick="ClearLeases">
+                                Limpiar Concesiones
+                            </MudButton>
+                            <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" OnClick="RefreshLeases" />
+                        </div>
                     </div>
                 </CardHeaderContent>
             </MudCardHeader>
@@ -188,7 +220,7 @@
                 @if (_activeLeases.Count == 0)
                 {
                     <div class="pa-6 text-center text-muted">
-                        No hay concesiones DHCP activas actualmente. Conecte los equipos al puerto de red configurado.
+                        No hay concesiones DHCP activas para '@_selectedAdapterName'. Conecte los equipos al puerto de red configurado.
                     </div>
                 }
                 else
@@ -198,6 +230,7 @@
                             <MudTh>Dirección IP</MudTh>
                             <MudTh>Dirección MAC</MudTh>
                             <MudTh>Hostname</MudTh>
+                            <MudTh>Interfaz</MudTh>
                             <MudTh>Inicio Concesión</MudTh>
                             <MudTh>Expira</MudTh>
                             <MudTh>Estado</MudTh>
@@ -206,6 +239,7 @@
                             <MudTd><code style="color:#38bdf8; font-weight:bold;">@context.IpAddress</code></MudTd>
                             <MudTd>@context.MacAddress</MudTd>
                             <MudTd>@(string.IsNullOrEmpty(context.HostName) ? "—" : context.HostName)</MudTd>
+                            <MudTd><MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Default">@(!string.IsNullOrEmpty(context.InterfaceName) ? context.InterfaceName : _selectedAdapterName)</MudChip></MudTd>
                             <MudTd>@context.LeaseStart.ToString("HH:mm:ss dd/MM/yyyy")</MudTd>
                             <MudTd>@context.LeaseEnd.ToString("HH:mm:ss dd/MM/yyyy")</MudTd>
                             <MudTd>
@@ -218,6 +252,11 @@
                 }
             </MudCardContent>
         </MudCard>
+    </MudItem>
+
+    <!-- Panel 3: Reproductor de Paquetes Wireshark & Packet Sender -->
+    <MudItem xs="12">
+        <PacketSenderPanel DefaultAdapterIp="@_selectedAdapter?.IpAddress" DefaultAdapterName="@_selectedAdapter?.Name" />
     </MudItem>
 </MudGrid>
 
@@ -237,18 +276,50 @@
     protected override void OnInitialized()
     {
         DhcpService.OnLeasesChanged += HandleLeasesChanged;
+        try
+        {
+            NetworkChange.NetworkAddressChanged += HandleNetworkAddressChanged;
+        }
+        catch { }
         RefreshAdapters();
         RefreshLeases();
+    }
+
+    private void HandleNetworkAddressChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            RefreshAdapters();
+            StateHasChanged();
+        });
     }
 
     private void RefreshAdapters()
     {
         _adapters = AdapterService.GetAdapters();
-        if (_adapters.Count > 0 && string.IsNullOrEmpty(_selectedAdapterName))
+        if (_adapters.Count > 0)
         {
-            var preferred = _adapters.FirstOrDefault(a => !string.IsNullOrEmpty(a.IpAddress)) ?? _adapters[0];
-            OnAdapterSelected(preferred.Name);
+            if (string.IsNullOrEmpty(_selectedAdapterName) || !_adapters.Any(a => a.Name == _selectedAdapterName))
+            {
+                var preferred = _adapters.FirstOrDefault(a => !string.IsNullOrEmpty(a.IpAddress)) ?? _adapters[0];
+                OnAdapterSelected(preferred.Name);
+            }
+            else
+            {
+                _selectedAdapter = _adapters.First(a => a.Name == _selectedAdapterName);
+                if (!string.IsNullOrEmpty(_selectedAdapter.IpAddress) && (string.IsNullOrEmpty(_ipAddress) || _selectedAdapter.IsDhcpEnabled))
+                {
+                    _ipAddress = _selectedAdapter.IpAddress;
+                    _subnetMask = string.IsNullOrEmpty(_selectedAdapter.SubnetMask) ? "255.255.255.0" : _selectedAdapter.SubnetMask;
+                    _gateway = _selectedAdapter.Gateway;
+                    if (!DhcpService.IsRunning)
+                    {
+                        SyncDhcpConfigFromInterface(_ipAddress, _subnetMask, _gateway);
+                    }
+                }
+            }
         }
+        RefreshLeases();
     }
 
     private void OnAdapterSelected(string name)
@@ -263,32 +334,103 @@
 
             if (!string.IsNullOrEmpty(_ipAddress))
             {
-                _dhcpConfig.ServerIp = _ipAddress;
-                _dhcpConfig.SubnetMask = _subnetMask;
+                SyncDhcpConfigFromInterface(_ipAddress, _subnetMask, _gateway);
+            }
+            else
+            {
+                _dhcpConfig.InterfaceName = _selectedAdapter.Name;
+                _dhcpConfig.InterfaceIndex = _selectedAdapter.InterfaceIndex;
+                _dhcpConfig.InterfaceMac = _selectedAdapter.MacAddress;
+            }
+        }
+        RefreshLeases();
+    }
 
-                // Heuristic for default range
-                var parts = _ipAddress.Split('.');
-                if (parts.Length == 4)
-                {
-                    string prefix = $"{parts[0]}.{parts[1]}.{parts[2]}";
-                    _dhcpConfig.StartIp = $"{prefix}.50";
-                    _dhcpConfig.EndIp = $"{prefix}.150";
-                    _dhcpConfig.GatewayIp = string.IsNullOrEmpty(_gateway) ? $"{prefix}.1" : _gateway;
-                }
+    private void OnIpAddressChanged(string newIp)
+    {
+        _ipAddress = newIp;
+        if (!DhcpService.IsRunning && System.Net.IPAddress.TryParse(newIp, out _))
+        {
+            SyncDhcpConfigFromInterface(newIp, _subnetMask, _gateway);
+        }
+    }
+
+    private void OnSubnetMaskChanged(string newMask)
+    {
+        _subnetMask = newMask;
+        if (!DhcpService.IsRunning)
+        {
+            _dhcpConfig.SubnetMask = newMask;
+        }
+    }
+
+    private void OnGatewayChanged(string newGw)
+    {
+        _gateway = newGw;
+        if (!DhcpService.IsRunning)
+        {
+            _dhcpConfig.GatewayIp = newGw;
+        }
+    }
+
+    private void SyncDhcpConfigFromInterface(string ip, string mask, string gw)
+    {
+        _dhcpConfig.ServerIp = ip;
+        _dhcpConfig.SubnetMask = string.IsNullOrWhiteSpace(mask) ? "255.255.255.0" : mask;
+        _dhcpConfig.GatewayIp = string.IsNullOrWhiteSpace(gw) ? ip : gw;
+
+        if (_selectedAdapter != null)
+        {
+            _dhcpConfig.InterfaceName = _selectedAdapter.Name;
+            _dhcpConfig.InterfaceIndex = _selectedAdapter.InterfaceIndex;
+            _dhcpConfig.InterfaceMac = _selectedAdapter.MacAddress;
+        }
+
+        var parts = ip.Split('.');
+        if (parts.Length == 4 && byte.TryParse(parts[3], out byte lastOctet))
+        {
+            string prefix = $"{parts[0]}.{parts[1]}.{parts[2]}";
+            if (lastOctet < 50)
+            {
+                _dhcpConfig.StartIp = $"{prefix}.50";
+                _dhcpConfig.EndIp = $"{prefix}.150";
+            }
+            else if (lastOctet <= 150)
+            {
+                _dhcpConfig.StartIp = $"{prefix}.160";
+                _dhcpConfig.EndIp = $"{prefix}.240";
+            }
+            else
+            {
+                _dhcpConfig.StartIp = $"{prefix}.10";
+                _dhcpConfig.EndIp = $"{prefix}.100";
             }
         }
     }
 
-    private void ApplyStaticIp()
+    private async Task ApplyStaticIp()
     {
         if (_selectedAdapter == null) return;
         _isConfiguringNetwork = true;
+        StateHasChanged();
+
         var (ok, msg) = AdapterService.SetStaticIp(_selectedAdapter.Name, _ipAddress, _subnetMask, _gateway);
         _isConfiguringNetwork = false;
 
         if (ok)
         {
             Snackbar.Add(msg, Severity.Success);
+            _selectedAdapter.IpAddress = _ipAddress;
+            _selectedAdapter.SubnetMask = _subnetMask;
+            _selectedAdapter.Gateway = _gateway;
+            _selectedAdapter.IsDhcpEnabled = false;
+
+            if (!DhcpService.IsRunning)
+            {
+                SyncDhcpConfigFromInterface(_ipAddress, _subnetMask, _gateway);
+            }
+
+            await Task.Delay(1200);
             RefreshAdapters();
         }
         else
@@ -297,17 +439,25 @@
         }
     }
 
-    private void RestoreAdapterDhcp()
+    private async Task RestoreAdapterDhcp()
     {
         if (_selectedAdapter == null) return;
         _isConfiguringNetwork = true;
+        StateHasChanged();
+
         var (ok, msg) = AdapterService.SetDhcpClient(_selectedAdapter.Name);
         _isConfiguringNetwork = false;
 
         if (ok)
         {
             Snackbar.Add(msg, Severity.Success);
-            RefreshAdapters();
+            for (int i = 0; i < 4; i++)
+            {
+                await Task.Delay(1000);
+                RefreshAdapters();
+                if (!string.IsNullOrEmpty(_selectedAdapter?.IpAddress))
+                    break;
+            }
         }
         else
         {
@@ -317,6 +467,13 @@
 
     private void StartDhcp()
     {
+        if (_selectedAdapter != null)
+        {
+            _dhcpConfig.InterfaceName = _selectedAdapter.Name;
+            _dhcpConfig.InterfaceIndex = _selectedAdapter.InterfaceIndex;
+            _dhcpConfig.InterfaceMac = _selectedAdapter.MacAddress;
+        }
+
         var (ok, msg) = DhcpService.StartServer(_dhcpConfig);
         if (ok)
         {
@@ -338,7 +495,17 @@
 
     private void RefreshLeases()
     {
-        _activeLeases = DhcpService.GetActiveLeases();
+        _activeLeases = DhcpService.GetActiveLeases(
+            _selectedAdapter?.Name,
+            _selectedAdapter?.IpAddress,
+            _selectedAdapter?.SubnetMask);
+    }
+
+    private void ClearLeases()
+    {
+        DhcpService.ClearLeases(_selectedAdapter?.Name);
+        RefreshLeases();
+        Snackbar.Add($"Concesiones de '{_selectedAdapterName}' eliminadas.", Severity.Info);
     }
 
     private void HandleLeasesChanged()
@@ -353,5 +520,27 @@
     public void Dispose()
     {
         DhcpService.OnLeasesChanged -= HandleLeasesChanged;
+        try
+        {
+            NetworkChange.NetworkAddressChanged -= HandleNetworkAddressChanged;
+        }
+        catch { }
+    }
+
+    private async Task OpenPacketSenderDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            ["DefaultAdapterIp"] = _selectedAdapter?.IpAddress,
+            ["DefaultAdapterName"] = _selectedAdapter?.Name
+        };
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraLarge,
+            FullWidth = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true
+        };
+        await DialogService.ShowAsync<PacketSenderDialog>("Reproductor de Paquetes Wireshark", parameters, options);
     }
 }

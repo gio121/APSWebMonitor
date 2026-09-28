@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -12,6 +13,8 @@ namespace ApsMonitor.Services;
 
 public class DhcpLeaseInfo
 {
+    public string InterfaceName { get; set; } = string.Empty;
+    public int InterfaceIndex { get; set; } = 0;
     public string MacAddress { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string HostName { get; set; } = string.Empty;
@@ -22,6 +25,9 @@ public class DhcpLeaseInfo
 
 public class DhcpServerConfig
 {
+    public string InterfaceName { get; set; } = string.Empty;
+    public int InterfaceIndex { get; set; } = 0;
+    public string InterfaceMac { get; set; } = string.Empty;
     public string ServerIp { get; set; } = "192.168.1.10";
     public string SubnetMask { get; set; } = "255.255.255.0";
     public string StartIp { get; set; } = "192.168.1.50";
@@ -43,9 +49,48 @@ public class DhcpServerService : IDisposable
     public DhcpServerConfig Config { get; set; } = new();
     public event Action? OnLeasesChanged;
 
-    public List<DhcpLeaseInfo> GetActiveLeases()
+    public List<DhcpLeaseInfo> GetActiveLeases(string? interfaceName = null, string? subnetIp = null, string? subnetMask = null)
     {
-        return _leases.Values.OrderBy(l => l.IpAddress).ToList();
+        var list = _leases.Values.Where(l => l.IsActive);
+
+        if (!string.IsNullOrEmpty(interfaceName))
+        {
+            list = list.Where(l => string.IsNullOrEmpty(l.InterfaceName) ||
+                                   string.Equals(l.InterfaceName, interfaceName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrEmpty(subnetIp) && !string.IsNullOrEmpty(subnetMask) &&
+            IPAddress.TryParse(subnetIp, out var sIp) && IPAddress.TryParse(subnetMask, out var sMask))
+        {
+            list = list.Where(l =>
+            {
+                if (!IPAddress.TryParse(l.IpAddress, out var lIp)) return false;
+                return IsInSameSubnet(lIp, sIp, sMask);
+            });
+        }
+
+        return list.OrderBy(l => l.IpAddress).ToList();
+    }
+
+    public void ClearLeases(string? interfaceName = null)
+    {
+        if (string.IsNullOrEmpty(interfaceName))
+        {
+            _leases.Clear();
+        }
+        else
+        {
+            var keysToRemove = _leases
+                .Where(kvp => string.Equals(kvp.Value.InterfaceName, interfaceName, StringComparison.OrdinalIgnoreCase))
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var k in keysToRemove)
+            {
+                _leases.TryRemove(k, out _);
+            }
+        }
+        OnLeasesChanged?.Invoke();
     }
 
     public (bool Success, string Message) StartServer(DhcpServerConfig config)
@@ -55,12 +100,75 @@ public class DhcpServerService : IDisposable
 
         Config = config;
 
+        // Resolver InterfaceIndex si no viene indicado
+        if (Config.InterfaceIndex <= 0 && (!string.IsNullOrEmpty(Config.InterfaceName) || !string.IsNullOrEmpty(Config.ServerIp)))
+        {
+            try
+            {
+                var nics = NetworkInterface.GetAllNetworkInterfaces();
+                var match = nics.FirstOrDefault(n =>
+                    (!string.IsNullOrEmpty(Config.InterfaceName) && string.Equals(n.Name, Config.InterfaceName, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(Config.ServerIp) && n.GetIPProperties().UnicastAddresses.Any(u => u.Address.ToString() == Config.ServerIp)));
+
+                if (match != null)
+                {
+                    try
+                    {
+                        var ipv4Props = match.GetIPProperties().GetIPv4Properties();
+                        if (ipv4Props != null)
+                        {
+                            Config.InterfaceIndex = ipv4Props.Index;
+                        }
+                    }
+                    catch { }
+                    if (string.IsNullOrEmpty(Config.InterfaceName))
+                        Config.InterfaceName = match.Name;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DHCP] Error resolviendo interfaz: {ex.Message}");
+            }
+        }
+
+        // Limpiar de la memoria concesiones que pertenezcan a otras subredes o que no coincidan con la interfaz seleccionada
+        if (IPAddress.TryParse(Config.ServerIp, out var srvIpCheck) && IPAddress.TryParse(Config.SubnetMask, out var maskCheck))
+        {
+            var staleKeys = _leases
+                .Where(kvp =>
+                {
+                    if (!kvp.Value.IsActive) return true;
+                    if (!string.IsNullOrEmpty(kvp.Value.InterfaceName) &&
+                        !string.IsNullOrEmpty(Config.InterfaceName) &&
+                        !string.Equals(kvp.Value.InterfaceName, Config.InterfaceName, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    if (IPAddress.TryParse(kvp.Value.IpAddress, out var lIp) && !IsInSameSubnet(lIp, srvIpCheck, maskCheck))
+                        return true;
+                    return false;
+                })
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in staleKeys)
+            {
+                _leases.TryRemove(key, out _);
+            }
+        }
+
         try
         {
             // Socket principal de escucha en 0.0.0.0:67
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+            try
+            {
+                _socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DHCP] Aviso configurando PacketInformation: {ex.Message}");
+            }
             _socket.Bind(new IPEndPoint(IPAddress.Any, 67));
 
             // Socket emisor dedicado ligado a la IP de la interfaz para forzar la salida por esa tarjeta de red
@@ -83,7 +191,8 @@ public class DhcpServerService : IDisposable
             _listenTask = Task.Run(() => ListenLoop(_cts.Token));
             IsRunning = true;
 
-            return (true, $"Servidor DHCP iniciado escuchando en puerto 67. Rango: {Config.StartIp} - {Config.EndIp}");
+            string ifLabel = !string.IsNullOrEmpty(Config.InterfaceName) ? $" en '{Config.InterfaceName}'" : "";
+            return (true, $"Servidor DHCP iniciado{ifLabel}. Rango: {Config.StartIp} - {Config.EndIp}");
         }
         catch (SocketException ex)
         {
@@ -128,10 +237,35 @@ public class DhcpServerService : IDisposable
             try
             {
                 if (_socket == null) break;
-                int received = _socket.ReceiveFrom(buffer, ref remoteEp);
+
+                SocketFlags flags = SocketFlags.None;
+                int received = 0;
+                int incomingInterfaceIndex = 0;
+
+                try
+                {
+                    received = _socket.ReceiveMessageFrom(buffer, 0, buffer.Length, ref flags, ref remoteEp, out IPPacketInformation packetInfo);
+                    incomingInterfaceIndex = packetInfo.Interface;
+                }
+                catch (SocketException) when (ct.IsCancellationRequested || !IsRunning)
+                {
+                    break;
+                }
+                catch (Exception)
+                {
+                    received = _socket.ReceiveFrom(buffer, ref remoteEp);
+                }
+
                 if (received < 240) continue; // Longitud mínima de paquete DHCP
 
-                ProcessPacket(buffer, received);
+                // FILTRADO ESTRICTO POR INTERFAZ:
+                // Si conocemos el índice de la interfaz configurada, descartar paquetes recibidos en cualquier otra interfaz (Wi-Fi, corporativa, etc.)
+                if (Config.InterfaceIndex > 0 && incomingInterfaceIndex > 0 && incomingInterfaceIndex != Config.InterfaceIndex)
+                {
+                    continue;
+                }
+
+                ProcessPacket(buffer, received, incomingInterfaceIndex);
             }
             catch (SocketException) when (ct.IsCancellationRequested || !IsRunning)
             {
@@ -144,7 +278,7 @@ public class DhcpServerService : IDisposable
         }
     }
 
-    private void ProcessPacket(byte[] buffer, int len)
+    private void ProcessPacket(byte[] buffer, int len, int incomingIfIndex)
     {
         if (buffer[0] != 1) return; // BootRequest únicamente
 
@@ -165,6 +299,7 @@ public class DhcpServerService : IDisposable
         byte msgType = 0;
         string hostName = "";
         IPAddress? requestedIp = null;
+        IPAddress? serverId = null;
 
         int i = 240;
         while (i < len)
@@ -184,6 +319,10 @@ public class DhcpServerService : IDisposable
             {
                 requestedIp = new IPAddress(buffer.Skip(i).Take(4).ToArray());
             }
+            else if (optCode == 54 && optLen == 4) // Server Identifier
+            {
+                serverId = new IPAddress(buffer.Skip(i).Take(4).ToArray());
+            }
             else if (optCode == 12) // Host Name
             {
                 hostName = Encoding.ASCII.GetString(buffer, i, optLen);
@@ -192,11 +331,21 @@ public class DhcpServerService : IDisposable
             i += optLen;
         }
 
+        // Si el paquete incluye Server Identifier (Opción 54) y no coincide con nuestra ServerIp,
+        // la petición va dirigida a OTRO servidor DHCP de la red (ej. router corporativo). Ignorar por completo.
+        if (serverId != null && !string.IsNullOrEmpty(Config.ServerIp))
+        {
+            if (IPAddress.TryParse(Config.ServerIp, out var mySrvIp) && !serverId.Equals(mySrvIp))
+            {
+                return;
+            }
+        }
+
         byte[] chaddr16 = buffer.Skip(28).Take(16).ToArray();
 
         if (msgType == 1) // DHCPDISCOVER
         {
-            Console.WriteLine($"[DHCP] DHCPDISCOVER recibido de MAC {mac}, host '{hostName}'");
+            Console.WriteLine($"[DHCP] DHCPDISCOVER recibido de MAC {mac}, host '{hostName}' en interfaz '{Config.InterfaceName}'");
             var offeredIp = GetOrAllocateIp(mac, requestedIp);
             if (offeredIp != null)
             {
@@ -205,12 +354,40 @@ public class DhcpServerService : IDisposable
         }
         else if (msgType == 3) // DHCPREQUEST
         {
-            Console.WriteLine($"[DHCP] DHCPREQUEST recibido de MAC {mac}, requestedIp={requestedIp}");
-            var chosenIp = requestedIp ?? GetOrAllocateIp(mac, null);
+            Console.WriteLine($"[DHCP] DHCPREQUEST recibido de MAC {mac}, requestedIp={requestedIp} en interfaz '{Config.InterfaceName}'");
+
+            IPAddress? chosenIp = null;
+
+            if (requestedIp != null)
+            {
+                // Comprobar estrictamente si la IP solicitada está dentro del rango o si es una concesión existente de esta MAC
+                if (IsIpInRange(requestedIp))
+                {
+                    chosenIp = requestedIp;
+                }
+                else if (_leases.TryGetValue(mac, out var existing) && existing.IsActive && existing.IpAddress == requestedIp.ToString())
+                {
+                    chosenIp = requestedIp;
+                }
+                else
+                {
+                    // La IP solicitada es ajena al rango configurado (ej. IP de otra red corporativa/Wi-Fi).
+                    // No conceder ni registrar concesión.
+                    Console.WriteLine($"[DHCP] Ignorando DHCPREQUEST fuera de rango/subred ({requestedIp}) para MAC {mac}");
+                    return;
+                }
+            }
+            else
+            {
+                chosenIp = GetOrAllocateIp(mac, null);
+            }
+
             if (chosenIp != null)
             {
                 var lease = new DhcpLeaseInfo
                 {
+                    InterfaceName = Config.InterfaceName,
+                    InterfaceIndex = Config.InterfaceIndex,
                     MacAddress = mac,
                     IpAddress = chosenIp.ToString(),
                     HostName = hostName,
@@ -235,7 +412,7 @@ public class DhcpServerService : IDisposable
     {
         if (_leases.TryGetValue(mac, out var existing) && existing.IsActive)
         {
-            if (IPAddress.TryParse(existing.IpAddress, out var ip))
+            if (IPAddress.TryParse(existing.IpAddress, out var ip) && IsIpInRange(ip))
                 return ip;
         }
 
@@ -255,6 +432,7 @@ public class DhcpServerService : IDisposable
         {
             var cand = UintToIp(u);
             string candStr = cand.ToString();
+            if (candStr == Config.ServerIp) continue; // No auto-asignar la IP del propio servidor
             if (!_leases.Values.Any(l => l.IpAddress == candStr && l.IsActive))
             {
                 return cand;
@@ -264,12 +442,25 @@ public class DhcpServerService : IDisposable
         return null;
     }
 
-    private bool IsIpInRange(IPAddress ip)
+    public bool IsIpInRange(IPAddress ip)
     {
         if (!IPAddress.TryParse(Config.StartIp, out var start) || !IPAddress.TryParse(Config.EndIp, out var end))
             return false;
         uint num = IpToUint(ip);
         return num >= IpToUint(start) && num <= IpToUint(end);
+    }
+
+    public static bool IsInSameSubnet(IPAddress ip1, IPAddress ip2, IPAddress mask)
+    {
+        byte[] b1 = ip1.GetAddressBytes();
+        byte[] b2 = ip2.GetAddressBytes();
+        byte[] m = mask.GetAddressBytes();
+        if (b1.Length != 4 || b2.Length != 4 || m.Length != 4) return false;
+        for (int i = 0; i < 4; i++)
+        {
+            if ((b1[i] & m[i]) != (b2[i] & m[i])) return false;
+        }
+        return true;
     }
 
     private static uint IpToUint(IPAddress ip)
@@ -416,7 +607,7 @@ public class DhcpServerService : IDisposable
             }
         }
 
-        // 2. Enviar por socket ligado a la interfaz hacia 255.255.255.255
+        // 2. Enviar por socket ligado a la interfaz hacia 255.255.255.255 y a la IP asignada
         if (_interfaceSocket != null)
         {
             try
@@ -426,8 +617,14 @@ public class DhcpServerService : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DHCP] Error enviando via interfaceSocket: {ex.Message}");
+                Console.WriteLine($"[DHCP] Error enviando via interfaceSocket broadcast: {ex.Message}");
             }
+
+            try
+            {
+                _interfaceSocket.SendTo(sendData, new IPEndPoint(yiaddr, 68));
+            }
+            catch { }
         }
         else
         {
@@ -436,14 +633,13 @@ public class DhcpServerService : IDisposable
                 _socket.SendTo(sendData, new IPEndPoint(IPAddress.Broadcast, 68));
             }
             catch { }
-        }
 
-        // 3. Enviar también unicast a la IP asignada (yiaddr)
-        try
-        {
-            _socket.SendTo(sendData, new IPEndPoint(yiaddr, 68));
+            try
+            {
+                _socket.SendTo(sendData, new IPEndPoint(yiaddr, 68));
+            }
+            catch { }
         }
-        catch { }
 
         Console.WriteLine($"[DHCP] {typeName} completado para {mac} -> {yiaddr}");
     }

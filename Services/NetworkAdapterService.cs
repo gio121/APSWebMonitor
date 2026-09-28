@@ -22,6 +22,7 @@ public class NetworkAdapterInfo
     public OperationalStatus Status { get; set; }
     public NetworkInterfaceType InterfaceType { get; set; }
     public bool IsDhcpEnabled { get; set; }
+    public int InterfaceIndex { get; set; }
 }
 
 public class NetworkAdapterService
@@ -46,6 +47,19 @@ public class NetworkAdapterService
 
                 var mac = string.Join(":", ni.GetPhysicalAddress().GetAddressBytes().Select(b => b.ToString("X2")));
 
+                int ifIndex = 0;
+                bool isDhcp = false;
+                try
+                {
+                    var ipv4Props = ipProps.GetIPv4Properties();
+                    if (ipv4Props != null)
+                    {
+                        ifIndex = ipv4Props.Index;
+                        isDhcp = ipv4Props.IsDhcpEnabled;
+                    }
+                }
+                catch { }
+
                 list.Add(new NetworkAdapterInfo
                 {
                     Id = ni.Id,
@@ -57,7 +71,8 @@ public class NetworkAdapterService
                     Gateway = gw?.Address.ToString() ?? "",
                     Status = ni.OperationalStatus,
                     InterfaceType = ni.NetworkInterfaceType,
-                    IsDhcpEnabled = ipProps.GetIPv4Properties()?.IsDhcpEnabled ?? false
+                    IsDhcpEnabled = isDhcp,
+                    InterfaceIndex = ifIndex
                 });
             }
         }

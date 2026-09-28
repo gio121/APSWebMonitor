@@ -43,6 +43,7 @@ builder.Services.AddScoped<TrdpPcapParserService>();
 builder.Services.AddSingleton<MonitorStateService>();
 builder.Services.AddSingleton<NetworkAdapterService>();
 builder.Services.AddSingleton<DhcpServerService>();
+builder.Services.AddSingleton<PacketSenderService>();
 builder.Services.Configure<InfluxOptions>(builder.Configuration.GetSection("InfluxDB"));
 builder.Services.AddHttpClient("InfluxDB", client => client.Timeout = TimeSpan.FromSeconds(5))
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
