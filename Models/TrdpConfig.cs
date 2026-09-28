@@ -620,6 +620,9 @@ public class TrdpFrameMessage
 
     [JsonPropertyName("snapshot")]
     public bool Snapshot { get; set; }
+
+    [JsonPropertyName("direction")]
+    public string Direction { get; set; } = "rx";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

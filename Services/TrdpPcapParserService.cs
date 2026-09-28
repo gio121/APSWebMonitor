@@ -42,71 +42,8 @@ public class TrdpCapturedFrame
             Snapshot  = false
         };
 
-        message.Parsed = DecodeParsedPayload(Payload, datasetDef);
+        message.Parsed = TrdpPcapParserService.DecodeParsedPayload(Payload, datasetDef, enableEndianSwap: false);
         return message;
-    }
-
-    private static Dictionary<string, JsonElement> DecodeParsedPayload(byte[] payload, TrdpDataset? datasetDef)
-    {
-        var result = new Dictionary<string, JsonElement>();
-        if (payload == null || payload.Length == 0)
-            return result;
-
-        if (datasetDef == null || datasetDef.Variables == null || datasetDef.Variables.Count == 0)
-        {
-            // Decodificación genérica por bytes si no hay definición de dataset
-            for (int i = 0; i < payload.Length; i += 2)
-            {
-                if (i + 1 < payload.Length)
-                {
-                    ushort val = BitConverter.ToUInt16(payload, i);
-                    result[$"word_{i}"] = JsonSerializer.SerializeToElement(val);
-                }
-                else
-                {
-                    result[$"byte_{i}"] = JsonSerializer.SerializeToElement((int)payload[i]);
-                }
-            }
-            return result;
-        }
-
-        foreach (var v in datasetDef.Variables)
-        {
-            if (string.IsNullOrWhiteSpace(v.Id)) continue;
-            if (v.Offset < 0 || v.Offset >= payload.Length) continue;
-
-            double rawVal = SessionParserService.ReadValue(payload, v.Offset, v.Type);
-            double physVal = rawVal * (v.Scale ?? 1.0) + (v.OffsetVal ?? 0.0);
-
-            // Decodificación de tipo entero / flotante
-            bool isFloat = v.Type.Equals("float", StringComparison.OrdinalIgnoreCase) || 
-                           v.Type.Equals("float32", StringComparison.OrdinalIgnoreCase);
-
-            if (isFloat)
-            {
-                result[v.Id] = JsonSerializer.SerializeToElement(Math.Round(physVal, 4));
-            }
-            else
-            {
-                result[v.Id] = JsonSerializer.SerializeToElement((long)Math.Round(physVal));
-            }
-
-            // Si es un tipo de 8 o 16 bits, generar también sus bitfields badges para el panel LED
-            int bitCount = SessionParserService.GetByteSize(v.Type) * 8;
-            if (bitCount is 8 or 16)
-            {
-                ulong intVal = (ulong)rawVal;
-                var bitDict = new Dictionary<string, int>();
-                for (int b = 0; b < Math.Min(bitCount, 16); b++)
-                {
-                    int bitState = (int)((intVal >> b) & 1);
-                    bitDict[$"bit_{b}"] = bitState;
-                }
-                result[$"{v.Id}_bits"] = JsonSerializer.SerializeToElement(bitDict);
-            }
-        }
-
-        return result;
     }
 }
 
@@ -128,6 +65,93 @@ public class PcapChunkResult
 public class TrdpPcapParserService
 {
     public const int DEFAULT_CHUNK_SIZE = 200;
+
+    public static Dictionary<string, JsonElement> DecodeParsedPayload(byte[] payload, TrdpDataset? datasetDef, bool enableEndianSwap = false)
+    {
+        var result = new Dictionary<string, JsonElement>();
+        if (payload == null || payload.Length == 0)
+            return result;
+
+        if (datasetDef == null || datasetDef.Variables == null || datasetDef.Variables.Count == 0)
+        {
+            // Decodificación genérica por bytes si no hay definición de dataset
+            for (int i = 0; i < payload.Length; i += 2)
+            {
+                if (i + 1 < payload.Length)
+                {
+                    ushort val = enableEndianSwap
+                        ? BitConverter.ToUInt16(new byte[] { payload[i + 1], payload[i] }, 0)
+                        : BitConverter.ToUInt16(payload, i);
+                    result[$"word_{i}"] = JsonSerializer.SerializeToElement(val);
+                }
+                else
+                {
+                    result[$"byte_{i}"] = JsonSerializer.SerializeToElement((int)payload[i]);
+                }
+            }
+            return result;
+        }
+
+        foreach (var v in datasetDef.Variables)
+        {
+            if (string.IsNullOrWhiteSpace(v.Id)) continue;
+            if (v.Offset < 0 || v.Offset >= payload.Length) continue;
+
+            int byteSize = SessionParserService.GetByteSize(v.Type);
+            byte[] slice = GetVariableBytes(payload, v.Offset, byteSize, enableEndianSwap);
+
+            double rawVal = SessionParserService.ReadValue(slice, 0, v.Type);
+            double physVal = rawVal * (v.Scale ?? 1.0) + (v.OffsetVal ?? 0.0);
+
+            // Decodificación de tipo entero / flotante
+            bool isFloat = v.Type.Equals("float", StringComparison.OrdinalIgnoreCase) || 
+                           v.Type.Equals("float32", StringComparison.OrdinalIgnoreCase);
+
+            if (isFloat)
+            {
+                result[v.Id] = JsonSerializer.SerializeToElement(Math.Round(physVal, 4));
+            }
+            else
+            {
+                result[v.Id] = JsonSerializer.SerializeToElement((long)Math.Round(physVal));
+            }
+
+            // Si es un tipo de 8, 16 o 32 bits, generar también sus bitfields badges para el panel LED
+            int bitCount = byteSize * 8;
+            if (bitCount is 8 or 16 or 32)
+            {
+                // Para el estado de bits del badge:
+                // Si enableEndianSwap es true, el orden de los bits 0..N-1 se invierte: bit 0 recibe el bit (N-1), bit 1 el (N-2), etc.
+                double unswappedRaw = SessionParserService.ReadValue(payload, v.Offset, v.Type);
+                ulong intVal = (ulong)unswappedRaw;
+                var bitDict = new Dictionary<string, int>();
+                for (int b = 0; b < Math.Min(bitCount, 32); b++)
+                {
+                    int srcBitIdx = enableEndianSwap ? (bitCount - 1 - b) : b;
+                    int bitState = (int)((intVal >> srcBitIdx) & 1);
+                    bitDict[$"bit_{b}"] = bitState;
+                }
+                result[$"{v.Id}_bits"] = JsonSerializer.SerializeToElement(bitDict);
+            }
+        }
+
+        return result;
+    }
+
+    public static byte[] GetVariableBytes(byte[] payload, int offset, int byteSize, bool swapBytes)
+    {
+        byte[] slice = new byte[byteSize];
+        for (int i = 0; i < byteSize; i++)
+        {
+            if (offset + i < payload.Length)
+            {
+                int srcIdx = (swapBytes && byteSize > 1) ? (offset + byteSize - 1 - i) : (offset + i);
+                if (srcIdx >= 0 && srcIdx < payload.Length)
+                    slice[i] = payload[srcIdx];
+            }
+        }
+        return slice;
+    }
 
     /// <summary>
     /// Guarda el stream entrante en un archivo temporal en disco de forma secuencial reportando el progreso de transferencia.

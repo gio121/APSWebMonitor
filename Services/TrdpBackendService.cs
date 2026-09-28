@@ -206,6 +206,36 @@ public sealed class TrdpBackendService
         }
         catch { return null; }
     }
+
+    /// <summary>
+    /// EnvÃ­a una trama de comando hacia el ControlManager a travÃ©s del WebMonitorBackend (POST /api/send).
+    /// </summary>
+    public async Task<TrdpBackendResult<string>> SendCommandAsync(
+        string deviceBaseUrl,
+        byte[] payload,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var bodyObj = new
+            {
+                payload = payload.Select(b => (int)b).ToArray()
+            };
+
+            using var client = CreateClient(deviceBaseUrl);
+            using var response = await client.PostAsJsonAsync("api/send", bodyObj, ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+                return TrdpBackendResult<string>.Fail($"HTTP {(int)response.StatusCode}: {body}");
+
+            return TrdpBackendResult<string>.Ok("Comando enviado exitosamente a Control");
+        }
+        catch (Exception ex)
+        {
+            return TrdpBackendResult<string>.Fail($"Error al enviar comando: {ex.Message}");
+        }
+    }
 }
 
 // ── Result types ───────────────────────────────────────────────────────────
@@ -234,4 +264,5 @@ public sealed class TrdpSaveResponse
     [JsonPropertyName("status")]           public string Status           { get; set; } = string.Empty;
     [JsonPropertyName("message")]          public string Message          { get; set; } = string.Empty;
     [JsonPropertyName("service_restarted")]public bool   ServiceRestarted { get; set; }
+
 }

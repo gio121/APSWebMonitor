@@ -5,6 +5,20 @@ using ApsMonitor.Data;
 using ApsMonitor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 
+// Cerrar instancias previas huerfanas en segundo plano para liberar los puertos (7211, 5005, etc.)
+try
+{
+    var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+    var existingProcesses = System.Diagnostics.Process.GetProcessesByName(currentProcess.ProcessName)
+        .Where(p => p.Id != currentProcess.Id)
+        .ToList();
+    foreach (var proc in existingProcesses)
+    {
+        try { proc.Kill(); proc.WaitForExit(1000); } catch { }
+    }
+}
+catch { }
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -27,6 +41,8 @@ builder.Services.AddScoped<TrdpBackendService>();
 builder.Services.AddScoped<TrdpWebSocketService>();
 builder.Services.AddScoped<TrdpPcapParserService>();
 builder.Services.AddSingleton<MonitorStateService>();
+builder.Services.AddSingleton<NetworkAdapterService>();
+builder.Services.AddSingleton<DhcpServerService>();
 
 // Authentication & Authorization
 builder.Services.AddAuthentication();

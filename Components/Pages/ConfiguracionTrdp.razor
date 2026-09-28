@@ -372,6 +372,11 @@ else
                                            OnClick="@(() => AddControlCommandRule(dsName))">
                                     Nueva Regla Control
                                 </MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Warning"
+                                           StartIcon="@Icons.Material.Filled.Send"
+                                           OnClick="@(() => OpenSendCommandDialog(dsName))">
+                                    Enviar comando
+                                </MudButton>
                             </div>
                         </div>
 
@@ -522,6 +527,9 @@ else
                                             <PropertyColumn Property="x => x.Description" Title="Descripción" />
                                             <TemplateColumn Title="Acciones">
                                                 <CellTemplate>
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Send" Size="Size.Small"
+                                                                   Color="Color.Warning" Title="Enviar comando a Control"
+                                                                   OnClick="@(() => OpenSendRuleCommandDialog(context.Item))" />
                                                     <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
                                                                    OnClick="@(() => EditControlCommandRule(dsName, context.Item))" />
                                                     <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
@@ -760,7 +768,7 @@ else
         if (_activeConfig is null) return;
         var json = TrdpService.ExportToJson(_activeConfig);
         var b64  = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
-        var name = (_activeConfig.Nombre.Length > 0 ? _activeConfig.Nombre : "trdp_config").Replace(" ", "_") + ".json";
+        var name = "ecnmanager.json";
         await JS.InvokeVoidAsync("eval",
             $"(function(){{var a=document.getElementById('trdp-export-link');a.href='data:application/json;base64,{b64}';a.download='{name}';a.click();}})()");
         Snackbar.Add("JSON exportado.", Severity.Info);
@@ -1067,6 +1075,31 @@ else
 
     private ErrorBoundary? _errorBoundary;
     private void ResetError() => _errorBoundary?.Recover();
+
+    
+    private async Task OpenSendCommandDialog(string dsName)
+    {
+        var parameters = new DialogParameters
+        {
+            ["DeviceUrl"] = "127.0.0.1:8080",
+            ["InitialFrameType"] = "0x7A",
+            ["InitialSubCmd"] = "0x0001",
+            ["InitialData"] = 0
+        };
+        await DialogService.ShowAsync<TrdpSendCommandDialog>($"Enviar comando ({dsName})", parameters);
+    }
+
+    private async Task OpenSendRuleCommandDialog(TrdpControlCommandRule rule)
+    {
+        var parameters = new DialogParameters
+        {
+            ["DeviceUrl"] = "127.0.0.1:8080",
+            ["InitialFrameType"] = string.IsNullOrEmpty(rule.Command?.FrameType) ? "0x7A" : rule.Command.FrameType,
+            ["InitialSubCmd"] = string.IsNullOrEmpty(rule.Command?.SubCmd) ? "0x0001" : rule.Command.SubCmd,
+            ["InitialData"] = (int)(rule.Command?.Data ?? 0)
+        };
+        await DialogService.ShowAsync<TrdpSendCommandDialog>($"Enviar comando '{rule.Id}' a Control", parameters);
+    }
 
     public void Dispose() { }
 }

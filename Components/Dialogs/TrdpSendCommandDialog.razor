@@ -1,0 +1,169 @@
+@using ApsMonitor.Services
+@using MudBlazor
+@inject TrdpBackendService BackendService
+@inject ISnackbar Snackbar
+
+<MudDialog Class="trdp-send-cmd-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Send" Color="Color.Warning" />
+            <MudText Typo="Typo.h6" Class="fw-bold">Enviar Comando a Control</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="2">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="DeviceUrl" Label="IP o URL del dispositivo (WebMonitorBackend)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="127.0.0.1:8080" />
+            </MudItem>
+
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="_frameTypeHex" Label="Frame Type (Hex)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="0x7A" OnBlur="UpdatePreview" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="_subCmdHex" Label="Sub Cmd (Hex)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="0x0005" OnBlur="UpdatePreview" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="_dataVal" Label="Data (0-255)"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                 Min="0" Max="255" OnBlur="UpdatePreview" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_rawHexPreview" Label="Trama Hexadecimal Resultante"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              HelperText="Cabecera: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK]" />
+            </MudItem>
+
+            @if (!string.IsNullOrEmpty(_resultMessage))
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="@(_resultSuccess ? Severity.Success : (_isWarning ? Severity.Warning : Severity.Error))" Dense="true">
+                        @_resultMessage
+                    </MudAlert>
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cerrar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Send"
+                   OnClick="SendCommand" Disabled="_isSending">
+            @(_isSending ? "Enviando..." : "Enviar a Control")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string DeviceUrl { get; set; } = "127.0.0.1:8080";
+    [Parameter] public string InitialFrameType { get; set; } = "0x7A";
+    [Parameter] public string InitialSubCmd { get; set; } = "0x0001";
+    [Parameter] public int InitialData { get; set; } = 0;
+
+    private string _frameTypeHex = "0x7A";
+    private string _subCmdHex = "0x0001";
+    private int _dataVal = 0;
+    private string _rawHexPreview = "";
+    private bool _isSending = false;
+    private string _resultMessage = "";
+    private bool _resultSuccess = false;
+    private bool _isWarning = false;
+
+    protected override void OnInitialized()
+    {
+        _frameTypeHex = InitialFrameType;
+        _subCmdHex = InitialSubCmd;
+        _dataVal = InitialData;
+        UpdatePreview();
+    }
+
+    private void UpdatePreview()
+    {
+        byte[] frame = BuildFrame();
+        _rawHexPreview = string.Join(" ", frame.Select(b => b.ToString("X2")));
+    }
+
+    private byte[] BuildFrame()
+    {
+        byte ft = ParseByte(_frameTypeHex, 0x7A);
+        ushort sc = ParseUshort(_subCmdHex, 0x0001);
+        byte d = (byte)(_dataVal & 0xFF);
+
+        byte[] frame = new byte[8];
+        frame[0] = 0xAA; // StartByte
+        frame[1] = 0x08; // Length
+        frame[2] = 0x02; // Destination: Control
+        frame[3] = 0x03; // Source: Comms
+        frame[4] = ft;   // FrameType
+        frame[5] = (byte)(sc & 0xFF);        // SubCmd LSB
+        frame[6] = (byte)((sc >> 8) & 0xFF); // SubCmd MSB
+
+        byte chk = 0;
+        for (int i = 0; i < 7; i++)
+            chk += frame[i];
+        frame[7] = chk;
+
+        return frame;
+    }
+
+    private static byte ParseByte(string hex, byte fallback)
+    {
+        try
+        {
+            hex = hex.Trim();
+            if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) hex = hex.Substring(2);
+            return Convert.ToByte(hex, 16);
+        }
+        catch { return fallback; }
+    }
+
+    private static ushort ParseUshort(string hex, ushort fallback)
+    {
+        try
+        {
+            hex = hex.Trim();
+            if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) hex = hex.Substring(2);
+            return Convert.ToUInt16(hex, 16);
+        }
+        catch { return fallback; }
+    }
+
+    private async Task SendCommand()
+    {
+        _isSending = true;
+        _resultMessage = "";
+        _isWarning = false;
+        byte[] frame = BuildFrame();
+        var res = await BackendService.SendCommandAsync(DeviceUrl, frame);
+        _isSending = false;
+
+        if (res.IsSuccess)
+        {
+            _resultSuccess = true;
+            _resultMessage = "Comando transmitido a ControlManager con éxito.";
+            Snackbar.Add("Comando enviado exitosamente.", Severity.Success);
+        }
+        else if (res.Error != null && res.Error.Contains("Timeout waiting for ControlManager response"))
+        {
+            _resultSuccess = true;
+            _isWarning = true;
+            _resultMessage = "Trama entregada a WebMonitorBackend y despachada por RS485 a Control. (Nota: ControlManager no emite acuse de recibo UDP síncrono para comandos de Control).";
+            Snackbar.Add("Comando entregado a Control.", Severity.Warning);
+        }
+        else
+        {
+            _resultSuccess = false;
+            _resultMessage = res.Error ?? "Error desconocido";
+            Snackbar.Add(_resultMessage, Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

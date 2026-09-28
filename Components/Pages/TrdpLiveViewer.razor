@@ -53,12 +53,21 @@
         </div>
     </div>
 
-    <!-- Toggle Selector Modo (En Vivo vs Reproductor PCAP) -->
+    <!-- Toggle Selector Modo (En Vivo vs Reproductor PCAP) + Toggle BitOrder/Endianness -->
     <div class="d-flex align-center gap-3 flex-wrap">
         <MudToggleGroup T="string" Value="_activeMode" ValueChanged="OnModeChanged" Color="Color.Primary" Size="Size.Small">
             <MudToggleItem Value="@("live")" Text="En Vivo (WebSocket)" Icon="@Icons.Material.Filled.Sensors" />
             <MudToggleItem Value="@("pcap")" Text="Reproductor Wireshark" Icon="@Icons.Material.Filled.PlayCircle" />
         </MudToggleGroup>
+
+        <MudButton Variant="@(_enableEndianSwap ? Variant.Filled : Variant.Outlined)"
+                   Color="@(_enableEndianSwap ? Color.Tertiary : Color.Default)"
+                   Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.SwapHoriz"
+                   OnClick="ToggleEndianSwap"
+                   Title="Alternar conversión BitOrder (Big-Endian <-> Little-Endian & Bitset Invertido)">
+            BitOrder: @(_enableEndianSwap ? "Little-Endian / Invertido" : "Big-Endian / Normal")
+        </MudButton>
 
         <!-- Quick Stats (En Vivo) -->
         @if (!IsPcapMode)
@@ -362,45 +371,16 @@ else
                 </div>
             </div>
 
-            <!-- Bitfields Badges / LED Panel -->
-            @if (_bitFields.Count > 0)
-            {
-                <MudPaper Elevation="0" Class="pa-4 mb-4 trdp-led-panel">
-                    <MudText Typo="Typo.subtitle2" Class="fw-bold mb-3" Style="color:#38bdf8;">
-                        <MudIcon Icon="@Icons.Material.Filled.Memory" Size="Size.Small" Class="mr-1" />
-                        Estados Lógicos Decodificados (Bit Badges)
-                    </MudText>
 
-                    @foreach (var (varName, bits) in _bitFields)
-                    {
-                        <div class="mb-3">
-                            <MudText Typo="Typo.caption" Class="fw-bold mb-1 d-block" Style="color:#94a3b8;">
-                                @varName.ToUpper()
-                            </MudText>
-                            <div class="d-flex gap-2 flex-wrap">
-                                @foreach (var (bitName, val) in bits)
-                                {
-                                    bool isOn = val == 1;
-                                    <div class="trdp-led-chip @(isOn ? "led-on" : "led-off")">
-                                        <span class="led-dot"></span>
-                                        <span class="led-name">@bitName</span>
-                                        <span class="led-val">@val</span>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                </MudPaper>
-            }
 
             <!-- Scalar / Numeric Variables Table -->
             <MudPaper Elevation="0" Class="pa-2 trdp-vars-table">
                 <table class="trdp-table">
                     <thead>
                         <tr>
-                            <th>VARIABLE</th>
-                            <th>VALOR DECODIFICADO</th>
-                            <th>TIPO DETECTADO</th>
+                            <th style="width:280px;">VARIABLE</th>
+                            <th style="width:200px;">VALOR DECODIFICADO</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -419,9 +399,7 @@ else
                                     <td>
                                         <span class="trdp-val-badge">@FormatValue(valObj)</span>
                                     </td>
-                                    <td class="trdp-muted" style="font-size:0.8rem;">
-                                        @valObj.ValueKind.ToString()
-                                    </td>
+                                    <td></td>
                                 </tr>
                             }
                         }
@@ -431,7 +409,118 @@ else
 
         </MudTabPanel>
 
-        <!-- ── Tab 2: Visor Hexadecimal / Wireshark HexDump ──────────── -->
+        <!-- ── Tab 2: Estructura de Trama (Orden de Byte) ────────────── -->
+        @{
+            var dsVars = GetDatasetVariablesSorted();
+            var rawPayload = GetRawPayload();
+        }
+        @if (dsVars.Count > 0)
+        {
+            <MudTabPanel Text="Estructura de Trama" Icon="@Icons.Material.Filled.ViewList">
+
+                <!-- Toolbar -->
+                <div class="d-flex align-center justify-space-between mb-3 flex-wrap gap-2">
+                    <div>
+                        <MudText Typo="Typo.subtitle1" Class="fw-bold">
+                            <MudIcon Icon="@Icons.Material.Filled.ViewList" Size="Size.Small" Class="mr-1" Style="color:#38bdf8;" />
+                            Estructura del dataset <span style="color:#38bdf8;">@_selectedDatasetName</span>
+                            <span class="trdp-muted" style="font-size:0.8rem;"> &mdash; @rawPayload.Length bytes payload</span>
+                        </MudText>
+                    </div>
+                    <div class="d-flex align-center gap-3">
+                        <MudToggleIconButton @bind-Toggled="_showSpares"
+                                             Icon="@Icons.Material.Filled.VisibilityOff"
+                                             ToggledIcon="@Icons.Material.Filled.Visibility"
+                                             Title="Mostrar/ocultar campos spare"
+                                             Color="Color.Default" ToggledColor="Color.Info"
+                                             Size="Size.Small" />
+                        <MudText Typo="Typo.caption" Class="trdp-muted">@(_showSpares ? "Spares visibles" : "Spares ocultos")</MudText>
+                    </div>
+                </div>
+
+                <!-- Frame Structure Table -->
+                <MudPaper Elevation="0" Class="pa-2 trdp-frame-struct">
+                    <table class="trdp-table trdp-struct-table">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;">BYTE</th>
+                                <th style="width:180px;">VARIABLE</th>
+                                <th style="width:90px;">TIPO</th>
+                                <th>VALOR / BITS</th>
+                                <th style="width:130px;">RAW HEX</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in dsVars)
+                            {
+                                bool isSpare = v.Id.StartsWith("spare", StringComparison.OrdinalIgnoreCase)
+                                           || v.Description.Equals("spare", StringComparison.OrdinalIgnoreCase);
+                                if (isSpare && !_showSpares) continue;
+
+                                bool isBitType  = IsBitsetType(v.Type);
+                                int byteCount   = GetVarByteCount(v);
+                                ulong rawInt    = ReadRawUlong(rawPayload, v.Offset, byteCount);
+                                int bitWidth    = byteCount * 8;
+                                string rawHex   = BuildRawHex(rawPayload, v.Offset, byteCount);
+
+                                <tr class="@(isSpare ? "trdp-spare-row" : "")">
+                                    <!-- Byte offset -->
+                                    <td><span class="trdp-offset-badge">@v.Offset</span></td>
+                                    <!-- Name + description -->
+                                    <td>
+                                        <div class="fw-bold" style="color:#e2e8f0; font-size:0.82rem;">@v.Id</div>
+                                        @if (!string.IsNullOrWhiteSpace(v.Description))
+                                        {
+                                            <div class="trdp-muted" style="font-size:0.72rem;">@v.Description</div>
+                                        }
+                                    </td>
+                                    <!-- Type badge -->
+                                    <td>
+                                        <span class="trdp-type-badge @(isBitType ? "type-bit" : isSpare ? "type-spare" : "type-scalar")">@v.Type</span>
+                                    </td>
+                                    <!-- Value / Bits visualization -->
+                                    <td>
+                                        @if (isBitType)
+                                        {
+                                            <div class="trdp-bitrow">
+                                                @for (int b = bitWidth - 1; b >= 0; b--)
+                                                {
+                                                    int bitIdx = b;
+                                                    int srcBitIdx = _enableEndianSwap ? (bitWidth - 1 - bitIdx) : bitIdx;
+                                                    bool bitOn = ((rawInt >> srcBitIdx) & 1) == 1;
+                                                    string bitLabel = GetBitLabel(v, bitIdx);
+                                                    string bitTitle = string.IsNullOrEmpty(bitLabel) ? $"bit {bitIdx}" : $"bit {bitIdx}: {bitLabel}";
+                                                    <div class="trdp-bit @(bitOn ? "bit-on" : "bit-off")" title="@bitTitle">
+                                                        <span class="bit-pos">@bitIdx</span>
+                                                        <span class="bit-tick">@(bitOn ? "✓" : "·")</span>
+                                                        @if (!string.IsNullOrWhiteSpace(bitLabel))
+                                                        {
+                                                            <span class="bit-label">@bitLabel</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            double physVal = ComputePhysicalValue(rawPayload, v);
+                                            string unit = string.IsNullOrWhiteSpace(v.Unit) ? "" : $" {v.Unit}";
+                                            <span class="trdp-val-badge">@physVal.ToString("G6")@unit</span>
+                                            <span class="trdp-muted ml-2" style="font-size:0.78rem;">(@rawInt)</span>
+                                        }
+                                    </td>
+                                    <!-- Raw hex bytes -->
+                                    <td><code class="trdp-rawbytes">@rawHex</code></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </MudPaper>
+
+            </MudTabPanel>
+        }
+
+        <!-- ── Tab 3: Visor Hexadecimal / Wireshark HexDump ──────────── -->
         <MudTabPanel Text="Visor Hexadecimal / Raw" Icon="@Icons.Material.Filled.Code">
             <div class="d-flex justify-space-between align-center mb-3">
                 <MudText Typo="Typo.subtitle1" Class="fw-bold">Raw HexDump</MudText>
@@ -449,6 +538,7 @@ else
 
     </MudTabs>
 }
+
 
 <!-- ══════════════════════════════════════════════════════════
      STYLES
@@ -594,7 +684,98 @@ else
         line-height: 1.5;
         margin: 0;
     }
+
+    /* ── Frame Structure Tab ────────────────────────────────── */
+    .trdp-frame-struct {
+        background: #151c24;
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+        overflow-x: auto;
+    }
+    .trdp-struct-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    .trdp-struct-table th {
+        text-align: left; padding: 8px 10px;
+        font-size: 0.7rem; color: #64748b; font-weight: 700; letter-spacing: 0.06em;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        background: #111820;
+        position: sticky; top: 0; z-index: 1;
+    }
+    .trdp-struct-table td {
+        padding: 7px 10px;
+        font-size: 0.82rem;
+        border-bottom: 1px solid rgba(255,255,255,0.025);
+        vertical-align: middle;
+    }
+    .trdp-struct-table tr:hover td { background: rgba(56,189,248,0.03); }
+    .trdp-spare-row td { opacity: 0.4; }
+    .trdp-offset-badge {
+        display: inline-block;
+        background: rgba(167,139,250,0.15);
+        color: #a78bfa;
+        border: 1px solid rgba(167,139,250,0.3);
+        border-radius: 4px;
+        padding: 1px 7px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+    .trdp-type-badge {
+        display: inline-block;
+        border-radius: 4px;
+        padding: 1px 7px;
+        font-size: 0.72rem;
+        font-family: monospace;
+        font-weight: 700;
+    }
+    .type-scalar { background: rgba(56,189,248,0.12);  color: #38bdf8; border: 1px solid rgba(56,189,248,0.25); }
+    .type-bit    { background: rgba(251,191,36,0.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.3);  }
+    .type-spare  { background: rgba(100,116,139,0.12); color: #64748b; border: 1px solid rgba(100,116,139,0.2); }
+    .trdp-rawbytes {
+        font-family: Consolas, monospace;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        background: rgba(255,255,255,0.04);
+        padding: 1px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.06em;
+    }
+    /* Bit grid */
+    .trdp-bitrow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+    }
+    .trdp-bit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 3px 5px;
+        border-radius: 5px;
+        min-width: 32px;
+        border: 1px solid transparent;
+        cursor: default;
+        transition: background 0.12s ease;
+    }
+    .trdp-bit.bit-on  { background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.45); }
+    .trdp-bit.bit-off { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+    .bit-pos  { font-size: 0.58rem; color: #475569; font-family: monospace; line-height: 1; }
+    .bit-tick { font-size: 1rem; line-height: 1.1; font-weight: 700; }
+    .bit-on  .bit-tick { color: #22c55e; text-shadow: 0 0 6px rgba(34,197,94,0.6); }
+    .bit-off .bit-tick { color: #1e293b; }
+    .bit-label {
+        font-size: 0.57rem;
+        max-width: 38px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.1;
+        color: #475569;
+    }
+    .bit-on .bit-label { color: #4ade80; }
 </style>
+
 
 @code {
     public class TrdpConfiguredFrameOption
@@ -630,6 +811,11 @@ else
     // Parsed fields breakdown
     private Dictionary<string, JsonElement> _scalarVariables = new();
     private Dictionary<string, Dictionary<string, int>> _bitFields = new();
+
+    // Frame Structure tab state
+    private bool _showSpares = false;
+    private bool _enableEndianSwap = false;
+
 
     // PCAP Chunked Player State & Progress
     private string? _tempPcapFilePath;
@@ -774,6 +960,15 @@ else
                 ComId       = 1048581,
                 FrameName   = "TCMS_PlcInfo",
                 Direction   = "Rx (Suscriptor)"
+            });
+            _frameOptions.Add(new TrdpConfiguredFrameOption
+            {
+                Id          = "default_telemetry_aps",
+                NetworkName = "Red Ramal 1",
+                DatasetName = "TelemetryAPS",
+                ComId       = 73531397,
+                FrameName   = "Telemetria_Principal",
+                Direction   = "Tx (Publicador)"
             });
         }
 
@@ -1101,10 +1296,37 @@ else
     // ══════════════════════════════════════════════════════════
     // SHARED FRAME PROCESSOR & HANDLERS
     // ══════════════════════════════════════════════════════════
+    private void ToggleEndianSwap()
+    {
+        _enableEndianSwap = !_enableEndianSwap;
+
+        if (_latestFrame != null && _activeSessionConfig != null &&
+            _activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds))
+        {
+            var rawBytes = GetRawPayload();
+            if (rawBytes.Length > 0)
+            {
+                _latestFrame.Parsed = TrdpPcapParserService.DecodeParsedPayload(rawBytes, ds, _enableEndianSwap);
+                ProcessParsedPayload(_latestFrame);
+            }
+        }
+        StateHasChanged();
+    }
+
     private void HandleFrameReceived(TrdpFrameMessage frame)
     {
         _latestFrame = frame;
         _lastFrameTime = DateTime.Now;
+
+        if (_enableEndianSwap && _activeSessionConfig != null &&
+            _activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds))
+        {
+            var rawBytes = frame.RawBytes?.ToArray() ?? GetRawPayload();
+            if (rawBytes.Length > 0)
+            {
+                frame.Parsed = TrdpPcapParserService.DecodeParsedPayload(rawBytes, ds, _enableEndianSwap);
+            }
+        }
 
         ProcessParsedPayload(frame);
         GenerateHexDump(frame);
@@ -1130,7 +1352,25 @@ else
 
         if (frame.Parsed is null) return;
 
-        foreach (var (key, jsonEl) in frame.Parsed)
+        // Build an offset lookup from the active dataset definition so we can sort by byte position
+        var offsetLookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (_activeSessionConfig != null &&
+            _activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds))
+        {
+            foreach (var v in ds.Variables)
+            {
+                offsetLookup[v.Id] = v.Offset;
+                // _bits entries share the same offset as their parent variable
+                offsetLookup[$"{v.Id}_bits"] = v.Offset;
+            }
+        }
+
+        // Sort parsed entries: known variables by offset, unknown ones go last (int.MaxValue)
+        var sorted = frame.Parsed
+            .OrderBy(kv => offsetLookup.TryGetValue(kv.Key, out int off) ? off : int.MaxValue)
+            .ThenBy(kv => kv.Key);
+
+        foreach (var (key, jsonEl) in sorted)
         {
             if (key.EndsWith("_bits") && jsonEl.ValueKind == JsonValueKind.Object)
             {
@@ -1148,6 +1388,7 @@ else
             }
         }
     }
+
 
     private void GenerateHexDump(TrdpFrameMessage frame)
     {
@@ -1226,6 +1467,122 @@ else
         {
             Snackbar.Add("Raw Hex copiado al portapapeles.", Severity.Info);
         }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // FRAME STRUCTURE TAB HELPERS
+    // ══════════════════════════════════════════════════════════
+
+    /// <summary>Returns the dataset variables sorted by their byte offset.</summary>
+    private List<TrdpDatasetVariable> GetDatasetVariablesSorted()
+    {
+        if (_activeSessionConfig == null) return new();
+        if (!_activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds)) return new();
+        return ds.Variables.OrderBy(v => v.Offset).ToList();
+    }
+
+    /// <summary>Returns the raw payload bytes from the latest received frame.</summary>
+    private byte[] GetRawPayload()
+    {
+        if (_latestFrame == null) return Array.Empty<byte>();
+        if (_latestFrame.RawBytes != null && _latestFrame.RawBytes.Count > 0)
+            return _latestFrame.RawBytes.ToArray();
+        if (!string.IsNullOrWhiteSpace(_latestFrame.RawHex))
+        {
+            try
+            {
+                var hex = _latestFrame.RawHex.Replace(" ", "").Replace("-", "");
+                return Enumerable.Range(0, hex.Length / 2)
+                    .Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16))
+                    .ToArray();
+            }
+            catch { }
+        }
+        return Array.Empty<byte>();
+    }
+
+    /// <summary>Returns true when the variable type should be rendered as a bitset grid.</summary>
+    private static bool IsBitsetType(string type)
+    {
+        var t = type.ToUpperInvariant();
+        // All integer types (1-2 bytes) are shown as bit grids; float / large types use scalar display
+        return t is "UINT8" or "INT8" or "BYTE" or "SBYTE" or "BCD_BYTE"
+                 or "UINT16" or "INT16" or "UINT" or "INT"
+                 or "UINT32" or "INT32" or "ULONG";
+    }
+
+    /// <summary>Returns the byte width of the variable (clamped to 4).</summary>
+    private static int GetVarByteCount(TrdpDatasetVariable v)
+    {
+        if (v.Size.HasValue && v.Size.Value > 0)
+            return Math.Min(v.Size.Value, 4);
+        return Math.Min(SessionParserService.GetByteSize(v.Type), 4);
+    }
+
+    /// <summary>Reads up to 8 bytes from payload into a ulong for bit inspection.</summary>
+    private ulong ReadRawUlong(byte[] payload, int offset, int byteCount)
+    {
+        if (payload == null || offset < 0 || offset >= payload.Length) return 0;
+        ulong result = 0;
+        if (_enableEndianSwap)
+        {
+            // Little-Endian
+            for (int i = 0; i < byteCount && offset + i < payload.Length; i++)
+                result |= (ulong)payload[offset + i] << (i * 8);
+        }
+        else
+        {
+            // Big-Endian / Network byte order (TRDP Standard IEC 61375)
+            for (int i = 0; i < byteCount && offset + i < payload.Length; i++)
+                result = (result << 8) | payload[offset + i];
+        }
+        return result;
+    }
+
+    /// <summary>Returns a space-separated hex string for the variable bytes.</summary>
+    private static string BuildRawHex(byte[] payload, int offset, int byteCount)
+    {
+        if (payload == null || offset < 0 || offset >= payload.Length) return "--";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < byteCount && offset + i < payload.Length; i++)
+        {
+            if (i > 0) sb.Append(' ');
+            sb.AppendFormat("{0:X2}", payload[offset + i]);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Returns a label for a specific bit index from the variable's description or Id.
+    /// Tries to find "bit N" references in the description; otherwise returns empty.
+    /// </summary>
+    private static string GetBitLabel(TrdpDatasetVariable v, int bitIdx)
+    {
+        // Variables can embed bit names in their description like "bit0=BRAKE, bit1=DOOR"
+        // Simple heuristic: look for "bit{N}=" or "b{N}=" patterns
+        var desc = v.Description ?? "";
+        var patterns = new[] { $"bit{bitIdx}=", $"b{bitIdx}=", $"bit {bitIdx}=", $"bit{bitIdx}:" };
+        foreach (var p in patterns)
+        {
+            int idx = desc.IndexOf(p, StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                int start = idx + p.Length;
+                int end = desc.IndexOfAny(new[] { ',', ';', ' ', '\n' }, start);
+                return end < 0 ? desc.Substring(start).Trim() : desc.Substring(start, end - start).Trim();
+            }
+        }
+        return string.Empty;
+    }
+
+    /// <summary>Applies scale and offset to produce the physical value for scalar variables.</summary>
+    private double ComputePhysicalValue(byte[] payload, TrdpDatasetVariable v)
+    {
+        if (payload == null || payload.Length == 0) return 0;
+        int byteSize = SessionParserService.GetByteSize(v.Type);
+        byte[] slice = TrdpPcapParserService.GetVariableBytes(payload, v.Offset, byteSize, _enableEndianSwap);
+        double raw = SessionParserService.ReadValue(slice, 0, v.Type);
+        return raw * (v.Scale ?? 1.0) + (v.OffsetVal ?? 0.0);
     }
 
     public void Dispose()
