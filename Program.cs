@@ -41,6 +41,8 @@ builder.Services.AddScoped<TrdpBackendService>();
 builder.Services.AddScoped<TrdpWebSocketService>();
 builder.Services.AddScoped<TrdpPcapParserService>();
 builder.Services.AddSingleton<MonitorStateService>();
+builder.Services.AddSingleton<ReprogrammingService>();
+builder.Services.AddSingleton<ISftpFirmwareUploader, SftpFirmwareUploader>();
 builder.Services.AddSingleton<NetworkAdapterService>();
 builder.Services.AddSingleton<DhcpServerService>();
 builder.Services.Configure<InfluxOptions>(builder.Configuration.GetSection("InfluxDB"));

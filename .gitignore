@@ -713,3 +713,4 @@ FodyWeavers.xsd
 *.msp
 build.log
 build_errors.txt
+.tools/
