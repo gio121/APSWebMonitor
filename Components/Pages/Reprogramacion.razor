@@ -1,0 +1,124 @@
+@page "/reprogramacion"
+@attribute [Authorize(Roles = "Administrador")]
+@rendermode InteractiveServer
+@implements IDisposable
+@using ApsMonitor.Models
+@using ApsMonitor.Components.Dialogs
+@inject ReprogrammingService Programmer
+@inject MonitorStateService Monitor
+@inject IDialogService Dialogs
+
+<PageTitle>Reprogramación</PageTitle>
+<MudText Typo="Typo.h5" Class="mb-4">Reprogramación</MudText>
+<MudPaper Class="pa-6 mb-4" Outlined="true">
+    <MudText Typo="Typo.h6" Class="mb-4">Software del sistema</MudText>
+    <MudTable T="ReprogrammingSoftware" Items="_software" Hover="true" Bordered="true" Striped="true"
+              SelectedItem="_selected" SelectedItemChanged="SelectSoftware" SelectOnRowClick="true" RowClassFunc="RowClass">
+        <HeaderContent>
+            <MudTh>Elemento de software</MudTh>
+            <MudTh>Versión</MudTh>
+            <MudTh>Descripción / Notas</MudTh>
+            <MudTh>Fichero seleccionado</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Elemento de software">
+                <MudButton Variant="Variant.Text" Color="@(_selected == context ? Color.Primary : Color.Default)"
+                           OnClick="@(() => SelectSoftware(context))" Disabled="Busy">@context.Id</MudButton>
+            </MudTd>
+            <MudTd DataLabel="Versión"><span title="Versión instalada no disponible">?</span></MudTd>
+            <MudTd DataLabel="Descripción / Notas">@context.Description</MudTd>
+            <MudTd DataLabel="Fichero seleccionado">@(_selections.TryGetValue(context.Id, out var selection) ? selection.FileSummary : "Sin seleccionar")</MudTd>
+        </RowTemplate>
+    </MudTable>
+    <MudText Typo="Typo.body2" Class="mt-4 mb-3">Seleccione un elemento de software y pulse «Cambiar fichero» para elegir el archivo que desea cargar.</MudText>
+    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+        <MudButton OnClick="ChangeFile" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" Disabled="@(_selected is null || Busy)">Cambiar fichero…</MudButton>
+        <MudButton OnClick="Start" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SystemUpdateAlt" Disabled="@(CurrentSelection is null || Busy)">Reprogramar</MudButton>
+        <MudButton OnClick="ClearSelection" Disabled="@(_selected is null || Busy)">Cancelar selección</MudButton>
+    </MudStack>
+    @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert> }
+</MudPaper>
+<MudPaper Class="pa-6" Outlined="true" aria-live="polite">
+    <MudText Typo="Typo.h6">Estado</MudText>
+    <MudText Class="my-3">@Programmer.State.Message</MudText>
+    <MudProgressLinear Value="Programmer.State.Percent" Color="@(Programmer.State.Success ? Color.Success : Color.Primary)" />
+    <MudText Typo="Typo.caption" Class="mt-2">@Programmer.State.Percent.ToString("F0") %</MudText>
+    @if (Programmer.State.Running)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mt-3">Mantenga el equipo alimentado y el servidor en ejecución hasta finalizar. La monitorización queda detenida durante la reprogramación.</MudAlert>
+    }
+</MudPaper>
+
+<style>
+    .software-selected > td { background-color: var(--mud-palette-primary-hover) !important; }
+    .software-selected > td:first-child { box-shadow: inset 3px 0 var(--mud-palette-primary); }
+</style>
+
+@code {
+    private readonly ReprogrammingSoftware[] _software = [
+        new("SELCONT0001", "C135KI · Unidad de control", "Control", "C135KI"),
+        new("SELFPGA0001", "C135KF · FPGA de control", "FPGA", "F22044"),
+        new("SELCOMM0001", "C135KX · ECN / Comunicaciones", "Comunicaciones", ""),
+        new("SELCOMM0002", "C135KD · Configuración ECN / Comunicaciones", "Comunicaciones", "")
+    ];
+    private readonly Dictionary<string, ReprogrammingSelection> _selections = new();
+    private ReprogrammingSoftware? _selected;
+    private bool _editing, _starting, _disposed;
+    private string? _error;
+    private bool Busy => Programmer.State.Running || _editing || _starting;
+    private ReprogrammingSelection? CurrentSelection => _selected is not null && _selections.TryGetValue(_selected.Id, out var value) ? value : null;
+
+    protected override void OnInitialized() => Programmer.Changed += Update;
+    private void Update() { if (!_disposed) _ = InvokeAsync(StateHasChanged); }
+    private void SelectSoftware(ReprogrammingSoftware? software) { if (!Busy) { _selected = software; _error = null; } }
+    private string RowClass(ReprogrammingSoftware software, int index) => software == _selected ? "software-selected" : "";
+    private void ClearSelection() { if (!Busy) { _selected = null; _error = null; } }
+
+    private async Task ChangeFile()
+    {
+        if (_selected is null || Busy) return;
+        var software = _selected;
+        _editing = true;
+        _error = null;
+        try
+        {
+            var parameters = new DialogParameters<ReprogrammingFileDialog>
+            {
+                { x => x.Software, software },
+                { x => x.Selection, CurrentSelection },
+                { x => x.Address, Monitor.IpAddress }
+            };
+            var dialog = await Dialogs.ShowAsync<ReprogrammingFileDialog>("Cambiar fichero", parameters,
+                new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Small, BackdropClick = false, CloseOnEscapeKey = false });
+            var result = await dialog.Result;
+            if (result is { Canceled: false, Data: ReprogrammingSelection selection })
+                _selections[software.Id] = selection;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _editing = false; }
+    }
+
+    private async Task Start()
+    {
+        if (_selected is null || CurrentSelection is not { } selection || Busy) return;
+        var software = _selected;
+        _error = null; _starting = true;
+        try
+        {
+            string details = selection.Image is null
+                ? selection.FileSummary
+                : $"{selection.FileName}; firma {selection.Signature}; {selection.Image.Length} bytes; CRC32 {ReprogrammingProtocol.Crc32(selection.Image):X8}; bloque {selection.BlockSize}; flash {selection.FlashOffset}.";
+            bool? confirmed = await Dialogs.ShowMessageBoxAsync("Confirmar reprogramación",
+                $"Destino: {software.Id} ({software.Description}) en {selection.Target.Address}:{selection.Target.UdpPort}. {details} Verifique equipo, versión y archivos. Se detendrá la monitorización. ¿Iniciar?",
+                yesText: "Iniciar", cancelText: "Cancelar");
+            if (confirmed != true) return;
+            if (software.Kind == "Comunicaciones")
+                await Programmer.UploadCommunicationsAsync(selection.Target, selection.SftpPort, selection.HostKey, selection.Files);
+            else
+                await Programmer.UploadControlAsync(selection.Target, software.Kind == "FPGA", selection.Signature, selection.Image!, selection.BlockSize);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _starting = false; }
+    }
+    public void Dispose() { _disposed = true; Programmer.Changed -= Update; }
+}

@@ -11,12 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove=".tools/**" />
+    <Content Remove=".tools/**" />
+    <None Remove=".tools/**" />
     <Compile Remove="tests/**/*.cs" />
     <Content Remove="tests/**" />
     <None Remove="tests/**" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -30,6 +30,46 @@ public class MonitorStateService : IDisposable
     public bool IsConnected { get; private set; } = false;
     public bool IsConnecting { get; private set; } = false;
     public bool IsMonitoring { get; private set; } = false;
+    private int _reprogramming;
+    private readonly object _operationLock = new();
+    private Task _monitoringTask = Task.CompletedTask;
+    private readonly SemaphoreSlim _protocolGate = new(1, 1);
+    public bool IsReprogramming => Volatile.Read(ref _reprogramming) != 0;
+
+    public bool TryBeginReprogramming()
+    {
+        lock (_operationLock)
+        {
+            if (Interlocked.CompareExchange(ref _reprogramming, 1, 0) != 0) return false;
+            StopMonitoring();
+            NotifyStateChanged();
+            return true;
+        }
+    }
+
+    public async Task WaitForMonitoringStoppedAsync()
+    {
+        await _monitoringTask;
+        await _protocolGate.WaitAsync();
+        _protocolGate.Release();
+    }
+
+    private async Task<SepsaExchangeResult> SendFrameAsync(string baseUrl, byte[] frame, CancellationToken token)
+    {
+        await _protocolGate.WaitAsync(token);
+        try
+        {
+            if (IsReprogramming) throw new OperationCanceledException("Reprogramación en curso.");
+            return await _sepsaClient.SendAsync(baseUrl, frame, token);
+        }
+        finally { _protocolGate.Release(); }
+    }
+
+    public void EndReprogramming()
+    {
+        Interlocked.Exchange(ref _reprogramming, 0);
+        NotifyStateChanged();
+    }
 
     // ── Logs de red ─────────────────────────────────────────────────────────────
     private readonly object _logsLock = new();
@@ -112,16 +152,19 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public void StartMonitoring()
     {
-        if (!IsConnected || IsMonitoring) return;
+        lock (_operationLock)
+        {
+            if (!IsConnected || IsMonitoring || IsReprogramming) return;
 
-        IsMonitoring = true;
-        SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
-        _monitoringCts = new CancellationTokenSource();
+            IsMonitoring = true;
+            SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
+            _monitoringCts = new CancellationTokenSource();
 
-        AddLog("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
-        NotifyStateChanged();
+            AddLog("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
+            NotifyStateChanged();
 
-        _ = RunMonitoringLoopAsync(_monitoringCts.Token, SessionId);
+            _monitoringTask = RunMonitoringLoopAsync(_monitoringCts.Token, SessionId);
+        }
     }
 
     /// <summary>
@@ -146,7 +189,7 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public async Task SendTestFrameAsync()
     {
-        if (!IsConnected) return;
+        if (!IsConnected || IsReprogramming) return;
 
         try
         {
@@ -158,7 +201,7 @@ public class MonitorStateService : IDisposable
             NotifyStateChanged();
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var response = await _sepsaClient.SendAsync(baseUrl, frame, cts.Token);
+            var response = await SendFrameAsync(baseUrl, frame, cts.Token);
 
             if (response.IsSuccess)
             {
@@ -229,7 +272,7 @@ public class MonitorStateService : IDisposable
                     using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     reqCts.CancelAfter(500);
 
-                    var response = await _sepsaClient.SendAsync(baseUrl, frame, reqCts.Token);
+                    var response = await SendFrameAsync(baseUrl, frame, reqCts.Token);
                     if (response.IsSuccess)
                     {
                         AddLog("Respuesta", $"RX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(response.Payload)}", false, false);

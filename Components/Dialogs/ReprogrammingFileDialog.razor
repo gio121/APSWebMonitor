@@ -1,0 +1,124 @@
+@using ApsMonitor.Models
+@inject IConfiguration Configuration
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Cambiar fichero · @Software.Id</MudText>
+        <MudText Typo="Typo.body2">@Software.Description</MudText>
+    </TitleContent>
+<DialogContent>
+    <fieldset disabled="@(_loading)" style="border:0;padding:0;margin:0">
+        <MudGrid>
+            @if (_kind != "Comunicaciones")
+            {
+                <MudItem xs="12">
+                    <label for="firmware-file">Fichero BIN, HEX, H86 o MCS (máximo 16 MiB)</label>
+                    <InputFile id="firmware-file" OnChange="LoadFirmware" accept=".bin,.hex,.h86,.mcs" class="d-block mt-2" />
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12">
+                    <label for="communications-files">Imágenes .img y sus .img.md5, o pareja edf*.bin / sdf*.bin (máximo 512 MiB)</label>
+                    <InputFile id="communications-files" OnChange="LoadCommunications" multiple accept=".img,.md5,.bin" class="d-block mt-2" />
+                </MudItem>
+            }
+        </MudGrid>
+    </fieldset>
+    @if (_loading) { <MudProgressLinear Indeterminate="true" Class="mt-4" /> }
+    @if (_image is not null)
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4">@_fileName</MudAlert>
+    }
+    @if (_files.Count > 0)
+    {
+        <MudList T="string" Dense="true">
+            @foreach (var file in _files) { <MudListItem>@file.Name</MudListItem> }
+        </MudList>
+    }
+    @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert> }
+</DialogContent>
+<DialogActions>
+    <MudButton OnClick="Cancel" Disabled="_loading">Cancelar</MudButton>
+    <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(_loading || (_image is null && _files.Count == 0))">Guardar selección</MudButton>
+</DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter, EditorRequired] public ReprogrammingSoftware Software { get; set; } = null!;
+    [Parameter] public ReprogrammingSelection? Selection { get; set; }
+    [Parameter] public string Address { get; set; } = "";
+    private string _kind = "", _address = "", _signature = "", _hostKey = "", _fileName = "";
+    private int _udpPort, _localPort, _sftpPort = 22, _blockSize = 128;
+    private uint _offset = 0xC00000;
+    private byte[]? _image;
+    private List<CommunicationsFile> _files = [];
+    private bool _loading;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        _kind = Software.Kind;
+        _address = Selection?.Target.Address ?? Address;
+        _udpPort = Configuration.GetValue<int>("Reprogramming:UdpPort");
+        _localPort = Configuration.GetValue<int>("Reprogramming:LocalPort");
+        _sftpPort = Configuration.GetValue("Reprogramming:SftpPort", 22);
+        _hostKey = Configuration["Reprogramming:HostKeySha256"] ?? "";
+        _signature = Selection?.Signature ?? Software.Signature;
+        _blockSize = Selection?.BlockSize ?? (_kind == "FPGA" ? 400 : 128);
+        _offset = Selection?.FlashOffset ?? (_kind == "Control" ? 0xC00000u : 0);
+        if (Selection is { } saved)
+        {
+            _udpPort = saved.Target.UdpPort; _localPort = saved.Target.LocalPort;
+            _sftpPort = saved.SftpPort; _hostKey = saved.HostKey;
+            _fileName = saved.FileName; _image = saved.Image; _files = saved.Files.ToList();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Submit()
+    {
+        _error = null;
+        if (_loading) return;
+        if (_kind == "Comunicaciones" ? _files.Count == 0 : _image is null) return;
+        MudDialog.Close(DialogResult.Ok(new ReprogrammingSelection(
+            new(_address.Trim(), _udpPort, _localPort), _signature.Trim(), _blockSize, _offset,
+            _fileName, _image, _files.ToArray(), _sftpPort, _hostKey.Trim())));
+    }
+    private async Task LoadFirmware(InputFileChangeEventArgs args)
+    {
+        _image = null; _error = null; _loading = true;
+        try
+        {
+            using var data = new MemoryStream();
+            await using var input = args.File.OpenReadStream(FirmwareImage.MaximumBytes);
+            await input.CopyToAsync(data);
+            _fileName = args.File.Name;
+            _image = FirmwareImage.Decode(_fileName, data.ToArray(), _offset);
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _loading = false; }
+    }
+    private async Task LoadCommunications(InputFileChangeEventArgs args)
+    {
+        _files.Clear(); _error = null; _loading = true;
+        try
+        {
+            var selected = args.GetMultipleFiles(32);
+            if (selected.Sum(f => f.Size) > 512L * 1024 * 1024) throw new InvalidDataException("Los archivos superan 512 MiB.");
+            var files = new List<CommunicationsFile>();
+            foreach (var file in selected)
+            {
+                using var data = new MemoryStream();
+                await using var input = file.OpenReadStream(512L * 1024 * 1024);
+                await input.CopyToAsync(data);
+                files.Add(new(file.Name, data.ToArray()));
+            }
+            ReprogrammingService.ValidateCommunicationsFiles(files);
+            _files = files;
+        }
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _loading = false; }
+    }
+}
