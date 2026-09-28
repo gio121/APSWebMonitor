@@ -53,8 +53,21 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
         var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
-        if (user == null || !PasswordHasher.Verify(password, user.PasswordHash))
+        if (user == null || !PasswordHasher.Verify(password, user.PasswordHash, out var needsRehash))
             return null;
+
+        if (needsRehash)
+        {
+            var previousHash = user.PasswordHash;
+            var newHash = PasswordHasher.Hash(password);
+            // A simultaneous password reset must win over this migration.
+            var updated = await context.Users
+                .Where(u => u.Id == user.Id && u.PasswordHash == previousHash)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.PasswordHash, newHash));
+            if (updated != 1)
+                return null;
+            user.PasswordHash = newHash;
+        }
 
         await _sessionStorage.SetAsync("auth_username", user.Username);
         _cachedUser = CreateClaimsPrincipal(user);

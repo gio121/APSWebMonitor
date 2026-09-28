@@ -24,10 +24,10 @@
             <MudText Typo="Typo.h6" Class="fw-bold mb-1">Iniciar Sesión</MudText>
             <MudText Typo="Typo.body2" Class="text-muted mb-6">Introduce tus credenciales para acceder</MudText>
 
-            <MudTextField @bind-Value="_username" 
-                          Label="Usuario" 
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
+            <MudTextField @bind-Value="_username"
+                          Label="Usuario"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           Class="mb-4 login-input"
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Person"
@@ -36,10 +36,10 @@
                           OnKeyDown="OnKeyDown"
                           Error="@_hasError" />
 
-            <MudTextField @bind-Value="_password" 
-                          Label="Contraseña" 
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
+            <MudTextField @bind-Value="_password"
+                          Label="Contraseña"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           Class="mb-6 login-input"
                           InputType="@(_showPassword ? InputType.Text : InputType.Password)"
                           Adornment="Adornment.End"
@@ -50,10 +50,10 @@
                           Error="@_hasError"
                           ErrorText="@_errorMessage" />
 
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
-                       FullWidth="true" 
-                       Class="login-btn fw-bold" 
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Class="login-btn fw-bold"
                        OnClick="HandleLogin"
                        Disabled="@_isLoading">
                 @if (_isLoading)
@@ -69,11 +69,7 @@
             </MudButton>
         </div>
 
-        <!-- Hint -->
-        @* <div class="login-hint">
-            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
-            <MudText Typo="Typo.caption">Credenciales por defecto: <strong>admin</strong> / <strong>admin</strong></MudText>
-        </div> *@
+
     </div>
 </div>
 
@@ -122,9 +118,23 @@
     .login-form-section {
         margin-bottom: 16px;
     }
+    .login-input {
+        --login-input-background: #141b24;
+    }
     .login-input .mud-input {
-        background: rgba(0, 0, 0, 0.25) !important;
+        background: var(--login-input-background) !important;
         border-radius: 8px;
+    }
+    .login-input input.mud-input-slot {
+        background: transparent;
+        box-shadow: none;
+    }
+    /* Match the browser's autofill area to the field, including its icons. */
+    .login-input input:is(:autofill, :-webkit-autofill) {
+        -webkit-box-shadow: 0 0 0 1000px var(--login-input-background) inset !important;
+        box-shadow: 0 0 0 1000px var(--login-input-background) inset !important;
+        -webkit-text-fill-color: var(--mud-palette-text-primary) !important;
+        caret-color: var(--mud-palette-text-primary);
     }
     .text-muted {
         color: #94a3b8 !important;

@@ -81,11 +81,11 @@
                 </MudAvatar>
                 <MudText Typo="Typo.h6" Class="fw-bold">Configuración de Red</MudText>
             </div>
-            
+
             <div class="mb-4">
                 <MudTextField T="string" Label="Dirección IP Servidor SCADA" Value="@("192.168.1.100")" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
                 <MudTextField T="string" Label="Puerto de Comunicación" Value="@("502")" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-                
+
                 <MudSwitch T="bool" Value="true" Color="Color.Info" Label="Habilitar registro de tramas (Debug)" Class="mb-2" />
                 <MudSwitch T="bool" Value="true" Color="Color.Success" Label="Guardar eventos en Base de Datos" />
             </div>
@@ -116,7 +116,7 @@
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.UserManagementDialog>("Gestión de Usuarios", options);
         var result = await dialog.Result;
-        
+
         if (result != null && !result.Canceled)
         {
             await LoadUserCounts();

@@ -7,6 +7,7 @@
 @inject IJSRuntime JS
 @inject MonitorStateService MonitorState
 @inject ApsDataService DataService
+@inject InfluxWriterService InfluxWriter
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
@@ -15,6 +16,19 @@
         @(MonitorState.IsConnected ? "Conectado" : "Desconectado")
     </MudChip>
 </div>
+
+@* <MudPaper Class="pa-3 mb-4" Elevation="0">
+    <MudText Typo="Typo.subtitle2">InfluxDB: @(!_influxStatus.Enabled ? "Desactivado" : _influxStatus.Error != null ? "Revisar conexión" : _influxStatus.LastWrite != null ? "Enviando datos" : "Esperando muestras")</MudText>
+    @if (_influxStatus.Enabled)
+    {
+        <MudText Typo="Typo.body2">Confirmadas: @_influxStatus.Written · Pendientes: @_influxStatus.Pending · Descartadas/no confirmadas: @_influxStatus.Dropped</MudText>
+        <MudText Typo="Typo.caption">Última escritura: @(_influxStatus.LastWrite?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—") · Sesión: @(MonitorState.SessionId ?? "—")</MudText>
+        @if (_influxStatus.Error != null)
+        {
+            <MudText Color="Color.Warning">@_influxStatus.Error</MudText>
+        }
+    }
+</MudPaper> *@
 
 <MudGrid>
     <!-- Configuración Card -->
@@ -581,6 +595,12 @@ else
 </style>
 
 @code {
+    private InfluxStatus _influxStatus = new(false, null, 0, 0, 0, null);
+    private void OnInfluxChanged() => _ = InvokeAsync(() =>
+    {
+        _influxStatus = InfluxWriter.Status;
+        StateHasChanged();
+    });
     // Vista local: snapshot de logs/valores tomado en cada re-render
     private IReadOnlyList<MonitorLogEntry> _logs = Array.Empty<MonitorLogEntry>();
     private List<SignalValue> _currentValues = new();
@@ -600,6 +620,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _influxStatus = InfluxWriter.Status;
+        InfluxWriter.Changed += OnInfluxChanged;
         // Carga inicial de señales para construir la vista (aunque aún no haya valores en vivo)
         await LoadSignalViewAsync();
         SyncFromService();
@@ -759,6 +781,7 @@ else
 
     public void Dispose()
     {
+        InfluxWriter.Changed -= OnInfluxChanged;
         MonitorState.OnStateChanged -= OnMonitorStateChanged;
     }
 

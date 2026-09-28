@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <UserSecretsId>ApsMonitor-8f829f28-f4bd-4791-baa1-b748f01426fb</UserSecretsId>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
@@ -10,6 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Content Remove="tests/**" />
+    <None Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

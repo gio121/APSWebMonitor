@@ -15,6 +15,9 @@ public class MonitorStateService : IDisposable
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SepsaProtocolClient _sepsaClient;
+    private readonly InfluxWriterService _influx;
+    public string? SessionId { get; private set; }
+    private long _lastTimestampNs;
 
     private CancellationTokenSource? _monitoringCts;
 
@@ -57,10 +60,11 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public event Action? OnStateChanged;
 
-    public MonitorStateService(IHttpClientFactory httpClientFactory, IServiceScopeFactory scopeFactory)
+    public MonitorStateService(IHttpClientFactory httpClientFactory, IServiceScopeFactory scopeFactory, InfluxWriterService influx)
     {
         _httpClientFactory = httpClientFactory;
         _scopeFactory = scopeFactory;
+        _influx = influx;
 
         // Crear el cliente SEPSA usando el factory (compatible con Singleton)
         var httpClient = _httpClientFactory.CreateClient("SepsaMonitor");
@@ -111,12 +115,13 @@ public class MonitorStateService : IDisposable
         if (!IsConnected || IsMonitoring) return;
 
         IsMonitoring = true;
+        SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
         _monitoringCts = new CancellationTokenSource();
 
         AddLog("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
         NotifyStateChanged();
 
-        _ = RunMonitoringLoopAsync(_monitoringCts.Token);
+        _ = RunMonitoringLoopAsync(_monitoringCts.Token, SessionId);
     }
 
     /// <summary>
@@ -203,7 +208,7 @@ public class MonitorStateService : IDisposable
 
     // ── Bucle de monitorización ──────────────────────────────────────────────────
 
-    private async Task RunMonitoringLoopAsync(CancellationToken cancellationToken)
+    private async Task RunMonitoringLoopAsync(CancellationToken cancellationToken, string sessionId)
     {
         byte currentFrameType = 0x1A;
 
@@ -228,7 +233,8 @@ public class MonitorStateService : IDisposable
                     if (response.IsSuccess)
                     {
                         AddLog("Respuesta", $"RX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
-                        ProcessIncomingFrame(response.Payload);
+                        if (!cancellationToken.IsCancellationRequested)
+                            ProcessIncomingFrame(response.Payload, sessionId);
                     }
                     else
                     {
@@ -271,7 +277,7 @@ public class MonitorStateService : IDisposable
         }
         finally
         {
-            IsMonitoring = false;
+            if (SessionId == sessionId) IsMonitoring = false;
             NotifyStateChanged();
         }
     }
@@ -282,7 +288,7 @@ public class MonitorStateService : IDisposable
     /// Decodifica una trama de respuesta según el protocolo SEPSA.
     /// Lógica idéntica a SessionParserService.Parse() y Monitor.razor.ProcessIncomingFrame().
     /// </summary>
-    private void ProcessIncomingFrame(byte[] frameData)
+    private void ProcessIncomingFrame(byte[] frameData, string? sessionId = null)
     {
         if (frameData == null || frameData.Length < 7 || _signals.Count == 0) return;
 
@@ -307,6 +313,8 @@ public class MonitorStateService : IDisposable
 
         lock (_valuesLock)
         {
+            var timestampNs = Math.Max((DateTime.UtcNow.Ticks - DateTime.UnixEpoch.Ticks) * 100, _lastTimestampNs + 1);
+            _lastTimestampNs = timestampNs;
             foreach (var sig in nodeSignals)
             {
                 int offset = sig.BytePosicion + 6;
@@ -317,6 +325,8 @@ public class MonitorStateService : IDisposable
 
                     _previousValues[sig.Id] = _currentValues.TryGetValue(sig.Id, out var prev) ? prev : physValue;
                     _currentValues[sig.Id] = physValue;
+                    if (sessionId != null)
+                        _influx.Enqueue($"{IpAddress}:{Port}", sessionId, sig.NodoNumero, sig.Id, sig.Tag, physValue, timestampNs);
                 }
             }
         }

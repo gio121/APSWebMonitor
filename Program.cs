@@ -43,6 +43,11 @@ builder.Services.AddScoped<TrdpPcapParserService>();
 builder.Services.AddSingleton<MonitorStateService>();
 builder.Services.AddSingleton<NetworkAdapterService>();
 builder.Services.AddSingleton<DhcpServerService>();
+builder.Services.Configure<InfluxOptions>(builder.Configuration.GetSection("InfluxDB"));
+builder.Services.AddHttpClient("InfluxDB", client => client.Timeout = TimeSpan.FromSeconds(5))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<InfluxWriterService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<InfluxWriterService>());
 
 // Authentication & Authorization
 builder.Services.AddAuthentication();
