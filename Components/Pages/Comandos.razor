@@ -5,6 +5,8 @@
 @using ApsMonitor.Services
 @using ApsMonitor.Components.Dialogs
 @inject ApsDataService DataService
+@inject ReprogrammingService Programmer
+@inject MonitorStateService Monitor
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
@@ -147,6 +149,22 @@ else
     {
         _isLoading = true;
         _commands = await DataService.GetCommandsAsync();
+
+        if (!_commands.Any(c => c.CommandValue != null &&
+            (c.CommandValue.Equals("0x8A", StringComparison.OrdinalIgnoreCase) ||
+             c.CommandValue.Equals("8A", StringComparison.OrdinalIgnoreCase))))
+        {
+            var cmd8A = new ScadaCommand
+            {
+                Nombre = "Reprogramación 8A",
+                CommandValue = "0x8A",
+                RequiereConfirmacion = true,
+                Estilo = "warning"
+            };
+            await DataService.AddCommandAsync(cmd8A);
+            _commands = await DataService.GetCommandsAsync();
+        }
+
         _events = await DataService.GetEventsAsync();
         _isLoading = false;
         StateHasChanged();
@@ -206,16 +224,36 @@ else
             if (result != true) return;
         }
 
-        // Logic to execute would go here. For now, log it.
-        var ev = new EventMessage 
-        { 
-            Fecha = DateTime.Now, 
-            Mensaje = $"Ejecutado comando: {command.Nombre} [{command.CommandValue}]",
-            Estado = "OK" 
-        };
-        await DataService.AddEventAsync(ev);
-        
-        Snackbar.Add($"Comando '{command.Nombre}' ejecutado.", Severity.Success);
+        string val = command.CommandValue?.Trim() ?? "";
+        bool is8A = val.Equals("0x8A", StringComparison.OrdinalIgnoreCase) ||
+                    val.Equals("8A", StringComparison.OrdinalIgnoreCase) ||
+                    val.Equals("CMD_8A", StringComparison.OrdinalIgnoreCase) ||
+                    val.Equals("CMD_REPROGRAM_8A", StringComparison.OrdinalIgnoreCase);
+
+        if (is8A)
+        {
+            var targetAddress = !string.IsNullOrWhiteSpace(Monitor.IpAddress) ? Monitor.IpAddress : "192.168.1.10";
+            var (success, message) = await Programmer.SendReprogramming8ACommandAsync(targetAddress);
+            var ev8A = new EventMessage 
+            { 
+                Fecha = DateTime.Now, 
+                Mensaje = $"Comando {command.Nombre} [{command.CommandValue}]: {message}",
+                Estado = success ? "OK" : "ERROR" 
+            };
+            await DataService.AddEventAsync(ev8A);
+            Snackbar.Add($"Comando '{command.Nombre}': {message}", success ? Severity.Success : Severity.Error);
+        }
+        else
+        {
+            var ev = new EventMessage 
+            { 
+                Fecha = DateTime.Now, 
+                Mensaje = $"Ejecutado comando: {command.Nombre} [{command.CommandValue}]",
+                Estado = "OK" 
+            };
+            await DataService.AddEventAsync(ev);
+            Snackbar.Add($"Comando '{command.Nombre}' ejecutado.", Severity.Success);
+        }
         
         // Refresh logs
         _events = await DataService.GetEventsAsync();

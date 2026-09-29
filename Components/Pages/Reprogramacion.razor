@@ -6,18 +6,99 @@
 @using ApsMonitor.Components.Dialogs
 @inject ReprogrammingService Programmer
 @inject MonitorStateService Monitor
+@inject DhcpServerService DhcpService
 @inject IDialogService Dialogs
 
 <PageTitle>Reprogramación</PageTitle>
-<MudText Typo="Typo.h5" Class="mb-4">Reprogramación</MudText>
+<MudText Typo="Typo.h5" Class="mb-4">Reprogramación del Sistema</MudText>
+
+<MudPaper Class="pa-4 mb-4" Outlined="true">
+    <MudText Typo="Typo.h6" Class="mb-3">Destino y Conectividad</MudText>
+    <MudGrid Spacing="2" Class="align-center">
+        <MudItem xs="12" sm="5">
+            <MudTextField @bind-Value="TargetIp" Label="Dirección IP destino"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                          Placeholder="192.168.1.10"
+                          HelperText="IP del equipo donde se aplicará la reprogramación"
+                          Disabled="Busy" />
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudSelect T="string" Label="Seleccionar IP detectada" Margin="Margin.Dense" Dense="true"
+                       Variant="Variant.Outlined" ValueChanged="OnDetectedIpSelected"
+                       Placeholder="Elegir IP detectada..." Disabled="Busy">
+                @foreach (var opt in GetDetectedIps())
+                {
+                    <MudSelectItem Value="@opt.Ip">@opt.Description</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            @if (_selected?.Kind == "Comunicaciones")
+            {
+                <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Medium" Icon="@Icons.Material.Filled.Security">
+                    SFTP: Puerto 22 (SSH)
+                </MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Medium" Icon="@Icons.Material.Filled.Router">
+                    SEPSA UDP: Puerto 50001
+                </MudChip>
+            }
+        </MudItem>
+    </MudGrid>
+
+    <MudDivider Class="my-3" />
+
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Monitorización previa:</MudText>
+            @if (Monitor.IsMonitoring)
+            {
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircle">
+                    Activa (Enlace verificado)
+                </MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Default" Variant="Variant.Outlined" Size="Size.Small" Icon="@Icons.Material.Filled.PauseCircle">
+                    Detenida
+                </MudChip>
+            }
+            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                @(Monitor.IsMonitoring 
+                    ? "El canal con el equipo está activo. Al reprogramar, se pausará para transferir las tramas." 
+                    : "Recomendado iniciar monitorización para comprobar que la tarjeta de control responde.")
+            </MudText>
+        </MudStack>
+        <MudStack Row="true" Spacing="2">
+            @if (Monitor.IsMonitoring)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Stop" OnClick="StopMonitoring" Disabled="Busy">
+                    Detener monitorización
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartMonitoring" Disabled="Busy">
+                    Iniciar monitorización previa
+                </MudButton>
+            }
+        </MudStack>
+    </MudStack>
+</MudPaper>
+
 <MudPaper Class="pa-6 mb-4" Outlined="true">
     <MudText Typo="Typo.h6" Class="mb-4">Software del sistema</MudText>
     <MudTable T="ReprogrammingSoftware" Items="_software" Hover="true" Bordered="true" Striped="true"
               SelectedItem="_selected" SelectedItemChanged="SelectSoftware" SelectOnRowClick="true" RowClassFunc="RowClass">
         <HeaderContent>
             <MudTh>Elemento de software</MudTh>
-            <MudTh>Versión</MudTh>
+            <MudTh>Tipo / Protocolo</MudTh>
             <MudTh>Descripción / Notas</MudTh>
+            <MudTh>IP Destino</MudTh>
             <MudTh>Fichero seleccionado</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -25,21 +106,56 @@
                 <MudButton Variant="Variant.Text" Color="@(_selected == context ? Color.Primary : Color.Default)"
                            OnClick="@(() => SelectSoftware(context))" Disabled="Busy">@context.Id</MudButton>
             </MudTd>
-            <MudTd DataLabel="Versión"><span title="Versión instalada no disponible">?</span></MudTd>
+            <MudTd DataLabel="Tipo / Protocolo">
+                @if (context.Kind == "Comunicaciones")
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">SFTP / SSH (p:22)</MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">SEPSA UDP (p:50001)</MudChip>
+                }
+            </MudTd>
             <MudTd DataLabel="Descripción / Notas">@context.Description</MudTd>
-            <MudTd DataLabel="Fichero seleccionado">@(_selections.TryGetValue(context.Id, out var selection) ? selection.FileSummary : "Sin seleccionar")</MudTd>
+            <MudTd DataLabel="IP Destino">
+                @(_selections.TryGetValue(context.Id, out var sel) ? sel.Target.Address : TargetIp)
+            </MudTd>
+            <MudTd DataLabel="Fichero seleccionado">
+                @if (_selections.TryGetValue(context.Id, out var selection))
+                {
+                    <span>@selection.FileSummary</span>
+                    @if (context.Kind == "Comunicaciones")
+                    {
+                        <span class="mud-text-secondary d-block" style="font-size:0.8rem;">
+                            Ruta remota: <b>@selection.RemotePath</b> · Usuario: <b>@selection.SftpUser</b>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="mud-text-secondary d-block" style="font-size:0.8rem;">
+                            Firma: <b>@selection.Signature</b> · Bloque: <b>@selection.BlockSize B</b> · Puerto UDP: <b>@selection.Target.UdpPort</b>
+                        </span>
+                    }
+                }
+                else
+                {
+                    <span class="mud-text-secondary">Sin seleccionar</span>
+                }
+            </MudTd>
         </RowTemplate>
     </MudTable>
     <MudText Typo="Typo.body2" Class="mt-4 mb-3">Seleccione un elemento de software y pulse «Cambiar fichero» para elegir el archivo que desea cargar.</MudText>
     <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
         <MudButton OnClick="ChangeFile" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" Disabled="@(_selected is null || Busy)">Cambiar fichero…</MudButton>
         <MudButton OnClick="Start" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SystemUpdateAlt" Disabled="@(CurrentSelection is null || Busy)">Reprogramar</MudButton>
+        <MudButton OnClick="Send8ACommand" Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Terminal" Disabled="Busy">Mandar comando 8A</MudButton>
         <MudButton OnClick="ClearSelection" Disabled="@(_selected is null || Busy)">Cancelar selección</MudButton>
     </MudStack>
     @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert> }
 </MudPaper>
+
 <MudPaper Class="pa-6" Outlined="true" aria-live="polite">
-    <MudText Typo="Typo.h6">Estado</MudText>
+    <MudText Typo="Typo.h6">Estado de la Reprogramación</MudText>
     <MudText Class="my-3">@Programmer.State.Message</MudText>
     <MudProgressLinear Value="Programmer.State.Percent" Color="@(Programmer.State.Success ? Color.Success : Color.Primary)" />
     <MudText Typo="Typo.caption" Class="mt-2">@Programmer.State.Percent.ToString("F0") %</MudText>
@@ -68,11 +184,100 @@
     private bool Busy => Programmer.State.Running || _editing || _starting;
     private ReprogrammingSelection? CurrentSelection => _selected is not null && _selections.TryGetValue(_selected.Id, out var value) ? value : null;
 
-    protected override void OnInitialized() => Programmer.Changed += Update;
+    private record DetectedIpOption(string Ip, string Description);
+    private string _targetIp = "";
+    private string TargetIp
+    {
+        get => _targetIp;
+        set
+        {
+            if (_targetIp != value)
+            {
+                _targetIp = value;
+                if (!string.IsNullOrWhiteSpace(_targetIp))
+                {
+                    UpdateSelectionsTargetIp(_targetIp);
+                }
+            }
+        }
+    }
+
+    private void UpdateSelectionsTargetIp(string ip)
+    {
+        foreach (var key in _selections.Keys.ToList())
+        {
+            var sel = _selections[key];
+            _selections[key] = sel with { Target = sel.Target with { Address = ip.Trim() } };
+        }
+    }
+
+    private List<DetectedIpOption> GetDetectedIps()
+    {
+        var list = new List<DetectedIpOption>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(Monitor.IpAddress) && seen.Add(Monitor.IpAddress))
+        {
+            list.Add(new(Monitor.IpAddress, $"{Monitor.IpAddress} (Monitor)"));
+        }
+
+        foreach (var lease in DhcpService.GetActiveLeases())
+        {
+            if (seen.Add(lease.IpAddress))
+            {
+                var name = !string.IsNullOrWhiteSpace(lease.HostName) ? lease.HostName : lease.MacAddress;
+                list.Add(new(lease.IpAddress, $"{lease.IpAddress} (DHCP: {name})"));
+            }
+        }
+
+        return list;
+    }
+
+    private void OnDetectedIpSelected(string? ip)
+    {
+        if (!string.IsNullOrWhiteSpace(ip))
+        {
+            TargetIp = ip;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Programmer.Changed += Update;
+        Monitor.OnStateChanged += Update;
+        DhcpService.OnLeasesChanged += OnLeasesChanged;
+
+        _targetIp = !string.IsNullOrWhiteSpace(Monitor.IpAddress)
+            ? Monitor.IpAddress
+            : (DhcpService.GetActiveLeases().FirstOrDefault()?.IpAddress ?? "192.168.1.10");
+    }
+
+    private void OnLeasesChanged()
+    {
+        if (!_disposed)
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+    }
+
     private void Update() { if (!_disposed) _ = InvokeAsync(StateHasChanged); }
     private void SelectSoftware(ReprogrammingSoftware? software) { if (!Busy) { _selected = software; _error = null; } }
     private string RowClass(ReprogrammingSoftware software, int index) => software == _selected ? "software-selected" : "";
     private void ClearSelection() { if (!Busy) { _selected = null; _error = null; } }
+
+    private void StartMonitoring()
+    {
+        if (!string.IsNullOrWhiteSpace(TargetIp))
+        {
+            Monitor.IpAddress = TargetIp.Trim();
+        }
+        _ = Monitor.ConnectAsync().ContinueWith(_ => Monitor.StartMonitoring());
+    }
+
+    private void StopMonitoring()
+    {
+        Monitor.StopMonitoring();
+    }
 
     private async Task ChangeFile()
     {
@@ -82,20 +287,71 @@
         _error = null;
         try
         {
+            var initialAddress = !string.IsNullOrWhiteSpace(TargetIp)
+                ? TargetIp
+                : (CurrentSelection?.Target.Address ?? Monitor.IpAddress);
+
             var parameters = new DialogParameters<ReprogrammingFileDialog>
             {
                 { x => x.Software, software },
                 { x => x.Selection, CurrentSelection },
-                { x => x.Address, Monitor.IpAddress }
+                { x => x.Address, initialAddress }
             };
             var dialog = await Dialogs.ShowAsync<ReprogrammingFileDialog>("Cambiar fichero", parameters,
                 new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Small, BackdropClick = false, CloseOnEscapeKey = false });
             var result = await dialog.Result;
             if (result is { Canceled: false, Data: ReprogrammingSelection selection })
+            {
                 _selections[software.Id] = selection;
+                if (!string.IsNullOrWhiteSpace(selection.Target.Address))
+                {
+                    TargetIp = selection.Target.Address;
+                }
+            }
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _editing = false; }
+    }
+
+    private async Task Send8ACommand()
+    {
+        var targetAddress = !string.IsNullOrWhiteSpace(TargetIp)
+            ? TargetIp.Trim()
+            : (!string.IsNullOrWhiteSpace(Monitor.IpAddress) ? Monitor.IpAddress : "192.168.1.10");
+
+        bool? confirmed = await Dialogs.ShowMessageBoxAsync("Confirmar comando 8A",
+            $"¿Desea enviar el comando de reprogramación 0x8A al equipo en {targetAddress}?\n" +
+            "El equipo verificará si existen archivos en /mnt/artifacts/update e iniciará la reprogramación.",
+            yesText: "Mandar comando 8A", cancelText: "Cancelar");
+        if (confirmed != true) return;
+
+        _error = null;
+        _starting = true;
+        try
+        {
+            var result = await Programmer.SendReprogramming8ACommandAsync(targetAddress);
+            if (result.Success)
+            {
+                await Dialogs.ShowMessageBoxAsync("Respuesta comando 8A (Éxito)",
+                    $"Respuesta del equipo: {result.Message}",
+                    yesText: "Aceptar");
+            }
+            else
+            {
+                _error = $"Fallo en comando 8A: {result.Message}";
+                await Dialogs.ShowMessageBoxAsync("Respuesta comando 8A (Fallo)",
+                    $"Respuesta del equipo: {result.Message}",
+                    yesText: "Aceptar");
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _starting = false;
+        }
     }
 
     private async Task Start()
@@ -105,20 +361,44 @@
         _error = null; _starting = true;
         try
         {
+            var targetAddress = !string.IsNullOrWhiteSpace(TargetIp) ? TargetIp.Trim() : selection.Target.Address;
+            var target = selection.Target with { Address = targetAddress };
+
             string details = selection.Image is null
                 ? selection.FileSummary
-                : $"{selection.FileName}; firma {selection.Signature}; {selection.Image.Length} bytes; CRC32 {ReprogrammingProtocol.Crc32(selection.Image):X8}; bloque {selection.BlockSize}; flash {selection.FlashOffset}.";
+                : $"{selection.FileName}; firma {selection.Signature}; {selection.Image.Length} bytes; CRC32 {ReprogrammingProtocol.Crc32(selection.Image):X8}; bloque {selection.BlockSize} B.";
+            
+            string portInfo = software.Kind == "Comunicaciones"
+                ? $"SFTP puerto 22, usuario '{selection.SftpUser}', ruta remota '{selection.RemotePath}'"
+                : $"SEPSA UDP puerto {target.UdpPort} (Nodo 2 - Tarjeta de Control)";
+
+            string monitorWarning = Monitor.IsMonitoring
+                ? "\nLa monitorización continua activa se detendrá temporalmente durante la transferencia."
+                : "";
+
             bool? confirmed = await Dialogs.ShowMessageBoxAsync("Confirmar reprogramación",
-                $"Destino: {software.Id} ({software.Description}) en {selection.Target.Address}:{selection.Target.UdpPort}. {details} Verifique equipo, versión y archivos. Se detendrá la monitorización. ¿Iniciar?",
+                $"Destino: {software.Id} ({software.Description}) en {target.Address}.\n" +
+                $"Canal: {portInfo}.\n" +
+                $"{details}\n" +
+                $"Verifique equipo, versión y archivos.{monitorWarning}\n¿Iniciar la reprogramación?",
                 yesText: "Iniciar", cancelText: "Cancelar");
             if (confirmed != true) return;
+
             if (software.Kind == "Comunicaciones")
-                await Programmer.UploadCommunicationsAsync(selection.Target, selection.SftpPort, selection.HostKey, selection.Files);
+                await Programmer.UploadCommunicationsAsync(target, 22, selection.HostKey, selection.Files,
+                    selection.SftpUser, selection.SftpPassword, selection.RemotePath, trigger8ACommand: true);
             else
-                await Programmer.UploadControlAsync(selection.Target, software.Kind == "FPGA", selection.Signature, selection.Image!, selection.BlockSize);
+                await Programmer.UploadControlAsync(target, software.Kind == "FPGA", selection.Signature, selection.Image!, selection.BlockSize);
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _starting = false; }
     }
-    public void Dispose() { _disposed = true; Programmer.Changed -= Update; }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Programmer.Changed -= Update;
+        Monitor.OnStateChanged -= Update;
+        DhcpService.OnLeasesChanged -= OnLeasesChanged;
+    }
 }

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Net.Http.Json;
 using ApsMonitor.Models;
 
@@ -5,10 +7,7 @@ namespace ApsMonitor.Services;
 
 /// <summary>
 /// Servicio Singleton que mantiene el estado de la monitorización en tiempo real.
-/// Al ser Singleton, la conexión y el bucle de polling persisten mientras la aplicación
-/// está en ejecución, independientemente de la navegación del usuario.
-/// Patrón idéntico a SessionStateService para que cualquier página pueda suscribirse
-/// a los cambios de estado mediante el evento OnStateChanged.
+/// Se comunica habitualmente por UDP (puerto 50001) directamente con ControlManager de la tarjeta de comunicaciones.
 /// </summary>
 public class MonitorStateService : IDisposable
 {
@@ -20,10 +19,11 @@ public class MonitorStateService : IDisposable
     private long _lastTimestampNs;
 
     private CancellationTokenSource? _monitoringCts;
+    private UdpClient? _udpClient;
 
     // ── Configuración ────────────────────────────────────────────────────────────
     public string IpAddress { get; set; } = "192.168.15.1";
-    public string Port { get; set; } = "8080";
+    public string Port { get; set; } = "50001";
     public string PayloadHex { get; set; } = "00 00";
 
     // ── Estado de conexión ───────────────────────────────────────────────────────
@@ -54,12 +54,46 @@ public class MonitorStateService : IDisposable
         _protocolGate.Release();
     }
 
-    private async Task<SepsaExchangeResult> SendFrameAsync(string baseUrl, byte[] frame, CancellationToken token)
+    private async Task<SepsaExchangeResult> SendFrameAsync(string targetAddress, int targetPort, byte[] frame, CancellationToken token)
     {
         await _protocolGate.WaitAsync(token);
         try
         {
             if (IsReprogramming) throw new OperationCanceledException("Reprogramación en curso.");
+
+            // 1. Envío directo por UDP a ControlManager (puerto 50001 habitual en proyectos de comms)
+            if (_udpClient != null)
+            {
+                try
+                {
+                    IPAddress ip;
+                    if (!IPAddress.TryParse(targetAddress, out ip!))
+                    {
+                        var addresses = await Dns.GetHostAddressesAsync(targetAddress, token);
+                        ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
+                    }
+
+                    var endpoint = new IPEndPoint(ip, targetPort > 0 ? targetPort : 50001);
+                    await _udpClient.SendAsync(frame, frame.Length, endpoint);
+
+                    using var rxCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    rxCts.CancelAfter(TimeSpan.FromMilliseconds(800));
+
+                    var rxResult = await _udpClient.ReceiveAsync(rxCts.Token);
+                    return SepsaExchangeResult.Success(new Uri($"udp://{targetAddress}:{targetPort}"), System.Net.HttpStatusCode.OK, rxResult.Buffer.Select(b => (int)b).ToArray());
+                }
+                catch (OperationCanceledException) when (!token.IsCancellationRequested)
+                {
+                    return SepsaExchangeResult.Failed(new Uri($"udp://{targetAddress}:{targetPort}"), System.Net.HttpStatusCode.RequestTimeout, "Timeout UDP ControlManager");
+                }
+                catch (SocketException ex)
+                {
+                    return SepsaExchangeResult.Failed(new Uri($"udp://{targetAddress}:{targetPort}"), System.Net.HttpStatusCode.BadGateway, $"Error socket UDP: {ex.Message}");
+                }
+            }
+
+            // 2. Fallback a cliente HTTP si no hay socket UDP inicializado
+            var baseUrl = $"{targetAddress}:{targetPort}";
             return await _sepsaClient.SendAsync(baseUrl, frame, token);
         }
         finally { _protocolGate.Release(); }
@@ -123,17 +157,35 @@ public class MonitorStateService : IDisposable
         IsConnecting = true;
         NotifyStateChanged();
 
-        // Simular latencia de conexión
-        await Task.Delay(500);
+        try
+        {
+            _udpClient?.Dispose();
+            _udpClient = new UdpClient();
+            if (OperatingSystem.IsWindows())
+            {
+                const int SIO_UDP_CONNRESET = -1744830452;
+                _udpClient.Client.IOControl((IOControlCode)SIO_UDP_CONNRESET, new byte[] { 0, 0, 0, 0 }, null);
+            }
 
-        // Cargar señales desde DB (necesitamos un scope porque ApsDataService es Scoped)
-        await LoadSignalsAsync();
+            await Task.Delay(300);
 
-        IsConnected = true;
-        IsConnecting = false;
+            // Cargar señales desde DB (necesitamos un scope porque ApsDataService es Scoped)
+            await LoadSignalsAsync();
 
-        AddLog("Sistema", $"Conectado a http://{IpAddress}:{Port}. Listo para enviar/recibir.", false, false);
-        NotifyStateChanged();
+            IsConnected = true;
+            IsConnecting = false;
+
+            int targetPort = int.TryParse(Port, out var p) ? p : 50001;
+            AddLog("Sistema", $"Conectado a ControlManager UDP en {IpAddress}:{targetPort}. Listo para enviar/recibir.", false, false);
+            NotifyStateChanged();
+        }
+        catch (Exception ex)
+        {
+            IsConnecting = false;
+            IsConnected = false;
+            AddLog("Error", $"Error al conectar socket UDP: {ex.Message}", false, true);
+            NotifyStateChanged();
+        }
     }
 
     /// <summary>
@@ -143,6 +195,8 @@ public class MonitorStateService : IDisposable
     {
         StopMonitoring();
         IsConnected = false;
+        try { _udpClient?.Dispose(); } catch { }
+        _udpClient = null;
         AddLog("Sistema", "Desconectado. Monitorización detenida.", false, false);
         NotifyStateChanged();
     }
@@ -193,7 +247,7 @@ public class MonitorStateService : IDisposable
 
         try
         {
-            var baseUrl = $"{IpAddress}:{Port}";
+            int targetPort = int.TryParse(Port, out var p) ? p : 50001;
             var payload = SepsaProtocolClient.ParsePayload(PayloadHex);
             var frame = _sepsaClient.BuildFrame(payload);
 
@@ -201,7 +255,7 @@ public class MonitorStateService : IDisposable
             NotifyStateChanged();
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var response = await SendFrameAsync(baseUrl, frame, cts.Token);
+            var response = await SendFrameAsync(IpAddress, targetPort, frame, cts.Token);
 
             if (response.IsSuccess)
             {
@@ -263,7 +317,7 @@ public class MonitorStateService : IDisposable
 
                 try
                 {
-                    var baseUrl = $"{IpAddress}:{Port}";
+                    int targetPort = int.TryParse(Port, out var p) ? p : 50001;
                     var payload = SepsaProtocolClient.ParsePayload(PayloadHex);
                     var frame = _sepsaClient.BuildFrame(payload, messageType: currentFrameType);
 
@@ -272,7 +326,7 @@ public class MonitorStateService : IDisposable
                     using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     reqCts.CancelAfter(500);
 
-                    var response = await SendFrameAsync(baseUrl, frame, reqCts.Token);
+                    var response = await SendFrameAsync(IpAddress, targetPort, frame, reqCts.Token);
                     if (response.IsSuccess)
                     {
                         AddLog("Respuesta", $"RX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
@@ -449,6 +503,9 @@ public class MonitorStateService : IDisposable
     public void Dispose()
     {
         StopMonitoring();
+        _monitoringCts?.Dispose();
+        try { _udpClient?.Dispose(); } catch { }
+        _protocolGate.Dispose();
     }
 }
 

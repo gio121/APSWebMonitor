@@ -19,10 +19,10 @@
                 <!-- Device IP -->
                 <MudItem xs="12">
                     <MudTextField @bind-Value="_deviceUrl"
-                                  Label="IP o URL del dispositivo"
+                                  Label="IP o Host del dispositivo"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                  Placeholder="192.168.1.100  ó  http://192.168.1.100:8080"
-                                  HelperText="Puerto 8080 por defecto. Acepta IP, hostname o URL completa."
+                                  Placeholder="192.168.15.1"
+                                  HelperText="Transferencia directa vía SFTP (puerto 22) y reinicio por SSH / ControlManager."
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Router" />
                 </MudItem>
@@ -72,8 +72,8 @@
                     <!-- Warning -->
                     <MudItem xs="12">
                         <MudAlert Severity="Severity.Warning" Dense="true" Class="rounded-lg">
-                            El archivo <code>/etc/sepsa/ecnmanager.json</code> en el dispositivo será
-                            sobreescrito. El backend generará una copia de seguridad <code>.bak</code> automáticamente.
+                            El archivo <code>/mnt/artifacts/ecnmanager.json</code> en el dispositivo será
+                            actualizado mediante SFTP y se reiniciará el servicio para aplicar los cambios.
                         </MudAlert>
                     </MudItem>
                 }
@@ -81,7 +81,7 @@
                 {
                     <MudItem xs="12">
                         <MudAlert Severity="Severity.Info" Dense="true" Class="rounded-lg">
-                            Se leerá <code>/etc/sepsa/ecnmanager.json</code> del dispositivo y se importará
+                            Se leerá <code>/mnt/artifacts/ecnmanager.json</code> del dispositivo vía SFTP y se importará
                             como nueva configuración en la base de datos local.
                         </MudAlert>
                     </MudItem>

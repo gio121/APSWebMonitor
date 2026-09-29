@@ -40,7 +40,7 @@
             </MudText>
 
             <MudTextField @bind-Value="MonitorState.IpAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" Disabled="@MonitorState.IsConnected" />
-            <MudTextField @bind-Value="MonitorState.Port" Label="Puerto HTTP / Endpoint" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 80 / 8080" Disabled="@MonitorState.IsConnected" />
+            <MudTextField @bind-Value="MonitorState.Port" Label="Puerto UDP ControlManager" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="50001" Disabled="@MonitorState.IsConnected" />
             <MudTextField @bind-Value="MonitorState.PayloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
 
             <MudButton Variant="Variant.Filled" Color="@(MonitorState.IsConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@MonitorState.IsConnecting">

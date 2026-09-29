@@ -30,13 +30,13 @@
                     @if (WsService.IsConnected)
                     {
                         <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Wifi">
-                            WS Conectado
+                            @(WsService.IsUdpStreaming ? "UDP Conectado (Puerto 50002)" : "WS Conectado")
                         </MudChip>
                     }
                     else
                     {
                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.WifiOff">
-                            WS Desconectado
+                            Desconectado
                         </MudChip>
                     }
                 }
@@ -48,7 +48,7 @@
                 }
             </div>
             <MudText Typo="Typo.caption" Class="trdp-muted">
-                @(IsPcapMode ? "Reproducción local paginada con filtrado automático por ComID (.pcap, .pcapng, .json)" : $"Streaming directo vía WebSocket (ws://{_deviceHost}/ws/trdp)")
+                @(IsPcapMode ? "Reproducción local paginada con filtrado automático por ComID (.pcap, .pcapng, .json)" : $"Streaming directo vía UDP / Comms ({_deviceHost}:50002)")
             </MudText>
         </div>
     </div>
@@ -56,7 +56,7 @@
     <!-- Toggle Selector Modo (En Vivo vs Reproductor PCAP) + Toggle BitOrder/Endianness -->
     <div class="d-flex align-center gap-3 flex-wrap">
         <MudToggleGroup T="string" Value="_activeMode" ValueChanged="OnModeChanged" Color="Color.Primary" Size="Size.Small">
-            <MudToggleItem Value="@("live")" Text="En Vivo (WebSocket)" Icon="@Icons.Material.Filled.Sensors" />
+            <MudToggleItem Value="@("live")" Text="En Vivo (UDP Comms)" Icon="@Icons.Material.Filled.Sensors" />
             <MudToggleItem Value="@("pcap")" Text="Reproductor Wireshark" Icon="@Icons.Material.Filled.PlayCircle" />
         </MudToggleGroup>
 
@@ -93,7 +93,7 @@
         <MudGrid Spacing="2" Class="align-center">
             <!-- Device IP / Host -->
             <MudItem xs="12" sm="4" md="3">
-                <MudTextField @bind-Value="_deviceHost" Label="IP / Host Placa" Placeholder="192.168.15.1:8080"
+                <MudTextField @bind-Value="_deviceHost" Label="IP / Host Placa" Placeholder="192.168.15.1"
                               Variant="Variant.Outlined" Margin="Margin.Dense"
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Computer" />
             </MudItem>
@@ -848,9 +848,9 @@ else
     {
         // Default host from MonitorState
         if (!string.IsNullOrWhiteSpace(MonitorState.IpAddress))
-            _deviceHost = $"{MonitorState.IpAddress}:{MonitorState.Port}";
+            _deviceHost = MonitorState.IpAddress;
         else
-            _deviceHost = "192.168.15.1:8080";
+            _deviceHost = "192.168.15.1";
 
         // Load configured frame options from active config in DB
         await LoadConfiguredFramesAsync();
@@ -1006,14 +1006,15 @@ else
 
         if (WsService.IsConnected)
         {
-            Snackbar.Add($"WS Conectado a {_deviceHost}", Severity.Success);
+            var connDesc = WsService.IsUdpStreaming ? "UDP (puerto 50002)" : "WebSocket";
+            Snackbar.Add($"Conectado a {_deviceHost} vía {connDesc}", Severity.Success);
         }
     }
 
     private async Task DisconnectWebSocket()
     {
         await WsService.DisconnectAsync();
-        Snackbar.Add("WebSocket desconectado.", Severity.Info);
+        Snackbar.Add("Streaming TRDP desconectado.", Severity.Info);
         StateHasChanged();
     }
 
@@ -1318,7 +1319,7 @@ else
         _latestFrame = frame;
         _lastFrameTime = DateTime.Now;
 
-        if (_enableEndianSwap && _activeSessionConfig != null &&
+        if ((frame.Parsed == null || _enableEndianSwap) && _activeSessionConfig != null &&
             _activeSessionConfig.CommsDatasets.TryGetValue(_selectedDatasetName, out var ds))
         {
             var rawBytes = frame.RawBytes?.ToArray() ?? GetRawPayload();

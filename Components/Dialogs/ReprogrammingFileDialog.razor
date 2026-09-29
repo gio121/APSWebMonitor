@@ -1,5 +1,8 @@
 @using ApsMonitor.Models
+@using ApsMonitor.Services
 @inject IConfiguration Configuration
+@inject DhcpServerService DhcpService
+@inject MonitorStateService Monitor
 
 <MudDialog>
     <TitleContent>
@@ -8,9 +11,97 @@
     </TitleContent>
 <DialogContent>
     <fieldset disabled="@(_loading)" style="border:0;padding:0;margin:0">
-        <MudGrid>
+        <MudGrid Spacing="2" Class="mb-2">
+            <MudItem xs="12" sm="8">
+                <MudTextField @bind-Value="_address" Label="Dirección IP del equipo destino"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="192.168.1.10" HelperText="Dirección IP del equipo para reprogramación" />
+            </MudItem>
+            @if (_kind == "Comunicaciones")
+            {
+                <MudItem xs="12" sm="4">
+                    <MudTextField Value="@("22")" Label="Puerto SFTP"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" ReadOnly="true"
+                                  HelperText="Puerto por defecto (SFTP)" />
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="_udpPort" Label="Puerto UDP SEPSA"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                     Min="1" Max="65535" HelperText="Puerto de ControlManager (50001)" />
+                </MudItem>
+            }
+            @if (_detectedIps.Count > 0)
+            {
+                <MudItem xs="12">
+                    <MudSelect T="string" Label="Seleccionar de IPs detectadas" Dense="true" Margin="Margin.Dense"
+                               Variant="Variant.Outlined" ValueChanged="OnSelectDetectedIp"
+                               Placeholder="Elegir IP detectada (Monitor / DHCP)...">
+                        @foreach (var opt in _detectedIps)
+                        {
+                            <MudSelectItem Value="@opt.Ip">@opt.Description</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            }
+            @if (_kind == "Comunicaciones")
+            {
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">Acceso SFTP y directorio remoto</MudText>
+                    <div class="d-flex align-center gap-1 my-1">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mr-1">Rápido:</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "root" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("root", "changeme"))">root (Recomendado)</MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "sepsa" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("sepsa", "thisisveryunsafepleasedeactivatemeaftersetup"))">sepsa</MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "update" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("update", "38I3jf/(Rihs959.fe9L0ra93nf"))">update</MudChip>
+                    </div>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_sftpUser" Label="Usuario SFTP"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                  Placeholder="root" HelperText="Usuario con permisos en /mnt/artifacts (ej. root)" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_sftpPassword" Label="Contraseña SFTP"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                  Placeholder="Contraseña" HelperText="Contraseña del usuario remoto" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_remotePath" Label="Ruta remota destino (Directorio)"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                  Placeholder="/mnt/artifacts/update" HelperText="Directorio destino en el equipo remoto donde se copiarán los ficheros" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                </MudItem>
+            }
             @if (_kind != "Comunicaciones")
             {
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">Parámetros de reprogramación SEPSA (Control)</MudText>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6" sm="4">
+                            <MudTextField @bind-Value="_signature" Label="Firma (6 caracteres)"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                          MaxLength="6" HelperText="Ej: C135KI o F22044" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudNumericField @bind-Value="_blockSize" Label="Tamaño de bloque (bytes)"
+                                             Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                             Min="32" Max="4096" HelperText="Por defecto: 128 (Control) / 400 (FPGA)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField Value="@($"0x{_offset:X6}")" Label="Offset Flash"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" ReadOnly="true"
+                                          HelperText="Dirección base en memoria" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="my-2" />
+                </MudItem>
                 <MudItem xs="12">
                     <label for="firmware-file">Fichero BIN, HEX, H86 o MCS (máximo 16 MiB)</label>
                     <InputFile id="firmware-file" OnChange="LoadFirmware" accept=".bin,.hex,.h86,.mcs" class="d-block mt-2" />
@@ -19,8 +110,8 @@
             else
             {
                 <MudItem xs="12">
-                    <label for="communications-files">Imágenes .img y sus .img.md5, o pareja edf*.bin / sdf*.bin (máximo 512 MiB)</label>
-                    <InputFile id="communications-files" OnChange="LoadCommunications" multiple accept=".img,.md5,.bin" class="d-block mt-2" />
+                    <label for="communications-files">Imágenes .img, archivos .gz (con .md5 si procede), o pareja edf / sdf (máximo 512 MiB)</label>
+                    <InputFile id="communications-files" OnChange="LoadCommunications" multiple accept=".img,.md5,.bin,.gz" class="d-block mt-2" />
                 </MudItem>
             }
         </MudGrid>
@@ -28,7 +119,9 @@
     @if (_loading) { <MudProgressLinear Indeterminate="true" Class="mt-4" /> }
     @if (_image is not null)
     {
-        <MudAlert Severity="Severity.Info" Class="mt-4">@_fileName</MudAlert>
+        <MudAlert Severity="Severity.Info" Class="mt-4">
+            <b>Fichero:</b> @_fileName &nbsp;|&nbsp; <b>Tamaño:</b> @_image.Length bytes &nbsp;|&nbsp; <b>CRC32:</b> @ReprogrammingProtocol.Crc32(_image).ToString("X8")
+        </MudAlert>
     }
     @if (_files.Count > 0)
     {
@@ -40,52 +133,100 @@
 </DialogContent>
 <DialogActions>
     <MudButton OnClick="Cancel" Disabled="_loading">Cancelar</MudButton>
-    <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(_loading || (_image is null && _files.Count == 0))">Guardar selección</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_loading || (_kind == "Comunicaciones" ? _files.Count == 0 : _image is null))">Aceptar</MudButton>
 </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter, EditorRequired] public ReprogrammingSoftware Software { get; set; } = null!;
+    [Parameter] public ReprogrammingSoftware Software { get; set; } = null!;
     [Parameter] public ReprogrammingSelection? Selection { get; set; }
     [Parameter] public string Address { get; set; } = "";
     private string _kind = "", _address = "", _signature = "", _hostKey = "", _fileName = "";
-    private int _udpPort, _localPort, _sftpPort = 22, _blockSize = 128;
+    private string _sftpUser = "root", _sftpPassword = "changeme", _remotePath = "/mnt/artifacts/update";
+    private int _udpPort = 50001, _localPort, _sftpPort = 22, _blockSize = 128;
     private uint _offset = 0xC00000;
     private byte[]? _image;
     private List<CommunicationsFile> _files = [];
     private bool _loading;
     private string? _error;
 
+    private record DetectedIpOption(string Ip, string Description);
+    private List<DetectedIpOption> _detectedIps = [];
+
+    private void SetCredentials(string user, string pass)
+    {
+        _sftpUser = user;
+        _sftpPassword = pass;
+    }
+
     protected override void OnInitialized()
     {
         _kind = Software.Kind;
         _address = Selection?.Target.Address ?? Address;
+        if (string.IsNullOrWhiteSpace(_address))
+        {
+            _address = !string.IsNullOrWhiteSpace(Monitor.IpAddress) ? Monitor.IpAddress : "192.168.1.10";
+        }
         _udpPort = Configuration.GetValue<int>("Reprogramming:UdpPort");
+        if (_udpPort <= 0 || _udpPort == 50000) _udpPort = 50001;
         _localPort = Configuration.GetValue<int>("Reprogramming:LocalPort");
-        _sftpPort = Configuration.GetValue("Reprogramming:SftpPort", 22);
+        _sftpPort = 22; // Puerto por defecto del protocolo SFTP
+        _sftpUser = Configuration["Reprogramming:SftpUser"] ?? "root";
+        _sftpPassword = Configuration["Reprogramming:SftpPassword"] ?? "changeme";
+        _remotePath = Configuration["Reprogramming:SftpRemotePath"] ?? "/mnt/artifacts/update";
         _hostKey = Configuration["Reprogramming:HostKeySha256"] ?? "";
         _signature = Selection?.Signature ?? Software.Signature;
         _blockSize = Selection?.BlockSize ?? (_kind == "FPGA" ? 400 : 128);
         _offset = Selection?.FlashOffset ?? (_kind == "Control" ? 0xC00000u : 0);
         if (Selection is { } saved)
         {
-            _udpPort = saved.Target.UdpPort; _localPort = saved.Target.LocalPort;
-            _sftpPort = saved.SftpPort; _hostKey = saved.HostKey;
+            _address = saved.Target.Address;
+            _udpPort = saved.Target.UdpPort > 0 ? (saved.Target.UdpPort == 50000 ? 50001 : saved.Target.UdpPort) : _udpPort;
+            _localPort = saved.Target.LocalPort;
+            _sftpPort = 22;
+            _sftpUser = saved.SftpUser;
+            _sftpPassword = saved.SftpPassword;
+            _remotePath = saved.RemotePath;
+            _hostKey = saved.HostKey;
+            _signature = saved.Signature;
+            _blockSize = saved.BlockSize;
+            _offset = saved.FlashOffset;
             _fileName = saved.FileName; _image = saved.Image; _files = saved.Files.ToList();
+        }
+
+        _detectedIps = GetDetectedIps();
+    }
+
+    private List<DetectedIpOption> GetDetectedIps()
+    {
+        var list = new List<DetectedIpOption>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!string.IsNullOrWhiteSpace(Monitor.IpAddress) && seen.Add(Monitor.IpAddress))
+        {
+            list.Add(new(Monitor.IpAddress, $"{Monitor.IpAddress} (Monitor)"));
+        }
+
+        foreach (var lease in DhcpService.GetActiveLeases())
+        {
+            if (seen.Add(lease.IpAddress))
+            {
+                var name = !string.IsNullOrWhiteSpace(lease.HostName) ? lease.HostName : lease.MacAddress;
+                list.Add(new(lease.IpAddress, $"{lease.IpAddress} (DHCP: {name})"));
+            }
+        }
+        return list;
+    }
+
+    private void OnSelectDetectedIp(string? ip)
+    {
+        if (!string.IsNullOrWhiteSpace(ip))
+        {
+            _address = ip;
         }
     }
 
-    private void Cancel() => MudDialog.Cancel();
-    private void Submit()
-    {
-        _error = null;
-        if (_loading) return;
-        if (_kind == "Comunicaciones" ? _files.Count == 0 : _image is null) return;
-        MudDialog.Close(DialogResult.Ok(new ReprogrammingSelection(
-            new(_address.Trim(), _udpPort, _localPort), _signature.Trim(), _blockSize, _offset,
-            _fileName, _image, _files.ToArray(), _sftpPort, _hostKey.Trim())));
-    }
     private async Task LoadFirmware(InputFileChangeEventArgs args)
     {
         _image = null; _error = null; _loading = true;
@@ -100,6 +241,7 @@
         catch (Exception ex) { _error = ex.Message; }
         finally { _loading = false; }
     }
+
     private async Task LoadCommunications(InputFileChangeEventArgs args)
     {
         _files.Clear(); _error = null; _loading = true;
@@ -115,10 +257,21 @@
                 await input.CopyToAsync(data);
                 files.Add(new(file.Name, data.ToArray()));
             }
-            ReprogrammingService.ValidateCommunicationsFiles(files);
             _files = files;
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _loading = false; }
     }
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_address)) { _error = "Especifique una IP de destino."; return; }
+        int udpPort = _udpPort > 0 ? (_udpPort == 50000 ? 50001 : _udpPort) : 50001;
+        var target = new ReprogrammingTarget(_address.Trim(), udpPort, _localPort);
+        MudDialog.Close(DialogResult.Ok(new ReprogrammingSelection(
+            target, _signature.Trim(), _blockSize, _offset, _fileName, _image, _files, _sftpPort, _hostKey.Trim(),
+            _sftpUser.Trim(), _sftpPassword, _remotePath.Trim())));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
 }

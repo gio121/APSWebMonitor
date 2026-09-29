@@ -13,9 +13,9 @@
     <DialogContent>
         <MudGrid Spacing="2">
             <MudItem xs="12">
-                <MudTextField @bind-Value="DeviceUrl" Label="IP o URL del dispositivo (WebMonitorBackend)"
+                <MudTextField @bind-Value="DeviceUrl" Label="IP de la Placa (ControlManager UDP:50001)"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                              Placeholder="127.0.0.1:8080" />
+                              Placeholder="192.168.15.1" />
             </MudItem>
 
             <MudItem xs="12" sm="4">
@@ -62,7 +62,7 @@
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
 
-    [Parameter] public string DeviceUrl { get; set; } = "127.0.0.1:8080";
+    [Parameter] public string DeviceUrl { get; set; } = "192.168.15.1";
     [Parameter] public string InitialFrameType { get; set; } = "0x7A";
     [Parameter] public string InitialSubCmd { get; set; } = "0x0001";
     [Parameter] public int InitialData { get; set; } = 0;
