@@ -742,12 +742,23 @@ else
         }
     }
 
+    private List<string> GetActiveControlVarTags()
+    {
+        if (_activeConfig?.ControlFrame?.Variables is { Count: > 0 } vars)
+        {
+            var list = vars.Select(v => v.Id).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().OrderBy(id => id).ToList();
+            if (list.Count > 0) return list;
+        }
+        return _signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
+    }
+
     // ── Config list actions ────────────────────────────────────────────────
     private void SelectConfig(TrdpSessionConfig cfg)
     {
         _editorTab = 0;
         _datasetTab = 0;
         _activeConfig = cfg;
+        _controlVarTags = GetActiveControlVarTags();
     }
 
     private void Deselect() => _activeConfig = null;
@@ -1083,7 +1094,7 @@ else
                 ["Variable"]         = variable,
                 ["IsNew"]            = isNew,
                 ["ExistingLinks"]    = existingLinks ?? new List<TrdpVariableLink>(),
-                ["ControlVarTags"]   = _controlVarTags,
+                ["ControlVarTags"]   = GetActiveControlVarTags(),
                 ["ControlVariables"] = _activeConfig?.ControlFrame?.Variables ?? new(),
                 ["Signals"]          = _signals
             },

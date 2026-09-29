@@ -297,6 +297,7 @@ public class TrdpConfigService
             ReverseBits = v.TryGetProperty("reverse_bits",out var rb)  && rb.GetBoolean(),
             Persistent  = v.TryGetProperty("persistent",  out var ps)  && ps.GetBoolean(),
             Cumulative  = v.TryGetProperty("cumulative",  out var cm)  && cm.GetBoolean(),
+            SumToCurrent= (v.TryGetProperty("sum_to_current", out var stc) && stc.GetBoolean()) || (v.TryGetProperty("add_to_current", out var atc) && atc.GetBoolean()),
             Formula     = v.TryGetProperty("formula",     out var fm)  ? fm.GetString()            : null,
             Description = v.TryGetProperty("description", out var ds)  ? ds.GetString() ?? ""      : ""
         };
@@ -317,6 +318,7 @@ public class TrdpConfigService
             SetOnly        = lnk.TryGetProperty("set_only",           out var so)  && so.GetBoolean(),
             Invert         = lnk.TryGetProperty("invert",             out var inv) && inv.GetBoolean(),
             Increment      = lnk.TryGetProperty("increment",          out var inc) ? inc.GetDouble()            : null,
+            SumToCurrent   = (lnk.TryGetProperty("sum_to_current",     out var lstc) && lstc.GetBoolean()) || (lnk.TryGetProperty("add_to_current", out var latc) && latc.GetBoolean()),
             Condition      = lnk.TryGetProperty("condition",          out var cond)? cond.GetString()           : null,
             Comment        = lnk.TryGetProperty("comment",            out var cm)  ? cm.GetString()             : null,
             Length         = lnk.TryGetProperty("length",             out var len) ? len.GetInt32()             : null,

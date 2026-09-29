@@ -296,6 +296,10 @@ public class TrdpDatasetVariable
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Cumulative { get; set; }
 
+    [JsonPropertyName("sum_to_current")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool SumToCurrent { get; set; }
+
     [JsonPropertyName("formula")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Formula { get; set; }
@@ -368,6 +372,10 @@ public class TrdpVariableLink
     [JsonPropertyName("increment")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? Increment { get; set; }
+
+    [JsonPropertyName("sum_to_current")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool SumToCurrent { get; set; }
 
     // condition_to_bit
     [JsonPropertyName("condition")]

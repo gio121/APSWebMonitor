@@ -10,6 +10,10 @@
             {
                 <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">→ @FixedTarget</MudChip>
             }
+            @if (Link.SumToCurrent)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">+= Sumar</MudChip>
+            }
         </div>
     </TitleContent>
     <DialogContent>
@@ -176,24 +180,26 @@
                             </div>
 
                             <!-- Recomendación de variables de control -->
-                            @if (ControlVarTags.Count > 0)
+                            @if (ControlVariables.Count > 0 || ControlVarTags.Count > 0)
                             {
                                 <div>
                                     <div class="d-flex align-center justify-space-between mb-1">
                                         <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#38bdf8;">
-                                            Variables recomendadas:
+                                            Variables de control:
                                         </MudText>
-                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable…"
+                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable de control…"
                                                       Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                                       Style="max-width:200px; font-size:0.75rem;" Class="my-0 py-0" />
                                     </div>
-                                    <div class="d-flex flex-wrap gap-1" style="max-height:100px; overflow-y:auto;">
+                                    <div class="d-flex flex-wrap gap-1" style="max-height:110px; overflow-y:auto;">
                                         @foreach (var tag in FilteredControlVars)
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
-                                                     OnClick="@(() => InsertFormulaToken(tag))">
-                                                @tag
-                                            </MudChip>
+                                            <MudTooltip Text="@GetControlVarTooltip(tag)">
+                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                                         OnClick="@(() => InsertFormulaToken(tag))">
+                                                    @tag
+                                                </MudChip>
+                                            </MudTooltip>
                                         }
                                     </div>
                                 </div>
@@ -264,6 +270,24 @@
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="_length" Label="Longitud (bytes)"
                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
+                </MudItem>
+            }
+
+            <!-- Sumar al valor actual (+=) -->
+            @if (Link.Type is "analog" or "max_value" or "formula" or "constant" or "direct_copy")
+            {
+                <MudItem xs="12">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <div class="d-flex align-center gap-2">
+                            <MudCheckBox @bind-Value="Link.SumToCurrent" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.body2" Class="fw-bold">Sumar al valor actual (+=)</MudText>
+                                <MudText Typo="Typo.caption" Class="trdp-muted">
+                                    Suma el resultado del cálculo o mapeo al valor acumulado de la variable destino en cada ciclo (en lugar de sobrescribirlo).
+                                </MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
                 </MudItem>
             }
 
@@ -470,10 +494,34 @@
     private string _selectedVarToAdd = "";
     private string _formulaVarFilter = "";
 
+    private IEnumerable<string> ControlVarNames
+    {
+        get
+        {
+            if (ControlVariables is { Count: > 0 })
+            {
+                return ControlVariables.Select(v => v.Id).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().OrderBy(id => id);
+            }
+            return ControlVarTags;
+        }
+    }
+
     private IEnumerable<string> FilteredControlVars =>
         string.IsNullOrWhiteSpace(_formulaVarFilter)
-            ? ControlVarTags.Take(40)
-            : ControlVarTags.Where(t => t.Contains(_formulaVarFilter, StringComparison.OrdinalIgnoreCase)).Take(40);
+            ? ControlVarNames.Take(40)
+            : ControlVarNames.Where(t => t.Contains(_formulaVarFilter, StringComparison.OrdinalIgnoreCase)).Take(40);
+
+    private string GetControlVarTooltip(string varName)
+    {
+        var cv = ControlVariables?.FirstOrDefault(c => string.Equals(c.Id, varName, StringComparison.OrdinalIgnoreCase));
+        if (cv != null)
+        {
+            var desc = string.IsNullOrEmpty(cv.Description) ? "" : $"{cv.Description} | ";
+            var unit = string.IsNullOrEmpty(cv.Unit) ? "" : $" [{cv.Unit}]";
+            return $"{desc}Tipo: {cv.Type}, Offset: {cv.Offset} (bit {cv.VarOffsetBits}){unit}";
+        }
+        return varName;
+    }
 
     protected override void OnInitialized()
     {
@@ -591,6 +639,10 @@
         if (newType != "formula")       { Link.Formula = null; }
         if (newType == "rising_edge_increment") { Link.Increment ??= 1.0; Link.SourceBit ??= 0; }
         else                                    { Link.Increment = null; }
+        if (newType is not ("analog" or "max_value" or "formula" or "constant" or "direct_copy"))
+        {
+            Link.SumToCurrent = false;
+        }
     }
 
     private void AddInput()
@@ -609,9 +661,10 @@
 
     private Task<IEnumerable<string>> SearchControlVars(string value, CancellationToken ct)
     {
+        var baseList = ControlVarNames;
         var results = string.IsNullOrWhiteSpace(value)
-            ? ControlVarTags
-            : ControlVarTags.Where(t => t.Contains(value, StringComparison.OrdinalIgnoreCase));
+            ? baseList
+            : baseList.Where(t => t.Contains(value, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(results.Take(40));
     }
 

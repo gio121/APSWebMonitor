@@ -25,6 +25,12 @@
                     Acumulativa
                 </MudChip>
             }
+            @if (Variable.SumToCurrent)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" Icon="@Icons.Material.Filled.AddCircle">
+                    += Sumar
+                </MudChip>
+            }
         </div>
     </TitleContent>
     <DialogContent>
@@ -106,8 +112,8 @@
 
                     <!-- ── Persistencia y Fórmulas ───────────────────────────── -->
                     <MudItem xs="12"><MudDivider /></MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Persistent" Color="Color.Warning" />
                                 <div>
@@ -119,14 +125,27 @@
                             </div>
                         </MudPaper>
                     </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Cumulative" Color="Color.Tertiary" />
                                 <div>
                                     <MudText Typo="Typo.body2" Class="fw-bold">Variable Acumulativa</MudText>
                                     <MudText Typo="Typo.caption" Class="trdp-muted">
                                         Acumula los incrementos positivos a lo largo del tiempo.
+                                    </MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <div class="d-flex align-center gap-2">
+                                <MudCheckBox @bind-Value="Variable.SumToCurrent" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">Sumar al valor actual</MudText>
+                                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                                        Suma el resultado de la fórmula al valor acumulado en cada ciclo (+=).
                                     </MudText>
                                 </div>
                             </div>
@@ -202,24 +221,26 @@
                             </div>
 
                             <!-- Recomendación de variables de control -->
-                            @if (ControlVarTags.Count > 0)
+                            @if (ControlVariables.Count > 0 || ControlVarTags.Count > 0)
                             {
                                 <div>
                                     <div class="d-flex align-center justify-space-between mb-1">
                                         <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#38bdf8;">
-                                            Variables recomendadas:
+                                            Variables de control:
                                         </MudText>
-                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable…"
+                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable de control…"
                                                       Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                                       Style="max-width:200px; font-size:0.75rem;" Class="my-0 py-0" />
                                     </div>
-                                    <div class="d-flex flex-wrap gap-1" style="max-height:100px; overflow-y:auto;">
+                                    <div class="d-flex flex-wrap gap-1" style="max-height:110px; overflow-y:auto;">
                                         @foreach (var tag in FilteredControlVars)
                                         {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
-                                                     OnClick="@(() => InsertFormulaDirect(tag))">
-                                                @tag
-                                            </MudChip>
+                                            <MudTooltip Text="@GetControlVarTooltip(tag)">
+                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                                         OnClick="@(() => InsertFormulaDirect(tag))">
+                                                    @tag
+                                                </MudChip>
+                                            </MudTooltip>
                                         }
                                     </div>
                                 </div>
@@ -363,10 +384,35 @@
     }
 
     private string _formulaVarFilter = "";
+
+    private IEnumerable<string> ControlVarNames
+    {
+        get
+        {
+            if (ControlVariables is { Count: > 0 })
+            {
+                return ControlVariables.Select(v => v.Id).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().OrderBy(id => id);
+            }
+            return ControlVarTags;
+        }
+    }
+
     private IEnumerable<string> FilteredControlVars =>
         string.IsNullOrWhiteSpace(_formulaVarFilter)
-            ? ControlVarTags.Take(40)
-            : ControlVarTags.Where(t => t.Contains(_formulaVarFilter, StringComparison.OrdinalIgnoreCase)).Take(40);
+            ? ControlVarNames.Take(40)
+            : ControlVarNames.Where(t => t.Contains(_formulaVarFilter, StringComparison.OrdinalIgnoreCase)).Take(40);
+
+    private string GetControlVarTooltip(string varName)
+    {
+        var cv = ControlVariables?.FirstOrDefault(c => string.Equals(c.Id, varName, StringComparison.OrdinalIgnoreCase));
+        if (cv != null)
+        {
+            var desc = string.IsNullOrEmpty(cv.Description) ? "" : $"{cv.Description} | ";
+            var unit = string.IsNullOrEmpty(cv.Unit) ? "" : $" [{cv.Unit}]";
+            return $"{desc}Tipo: {cv.Type}, Offset: {cv.Offset} (bit {cv.VarOffsetBits}){unit}";
+        }
+        return varName;
+    }
 
     private void InsertFormulaDirect(string token)
     {
@@ -497,17 +543,21 @@
                 __builder.AddContent(0, "Contador 0..255");
                 break;
             case "constant":
-                __builder.AddContent(0, $"= {lnk.Value}");
+                var accC = lnk.SumToCurrent ? " [+= acumular]" : "";
+                __builder.AddContent(0, $"= {lnk.Value}{accC}");
                 break;
             case "analog":
-                __builder.AddContent(0, $"{lnk.SourceControlVar} × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                var accA = lnk.SumToCurrent ? " [+= acumular]" : "";
+                __builder.AddContent(0, $"{lnk.SourceControlVar} × {lnk.Scale:G4} + {lnk.Offset:G4}{accA}");
                 break;
             case "max_value":
                 var vars = lnk.SourceControlVars is { Count: > 0 } ? string.Join(", ", lnk.SourceControlVars) : "—";
-                __builder.AddContent(0, $"max({vars}) × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                var accM = lnk.SumToCurrent ? " [+= acumular]" : "";
+                __builder.AddContent(0, $"max({vars}) × {lnk.Scale:G4} + {lnk.Offset:G4}{accM}");
                 break;
             case "formula":
-                __builder.AddContent(0, $"formula: {lnk.Formula} × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                var accF = lnk.SumToCurrent ? " [+= acumular]" : "";
+                __builder.AddContent(0, $"formula: {lnk.Formula} × {lnk.Scale:G4} + {lnk.Offset:G4}{accF}");
                 break;
             case "rising_edge_increment":
                 var inc = lnk.Increment ?? 1.0;
