@@ -46,18 +46,16 @@ public class ApsDataService
     }
 
     // Signals
-    public async Task<List<Signal>> GetSignalsAsync()
+    public async Task<List<Signal>> GetSignalsAsync(bool includeDeleted = false)
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
-        return await context.Signals.ToListAsync();
+        return await (includeDeleted ? context.Signals.IgnoreQueryFilters() : context.Signals).ToListAsync();
     }
 
     public async Task DeleteAllSignalsAsync()
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
-        var signals = await context.Signals.ToListAsync();
-        context.Signals.RemoveRange(signals);
-        await context.SaveChangesAsync();
+        await context.Signals.ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDeleted, true));
     }
 
     public async Task<Signal> GetSignalAsync(int id)
@@ -86,9 +84,46 @@ public class ApsDataService
         var signal = await context.Signals.FindAsync(id);
         if (signal != null)
         {
-            context.Signals.Remove(signal);
+            signal.IsDeleted = true;
             await context.SaveChangesAsync();
         }
+    }
+
+    // Reimport by logical identity without replacing the IDs used by windows.
+    public async Task ImportSignalsAsync(IEnumerable<Signal> importedSignals)
+    {
+        var incoming = importedSignals.ToList();
+        if (incoming.Any(s => string.IsNullOrWhiteSpace(s.Tag)))
+            throw new ArgumentException("Las señales importadas deben tener un keyname.");
+
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var existing = (await context.Signals.IgnoreQueryFilters().ToListAsync())
+            .GroupBy(s => (s.NodoNumero, Tag: s.Tag.Trim().ToUpperInvariant()))
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var signal in incoming)
+        {
+            var key = (signal.NodoNumero, Tag: signal.Tag.Trim().ToUpperInvariant());
+            signal.IsDeleted = false;
+            if (existing.TryGetValue(key, out var matches))
+            {
+                // Older imports may have duplicates. Keep every existing ID because
+                // different windows can reference different copies of the same signal.
+                var values = context.Entry(signal).CurrentValues;
+                foreach (var match in matches)
+                    foreach (var property in values.Properties.Where(p => p.Name != nameof(Signal.Id)))
+                        context.Entry(match).Property(property.Name).CurrentValue = values[property];
+            }
+            else
+            {
+                signal.Id = 0;
+                context.Signals.Add(signal);
+                existing.Add(key, [signal]);
+            }
+        }
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     // Events

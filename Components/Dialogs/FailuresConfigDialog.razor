@@ -26,7 +26,7 @@
                                          Label="Opcional: Señal de estado (status_ac, status_dc, etc)..." 
                                          Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.StatusSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? "Ninguna" : $"{s.Tag} - {s.Nombre}")"
+                                         ToStringFunc="@(s => s == null ? "Ninguna" : s.BindingLabel + " - " + s.Nombre)"
                                          ValueChanged="@((s) => category.StatusSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                     </div>
@@ -37,7 +37,7 @@
                                          Label="Opcional: Señal para el conteo total..." 
                                          Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.CountSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? "Ninguna (usar suma de bits)" : $"{s.Tag} - {s.Nombre}")"
+                                         ToStringFunc="@(s => s == null ? "Ninguna (usar suma de bits)" : s.BindingLabel + " - " + s.Nombre)"
                                          ValueChanged="@((s) => category.CountSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                     </div>

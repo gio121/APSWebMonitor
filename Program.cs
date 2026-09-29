@@ -68,6 +68,8 @@ using (var scope = app.Services.CreateScope())
     using var context = contextFactory.CreateDbContext();
     context.Database.EnsureCreated(); // Crea tablas si la BD no existe aún
 
+    SignalSchema.EnsurePersistentBindings(context);
+
     // Migración manual de columnas
     try
     {

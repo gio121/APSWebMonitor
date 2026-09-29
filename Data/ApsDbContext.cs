@@ -17,6 +17,7 @@ public class ApsDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Signal>().HasQueryFilter(s => !s.IsDeleted);
 
         // Configure primitive collections for SQLite using JSON serialization
         modelBuilder.Entity<Signal>()

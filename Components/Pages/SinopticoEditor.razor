@@ -234,7 +234,7 @@
                                          Label="Señal vinculada" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.SignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => OnSignalSelected(s?.Id))"
                                          Variant="Variant.Outlined" 
                                          Margin="Margin.Dense" 
@@ -266,7 +266,7 @@
                                                      Label="Señal de Estado" 
                                                      Value="@(_availableSignals.FirstOrDefault(s => s.Id == rule.SignalId))"
                                                      SearchFunc="@SearchSignals"
-                                                     ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                                     ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                                      ValueChanged="@(s => rule.SignalId = s?.Id)"
                                                      Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                                     <MudSelect T="int?" Label="Bit de Estado" @bind-Value="rule.SignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
@@ -301,7 +301,7 @@
                                          Label="Señal de Estado" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.StateSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => _selectedElement.StateSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Estado" @bind-Value="_selectedElement.StateSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
@@ -328,7 +328,7 @@
                                          Label="Señal de Comando" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.CommandSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => _selectedElement.CommandSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Comando" @bind-Value="_selectedElement.CommandSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
@@ -388,7 +388,7 @@
                                          Label="Señal de Valor Variable" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.SignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => _selectedElement.SignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         
@@ -396,7 +396,7 @@
                                          Label="Señal de Valor Máximo" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.StateSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => _selectedElement.StateSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" Class="mt-2" 
                                          HelperText="Si no se selecciona, usa el valor fijo de abajo" />
@@ -412,7 +412,7 @@
                                          Label="Señal de Visibilidad" 
                                          Value="@(_availableSignals.FirstOrDefault(s => s.Id == _selectedElement.CommandSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? null : $"{s.Tag} (Nodo {s.NodoNumero})")"
+                                         ToStringFunc="@(s => s == null ? null : s.BindingLabel)"
                                          ValueChanged="@(s => _selectedElement.CommandSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                         <MudSelect T="int?" Label="Bit de Visibilidad" @bind-Value="_selectedElement.CommandSignalBit" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="mt-2">
@@ -694,7 +694,7 @@
     {
         var allWindows = await DataService.GetWindowsAsync();
         _window = allWindows.FirstOrDefault(w => w.Id == WindowId);
-        _availableSignals = await DataService.GetSignalsAsync();
+        _availableSignals = await DataService.GetSignalsAsync(includeDeleted: true);
         _availableCommands = await DataService.GetCommandsAsync();
         
         if (_window != null && !string.IsNullOrWhiteSpace(_window.ContentJson))

@@ -234,6 +234,7 @@ else
             }
 
             int importados = 0;
+            var importedSignals = new List<Signal>();
 
             foreach (var node in nodes)
             {
@@ -348,12 +349,13 @@ else
                         ImportarBits(signal, infoNode);
                     }
 
-                    await DataService.AddSignalAsync(signal);
+                    importedSignals.Add(signal);
                     sequentialBytePos += GetByteSize(tipoVariable);
                     importados++;
                 }
             }
 
+            await DataService.ImportSignalsAsync(importedSignals);
             Snackbar.Add($"Se importaron {importados} señales de {nodes.Count} nodos desde '{file.Name}'.", Severity.Success);
             await LoadData();
         }
@@ -444,7 +446,7 @@ else
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Eliminar", 
-            "¿Estás seguro de que deseas eliminar esta señal?", 
+            "¿Eliminar esta señal? Sus asignaciones se conservarán y se recuperarán al importar de nuevo el CMFX.",
             yesText: "Eliminar", cancelText: "Cancelar");
             
         if (result == true)
@@ -458,7 +460,7 @@ else
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Borrar Todo", 
-            "¿Estás seguro de que deseas eliminar TODAS las señales? Esta acción no se puede deshacer.", 
+            "¿Eliminar todas las señales? Las asignaciones de las ventanas se conservarán y se recuperarán al importar de nuevo el CMFX.",
             yesText: "Borrar Todo", cancelText: "Cancelar");
             
         if (result == true)

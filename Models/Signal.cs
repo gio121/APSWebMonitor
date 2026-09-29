@@ -3,6 +3,10 @@ namespace ApsMonitor.Models;
 public class Signal
 {
     public int Id { get; set; }
+    // Keep identity and window bindings when a CMFX is removed.
+    public bool IsDeleted { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string BindingLabel => $"{Tag} (Nodo {NodoNumero})" + (IsDeleted ? " · CMFX no cargado" : "");
     
     // General Tab
     public string Nombre { get; set; } = string.Empty;
