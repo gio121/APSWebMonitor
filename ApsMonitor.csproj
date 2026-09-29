@@ -11,6 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="artifacts/**" />
+    <Content Remove="artifacts/**" />
+    <None Remove="artifacts/**" />
     <Compile Remove=".tools/**" />
     <Content Remove=".tools/**" />
     <None Remove=".tools/**" />
