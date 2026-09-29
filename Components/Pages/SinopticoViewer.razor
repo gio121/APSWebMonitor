@@ -9,6 +9,7 @@
 @inject MonitorStateService MonitorState
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -82,9 +83,9 @@
                                 <div class="ind-field @statusInfo.Css">
                                     @statusInfo.Text
                                 </div>
-                                <div class="ind-status-text-btn @statusInfo.BtnCss">
+                                <button class="ind-status-text-btn @statusInfo.BtnCss" @onclick="() => HandleConverterAction(category, statusInfo)">
                                     <MudIcon Icon="@statusInfo.Icon" Size="Size.Small" />
-                                </div>
+                                </button>
                             </div>
 
                             <!-- Last Stop Row -->
@@ -105,7 +106,7 @@
                                 <div class="ind-counter-box">@displayCount</div>
                                 @if (statusInfo.ShowReset)
                                 {
-                                    <button class="ind-btn-reset">Reset</button>
+                                    <button class="ind-btn-reset" @onclick="() => HandleResetFailures(category)">Reset</button>
                                 }
                             </div>
 
@@ -363,18 +364,24 @@
     }
 
     .ind-field.status-run {
-        color: #4caf50;
+        background: #00c853;
+        color: #ffffff;
         font-weight: bold;
+        border-color: #00c853;
     }
 
     .ind-field.status-stop {
-        color: #f44336;
+        background: #f44336;
+        color: #ffffff;
         font-weight: bold;
+        border-color: #f44336;
     }
 
     .ind-field.status-warn {
-        color: #fbc02d;
+        background: #ffeb3b;
+        color: #000000;
         font-weight: bold;
+        border-color: #ffeb3b;
     }
 
     .ind-field.status-off {
@@ -401,7 +408,7 @@
     }
 
     .ind-status-text-btn {
-        min-width: 85px;
+        min-width: 40px;
         height: 32px;
         border-radius: 6px;
         display: flex;
@@ -413,11 +420,19 @@
         letter-spacing: 0.5px;
         text-transform: uppercase;
         border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        background: transparent;
+        transition: all 0.2s;
+    }
+
+    .ind-status-text-btn:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
     }
     
-    .btn-run { color: #4caf50; border-color: rgba(76, 175, 80, 0.2); }
-    .btn-stop { color: #f44336; border-color: rgba(244, 67, 54, 0.2); }
-    .btn-warn { color: #fbc02d; border-color: rgba(251, 192, 45, 0.2); }
+    .btn-run { color: #00c853; border-color: rgba(0, 200, 83, 0.3); }
+    .btn-stop { color: #f44336; border-color: rgba(244, 67, 54, 0.3); }
+    .btn-warn { color: #fbc02d; border-color: rgba(251, 192, 45, 0.3); }
     .btn-off { color: #8b949e; border-color: rgba(139, 148, 158, 0.2); }
 
     .ind-btn-reset {
@@ -894,29 +909,50 @@
             return info;
 
         int intStatus = (int)Math.Truncate(statusVal);
-        var statusSig = SessionState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value);
 
-        // Si es una señal de status estándar (in, ac, dc), usamos la lógica de valores fijos del Inversor
-        if (statusSig != null && (statusSig.Tag.EndsWith("_in", StringComparison.OrdinalIgnoreCase) || 
-                                 statusSig.Tag.EndsWith("_ac", StringComparison.OrdinalIgnoreCase) || 
-                                 statusSig.Tag.EndsWith("_dc", StringComparison.OrdinalIgnoreCase)))
+        // Buscar señal en ambas fuentes: SessionState (sesiones grabadas) y MonitorState (monitorización en vivo)
+        var statusSig = SessionState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value)
+                     ?? MonitorState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value);
+
+        // Determinar si es un status_info_t enum (0-6) por tag de señal o por nombre de categoría
+        bool isEnumStatus = false;
+        if (statusSig != null)
         {
+            isEnumStatus = statusSig.Tag.EndsWith("_in", StringComparison.OrdinalIgnoreCase) ||
+                           statusSig.Tag.EndsWith("_ac", StringComparison.OrdinalIgnoreCase) ||
+                           statusSig.Tag.EndsWith("_dc", StringComparison.OrdinalIgnoreCase);
+        }
+        else
+        {
+            // Fallback por nombre de categoría (cuando no hay metadata de señal)
+            isEnumStatus = category.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase) ||
+                           category.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase) ||
+                           category.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (isEnumStatus)
+        {
+            // status_info_t: UNKNOWN=0, STOP=1, FAILURE=2, LOCKOUT=3, CONFIGURATION=4, WORKING=5, PULSES_SIMULATION=6
             switch (intStatus)
             {
-                case 1:
-                case 6:
-                    info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+                case 1: // STOP
+                    info.Text = "STOP"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
                     break;
-                case 2:
-                case 3:
-                    info.Text = "Failure"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
-                    if (intStatus == 3) info.ShowReset = true;
+                case 2: // FAILURE
+                    info.Text = "FALLO"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
                     break;
-                case 5:
-                    info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.PlayArrow;
+                case 3: // LOCKOUT
+                    info.Text = "BLOQUEADO"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
+                    info.ShowReset = true;
                     break;
-                case 0:
-                case 4:
+                case 5: // WORKING
+                    info.Text = "EN CICLO"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
+                    break;
+                case 6: // PULSES_SIMULATION
+                    info.Text = "SIMULACIÓN"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+                    break;
+                case 0: // UNKNOWN
+                case 4: // CONFIGURATION
                 default:
                     info.Text = "OFF"; info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
                     break;
@@ -930,11 +966,11 @@
 
             if (IsBitActive(5))
             {
-                info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.PlayArrow;
+                info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
             }
             else if (IsBitActive(2) || IsBitActive(3))
             {
-                info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+                info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
             }
             else if (IsBitActive(1) || IsBitActive(6))
             {
@@ -947,6 +983,94 @@
         }
 
         return info;
+    }
+
+    /// <summary>
+    /// Envía comando Start/Stop al converter correspondiente.
+    /// SubCmds (frameType 0x7A): Inversor Stop=0x0005/Start=0x0006, LVPS Stop=0x0003/Start=0x0004, Chopper Stop=0x00FE/Start=0x00FF.
+    /// </summary>
+    private async Task HandleConverterAction(FailureCategoryConfig category, StatusDisplayInfo statusInfo)
+    {
+        if (!MonitorState.IsConnected || !MonitorState.IsMonitoring) 
+        {
+            Snackbar.Add("Debe estar monitorizando para enviar comandos", Severity.Warning);
+            return;
+        }
+
+        ushort stopCmd, startCmd;
+        string catName = category.Name;
+
+        if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+        { stopCmd = 0x0005; startCmd = 0x0006; }
+        else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+        { stopCmd = 0x0003; startCmd = 0x0004; }
+        else if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+        { stopCmd = 0x00FE; startCmd = 0x00FF; }
+        else
+        {
+            Snackbar.Add($"Categoría '{catName}' no tiene comandos configurados", Severity.Info);
+            return;
+        }
+
+        bool isRunning = statusInfo.Css == "status-run";
+        ushort subCmd = isRunning ? stopCmd : startCmd;
+        string action = isRunning ? "PARAR" : "ARRANCAR";
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            $"Confirmar {action}",
+            $"¿Confirmar {action} de {catName}?",
+            yesText: "Confirmar", cancelText: "Cancelar");
+
+        if (confirmed == true)
+        {
+            var result = await MonitorState.SendControlCommandAsync(0x7A, subCmd);
+            if (result)
+                Snackbar.Add($"{catName}: comando {action} enviado", Severity.Success);
+            else
+                Snackbar.Add($"{catName}: error al enviar comando {action}", Severity.Error);
+        }
+    }
+
+    /// <summary>
+    /// Envía un comando de Reset al converter correspondiente (frameType 0x2A).
+    /// SubCmds: Chopper=0x0000, LVPS=0x0001, Inversor=0x0004.
+    /// </summary>
+    private async Task HandleResetFailures(FailureCategoryConfig category)
+    {
+        if (!MonitorState.IsConnected || !MonitorState.IsMonitoring)
+        {
+            Snackbar.Add("Debe estar monitorizando para enviar comandos", Severity.Warning);
+            return;
+        }
+
+        ushort resetSubCmd;
+        string catName = category.Name;
+
+        if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+            resetSubCmd = 0x0000;
+        else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+            resetSubCmd = 0x0001;
+        else if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+            resetSubCmd = 0x0004;
+        else
+        {
+            Snackbar.Add($"Categoría '{catName}' no tiene reset configurado", Severity.Info);
+            return;
+        }
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Confirmar RESET",
+            $"¿Confirmar RESET de fallos de {catName}?",
+            yesText: "Confirmar", cancelText: "Cancelar");
+
+        if (confirmed == true)
+        {
+            var result = await MonitorState.SendControlCommandAsync(0x2A, resetSubCmd);
+            if (result)
+                Snackbar.Add($"{catName}: reset enviado", Severity.Success);
+            else
+                Snackbar.Add($"{catName}: error al enviar reset", Severity.Error);
+        }
     }
 
     private struct ActiveFailure
@@ -1003,16 +1127,24 @@
                     _failureCategories = JsonSerializer.Deserialize<List<FailureCategoryConfig>>(_window.FailuresConfigJson) ?? GetDefaultCategories();
                     
                     // Auto-mapear StatusSignalId si está null (para configuraciones antiguas)
+                    // Buscar en ambas fuentes: SessionState (sesión grabada) y MonitorState (monitorización en vivo)
                     foreach (var cat in _failureCategories)
                     {
-                        if (!cat.StatusSignalId.HasValue && SessionState.Signals.Any())
+                        if (!cat.StatusSignalId.HasValue)
                         {
-                            if (cat.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
-                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
-                            else if (cat.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
-                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
-                            else if (cat.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
-                                cat.StatusSignalId = SessionState.Signals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+                            var signalSrc = SessionState.Signals.Any()
+                                ? SessionState.Signals
+                                : (IReadOnlyList<Signal>)MonitorState.Signals;
+
+                            if (signalSrc.Any())
+                            {
+                                if (cat.Name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+                                    cat.StatusSignalId = signalSrc.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+                                else if (cat.Name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+                                    cat.StatusSignalId = signalSrc.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+                                else if (cat.Name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+                                    cat.StatusSignalId = signalSrc.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+                            }
                         }
                     }
                 }

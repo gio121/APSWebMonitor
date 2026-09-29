@@ -276,6 +276,53 @@ public class MonitorStateService : IDisposable
     }
 
     /// <summary>
+    /// Envía un comando SEPSA al Control Board (start/stop/reset).
+    /// Construye un apsCommandFrame con frameType y subCmd y lo envía por UDP.
+    /// SubCmds conocidos: Stop AC=0x0005, Start AC=0x0006, Stop DC=0x0003, Start DC=0x0004,
+    ///                     Stop APS=0x00FE, Start APS=0x00FF.
+    /// Reset: frameType=0x2A, subCmd: Chopper=0x0000, LVPS=0x0001, Inversor=0x0004.
+    /// </summary>
+    public async Task<bool> SendControlCommandAsync(byte frameType, ushort subCmd, CancellationToken token = default)
+    {
+        if (!IsConnected || _udpClient == null) return false;
+
+        try
+        {
+            byte[] payload = new byte[] { (byte)(subCmd & 0xFF), (byte)((subCmd >> 8) & 0xFF) };
+            var frame = _sepsaClient.BuildFrame(payload, source: 0x01, destination: 0x02, messageType: frameType);
+
+            int targetPort = int.TryParse(Port, out var p) ? p : 50001;
+
+            AddLog("Comando", $"TX CMD [FT:{frameType:X2} SC:{subCmd:X4}] {SepsaProtocolClient.ToHex(frame)}", true, false);
+            NotifyStateChanged();
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+            cts.CancelAfter(2000);
+
+            var response = await SendFrameAsync(IpAddress, targetPort, frame, cts.Token);
+
+            if (response.IsSuccess)
+            {
+                AddLog("Comando", $"RX CMD [FT:{frameType:X2} SC:{subCmd:X4}] OK", false, false);
+                NotifyStateChanged();
+                return true;
+            }
+            else
+            {
+                AddLog("Error", $"Fallo CMD [{subCmd:X4}]: {response.Error}", false, true);
+                NotifyStateChanged();
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            AddLog("Error", $"Excepción CMD [{subCmd:X4}]: {ex.Message}", false, true);
+            NotifyStateChanged();
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Limpia el log de red.
     /// </summary>
     public void ClearLogs()
