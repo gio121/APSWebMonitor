@@ -278,41 +278,52 @@ public class MonitorStateService : IDisposable
     /// <summary>
     /// Envía un comando SEPSA al Control Board (start/stop/reset).
     /// Construye un apsCommandFrame con frameType y subCmd y lo envía por UDP.
+    /// Los comandos son "fire-and-forget": el ControlManager los ejecuta sin responder.
+    /// NO pasa por SendFrameAsync/_protocolGate para no interferir con el bucle de monitorización.
     /// SubCmds conocidos: Stop AC=0x0005, Start AC=0x0006, Stop DC=0x0003, Start DC=0x0004,
     ///                     Stop APS=0x00FE, Start APS=0x00FF.
     /// Reset: frameType=0x2A, subCmd: Chopper=0x0000, LVPS=0x0001, Inversor=0x0004.
     /// </summary>
     public async Task<bool> SendControlCommandAsync(byte frameType, ushort subCmd, CancellationToken token = default)
     {
-        if (!IsConnected || _udpClient == null) return false;
+        if (!IsConnected || _udpClient == null)
+        {
+            AddLog("Error", "No se puede enviar comando: no hay conexión UDP activa.", false, true);
+            NotifyStateChanged();
+            return false;
+        }
 
         try
         {
-            byte[] payload = new byte[] { (byte)(subCmd & 0xFF), (byte)((subCmd >> 8) & 0xFF) };
+            // Trama de comando SEPSA: payload estándar de 8 bytes
+            byte[] payload = new byte[8];
+            payload[0] = (byte)(subCmd & 0xFF);
+            payload[1] = (byte)((subCmd >> 8) & 0xFF);
+
+            // Destino 0x02 (Control Board / BOARD1), Origen 0x01 (Monitor PC)
             var frame = _sepsaClient.BuildFrame(payload, source: 0x01, destination: 0x02, messageType: frameType);
 
             int targetPort = int.TryParse(Port, out var p) ? p : 50001;
 
-            AddLog("Comando", $"TX CMD [FT:{frameType:X2} SC:{subCmd:X4}] {SepsaProtocolClient.ToHex(frame)}", true, false);
+            IPAddress ip;
+            if (!IPAddress.TryParse(IpAddress, out ip!))
+            {
+                var addresses = await Dns.GetHostAddressesAsync(IpAddress, token);
+                ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
+            }
+
+            var endpoint = new IPEndPoint(ip, targetPort > 0 ? targetPort : 50001);
+
+            AddLog("Comando", $"TX CMD [FT:0x{frameType:X2} SC:0x{subCmd:X4}] {SepsaProtocolClient.ToHex(frame)}", true, false);
+
+            // Envío directo fire-and-forget: enviar 2 veces para evitar pérdidas en red UDP
+            await _udpClient.SendAsync(frame, frame.Length, endpoint);
+            await Task.Delay(20, token);
+            await _udpClient.SendAsync(frame, frame.Length, endpoint);
+
+            AddLog("Comando", $"CMD [FT:0x{frameType:X2} SC:0x{subCmd:X4}] enviado OK", false, false);
             NotifyStateChanged();
-
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-            cts.CancelAfter(2000);
-
-            var response = await SendFrameAsync(IpAddress, targetPort, frame, cts.Token);
-
-            if (response.IsSuccess)
-            {
-                AddLog("Comando", $"RX CMD [FT:{frameType:X2} SC:{subCmd:X4}] OK", false, false);
-                NotifyStateChanged();
-                return true;
-            }
-            else
-            {
-                AddLog("Error", $"Fallo CMD [{subCmd:X4}]: {response.Error}", false, true);
-                NotifyStateChanged();
-                return false;
-            }
+            return true;
         }
         catch (Exception ex)
         {

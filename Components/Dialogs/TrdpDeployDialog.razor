@@ -131,6 +131,14 @@
                         </MudAlert>
                     </MudItem>
                 }
+                else if (Mode == DeployMode.Restart)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="rounded-lg">
+                            Se enviará la orden de reinicio inmediato para el servicio <code>ecnmanager</code> en la tarjeta de comunicaciones mediante SSH (<code>systemctl restart ecnmanager</code>) y comando UDP a ControlManager (puerto 50001).
+                        </MudAlert>
+                    </MudItem>
+                }
             </MudGrid>
         }
         else if (_phase == Phase.Working)
@@ -195,7 +203,7 @@
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
-    public enum DeployMode { Send, Receive, SetMode }
+    public enum DeployMode { Send, Receive, SetMode, Restart }
 
     [Parameter] public DeployMode Mode    { get; set; } = DeployMode.Send;
     [Parameter] public TrdpSessionConfig? Config { get; set; }
@@ -207,7 +215,7 @@
     private enum Phase { Form, Working, Done }
     private Phase  _phase          = Phase.Form;
     private string _deviceUrl      = string.Empty;
-    private bool   _restartService = false;
+    private bool   _restartService = true;
     private string _workingMessage = "Conectando…";
     private bool   _resultOk;
     private string _resultMessage  = string.Empty;
@@ -218,6 +226,7 @@
         DeployMode.Send    => "Enviar configuración al dispositivo",
         DeployMode.Receive => "Leer configuración del dispositivo",
         DeployMode.SetMode => "Cambiar modo de mapping",
+        DeployMode.Restart => "Reiniciar servicio ECNManager",
         _                  => "Backend TRDP"
     };
     private string _titleIcon => Mode switch
@@ -225,6 +234,7 @@
         DeployMode.Send    => Icons.Material.Filled.Upload,
         DeployMode.Receive => Icons.Material.Filled.Download,
         DeployMode.SetMode => Icons.Material.Filled.Tune,
+        DeployMode.Restart => Icons.Material.Filled.RestartAlt,
         _                  => Icons.Material.Filled.Hub
     };
     private string _titleIconStyle => "color:#38bdf8; font-size:1.6rem;";
@@ -233,6 +243,7 @@
         DeployMode.Send    => Icons.Material.Filled.Send,
         DeployMode.Receive => Icons.Material.Filled.CloudDownload,
         DeployMode.SetMode => Icons.Material.Filled.SettingsInputComponent,
+        DeployMode.Restart => Icons.Material.Filled.RestartAlt,
         _                  => Icons.Material.Filled.Done
     };
     private string _actionLabel => Mode switch
@@ -240,14 +251,14 @@
         DeployMode.Send    => "Enviar",
         DeployMode.Receive => "Leer y importar",
         DeployMode.SetMode => "Aplicar modo",
+        DeployMode.Restart => "Reiniciar",
         _                  => "Ejecutar"
     };
 
     protected override void OnInitialized()
     {
         _deviceUrl = DefaultUrl;
-        // El cambio de modo siempre necesita reiniciar ecnmanager; el envío de config es opcional
-        _restartService = (Mode == DeployMode.SetMode);
+        _restartService = (Mode == DeployMode.SetMode || Mode == DeployMode.Send);
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -275,6 +286,9 @@
                 break;
             case DeployMode.SetMode:
                 await ExecuteSetMode();
+                break;
+            case DeployMode.Restart:
+                await ExecuteRestart();
                 break;
         }
 
@@ -332,6 +346,22 @@
             _resultMessage = _restartService
                 ? $"{baseMsg}\nEl servicio ecnmanager ha sido reiniciado y el nuevo modo está activo."
                 : baseMsg;
+        }
+        else
+        {
+            Fail(result.Error);
+        }
+    }
+
+    private async Task ExecuteRestart()
+    {
+        _workingMessage = "Reiniciando servicio ecnmanager…";
+        StateHasChanged();
+        var result = await BackendService.RestartEcnManagerAsync(_deviceUrl);
+        if (result.IsSuccess)
+        {
+            _resultOk = true;
+            _resultMessage = "Servicio ecnmanager reiniciado correctamente.";
         }
         else
         {

@@ -178,6 +178,18 @@ public class TrdpControlVariable
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Size { get; set; }
 
+    [JsonPropertyName("scale")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Scale { get; set; }
+
+    [JsonPropertyName("offset_val")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? OffsetVal { get; set; }
+
+    [JsonPropertyName("unit")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Unit { get; set; }
+
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 }
@@ -254,6 +266,18 @@ public class TrdpDatasetVariable
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ReverseBits { get; set; }
 
+    [JsonPropertyName("persistent")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Persistent { get; set; }
+
+    [JsonPropertyName("cumulative")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Cumulative { get; set; }
+
+    [JsonPropertyName("formula")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Formula { get; set; }
+
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 }
@@ -271,6 +295,14 @@ public class TrdpVariableLink
     [JsonPropertyName("source_control_var")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? SourceControlVar { get; set; }
+
+    [JsonPropertyName("source_control_vars")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? SourceControlVars { get; set; }
+
+    [JsonPropertyName("formula")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Formula { get; set; }
 
     [JsonPropertyName("source_bit")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

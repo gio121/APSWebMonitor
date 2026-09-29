@@ -50,9 +50,15 @@
                                Size="Size.Medium" OnClick="OpenSendDialog"
                                Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
             </MudTooltip>
+            <MudTooltip Text="Reiniciar servicio ECNManager en el dispositivo">
+                <MudIconButton Icon="@Icons.Material.Filled.RestartAlt"
+                               Color="Color.Warning" Variant="Variant.Outlined"
+                               Size="Size.Medium" OnClick="OpenRestartDialog"
+                               Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
+            </MudTooltip>
             <MudTooltip Text="Cambiar modo dynamic/legacy en el dispositivo">
                 <MudIconButton Icon="@Icons.Material.Filled.Tune"
-                               Color="Color.Warning" Variant="Variant.Outlined"
+                               Color="Color.Secondary" Variant="Variant.Outlined"
                                Size="Size.Medium" OnClick="OpenSetModeDialog"
                                Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
             </MudTooltip>
@@ -72,8 +78,8 @@
                 @(_isSaving ? "Guardando…" : "Guardar")
             </MudButton>
             <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
-                       StartIcon="@Icons.Material.Filled.FileDownload" OnClick="ExportJson">
-                Exportar JSON
+                       StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="ExportJson">
+                Guardar JSON…
             </MudButton>
         }
     </div>
@@ -88,9 +94,29 @@
 else if (_activeConfig is null)
 {
     <!-- ══ Config list ══ -->
-    <div class="d-flex justify-space-between align-center mb-4">
-        <MudText Typo="Typo.subtitle1" Class="trdp-muted">Selecciona o crea una configuración TRDP</MudText>
-        <div class="d-flex gap-2">
+    <div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-2">
+        <div>
+            <MudText Typo="Typo.subtitle1" Class="fw-bold">Configuraciones TRDP</MudText>
+            <MudText Typo="Typo.caption" Class="trdp-muted">Selecciona, exporta a fichero o crea una configuración</MudText>
+        </div>
+        <div class="d-flex gap-2 align-center flex-wrap">
+            <MudTextField @bind-Value="_deviceUrl"
+                          Placeholder="IP dispositivo (ej: 192.168.1.100)"
+                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Style="min-width:200px; max-width:230px;"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Router"
+                          AdornmentColor="Color.Info" />
+            <MudButton Variant="Variant.Outlined" Color="Color.Info"
+                       StartIcon="@Icons.Material.Filled.CloudDownload" OnClick="OpenReceiveDialog"
+                       Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)">
+                Leer de dispositivo
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Warning"
+                       StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="OpenRestartDialog"
+                       Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)">
+                Reiniciar ECNManager
+            </MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Info"
                        StartIcon="@Icons.Material.Filled.Upload" OnClick="OpenImportDialog">
                 Importar JSON
@@ -147,6 +173,10 @@ else if (_activeConfig is null)
                             <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info"
                                        StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => SelectConfig(cfg))">
                                 Editar
+                            </MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="@(() => ExportConfigJson(cfg))">
+                                Guardar JSON…
                             </MudButton>
                             <MudButton Size="Size.Small" Variant="Variant.Outlined"
                                        StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="@(() => DuplicateConfig(cfg))">
@@ -253,10 +283,19 @@ else
                 </MudItem>
 
                 <MudItem xs="12">
-                    <MudText Typo="Typo.caption" Class="trdp-muted">
-                        Variables de trama de control: @_activeConfig.ControlFrame.Variables.Count
-                        (se asocian con los Tags de las señales cargadas en la sección Señales)
-                    </MudText>
+                    <div class="d-flex justify-space-between align-center mb-1">
+                        <div>
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8">Trama de Control</MudText>
+                            <MudText Typo="Typo.caption" Class="trdp-muted">
+                                Variables de trama de control: @_activeConfig.ControlFrame.Variables.Count
+                                (se asocian con los Tags de las señales cargadas en la sección Señales)
+                            </MudText>
+                        </div>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                   StartIcon="@Icons.Material.Filled.Add" OnClick="AddControlVar">
+                            Añadir Variable de Control
+                        </MudButton>
+                    </div>
                 </MudItem>
 
                 <!-- Control frame variables table -->
@@ -264,10 +303,21 @@ else
                     <MudDataGrid T="TrdpControlVariable" Items="_activeConfig.ControlFrame.Variables" Dense="true"
                                  Hover="true" Elevation="0" Class="trdp-grid">
                         <Columns>
-                            <PropertyColumn Property="x => x.Id"          Title="ID" />
+                            <PropertyColumn Property="x => x.Id"          Title="ID / Tag" />
                             <PropertyColumn Property="x => x.Offset"      Title="Offset" />
                             <PropertyColumn Property="x => x.Type"        Title="Tipo" />
+                            <PropertyColumn Property="x => x.Scale"       Title="Escala def." Format="G6" />
+                            <PropertyColumn Property="x => x.OffsetVal"   Title="Offset def." Format="G6" />
+                            <PropertyColumn Property="x => x.Unit"        Title="Unidad" />
                             <PropertyColumn Property="x => x.Description" Title="Descripción" />
+                            <TemplateColumn Title="Acciones" CellClass="d-flex justify-end">
+                                <CellTemplate>
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                                                   Color="Color.Info" OnClick="@(() => EditControlVar(context.Item))" />
+                                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                                   Color="Color.Error" OnClick="@(() => RemoveControlVar(context.Item))" />
+                                </CellTemplate>
+                            </TemplateColumn>
                         </Columns>
                     </MudDataGrid>
                 </MudItem>
@@ -647,8 +697,9 @@ else
     private int  _editorTab  = 0;
     private int  _datasetTab = 0;
 
-    // Control var tags (from Signals in DB)
+    // Control var tags and signals (from Signals in DB)
     private List<string> _controlVarTags = new();
+    private List<Signal> _signals = new();
 
     // Device URL for backend communication
     private string _deviceUrl = string.Empty;
@@ -659,8 +710,8 @@ else
         try
         {
             _configs = await TrdpService.GetAllAsync();
-            var signals = await DataService.GetSignalsAsync();
-            _controlVarTags = signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
+            _signals = await DataService.GetSignalsAsync();
+            _controlVarTags = _signals.Select(s => s.Tag).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().OrderBy(t => t).ToList();
             // Pre-fill device URL from the active monitor connection
             if (string.IsNullOrWhiteSpace(_deviceUrl) && !string.IsNullOrWhiteSpace(MonitorState.IpAddress))
                 _deviceUrl = $"{MonitorState.IpAddress}:{MonitorState.Port}";
@@ -763,15 +814,95 @@ else
         }
     }
 
+    private async Task ExportConfigJson(TrdpSessionConfig cfg)
+    {
+        try
+        {
+            var json = TrdpService.ExportToJson(cfg);
+            var safeName = string.Join("_", cfg.Nombre.Split(System.IO.Path.GetInvalidFileNameChars())).Replace(" ", "_").ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = "ecnmanager";
+            if (!safeName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) safeName += ".json";
+
+            var res = await JS.InvokeAsync<JsonElement>("apsMonitor.saveJsonFileWithDirectoryPicker", safeName, json);
+            if (res.TryGetProperty("cancelled", out var cancelled) && cancelled.GetBoolean())
+            {
+                return;
+            }
+            Snackbar.Add($"Configuración '{cfg.Nombre}' guardada en fichero JSON.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar JSON: {ex.Message}", Severity.Error);
+        }
+    }
+
     private async Task ExportJson()
     {
         if (_activeConfig is null) return;
-        var json = TrdpService.ExportToJson(_activeConfig);
-        var b64  = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
-        var name = "ecnmanager.json";
-        await JS.InvokeVoidAsync("eval",
-            $"(function(){{var a=document.getElementById('trdp-export-link');a.href='data:application/json;base64,{b64}';a.download='{name}';a.click();}})()");
-        Snackbar.Add("JSON exportado.", Severity.Info);
+        await ExportConfigJson(_activeConfig);
+    }
+
+    private async Task OpenRestartDialog()
+    {
+        var dlg = await DialogService.ShowAsync<TrdpDeployDialog>("Reiniciar servicio ECNManager",
+            new DialogParameters
+            {
+                ["Mode"]       = TrdpDeployDialog.DeployMode.Restart,
+                ["DefaultUrl"] = _deviceUrl
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        await dlg.Result;
+    }
+
+    private async Task AddControlVar()
+    {
+        if (_activeConfig is null) return;
+        var newVar = new TrdpControlVariable
+        {
+            Id = $"CTRL_VAR_{_activeConfig.ControlFrame.Variables.Count + 1}",
+            Offset = _activeConfig.ControlFrame.Variables.Count > 0 ? _activeConfig.ControlFrame.Variables.Max(v => v.Offset) + 2 : 0,
+            Type = "uint16",
+            Scale = 1.0,
+            OffsetVal = 0.0
+        };
+        var dlg = await DialogService.ShowAsync<TrdpControlVarDialog>("Nueva Variable de Control",
+            new DialogParameters { ["Variable"] = newVar, ["IsNew"] = true },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var res = await dlg.Result;
+        if (res is { Canceled: false, Data: TrdpControlVariable saved })
+        {
+            _activeConfig.ControlFrame.Variables.Add(saved);
+            if (!_controlVarTags.Contains(saved.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                _controlVarTags.Add(saved.Id);
+                _controlVarTags.Sort();
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditControlVar(TrdpControlVariable v)
+    {
+        if (_activeConfig is null) return;
+        var clone = CloneJson(v);
+        var dlg = await DialogService.ShowAsync<TrdpControlVarDialog>($"Editar {v.Id}",
+            new DialogParameters { ["Variable"] = clone, ["IsNew"] = false },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var res = await dlg.Result;
+        if (res is { Canceled: false, Data: TrdpControlVariable saved })
+        {
+            var idx = _activeConfig.ControlFrame.Variables.IndexOf(v);
+            if (idx >= 0)
+                _activeConfig.ControlFrame.Variables[idx] = saved;
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveControlVar(TrdpControlVariable v)
+    {
+        if (_activeConfig is null) return;
+        _activeConfig.ControlFrame.Variables.Remove(v);
+        StateHasChanged();
     }
 
     // ── Backend: Deploy / Receive ──────────────────────────────────────────
@@ -922,10 +1053,12 @@ else
             isNew ? "Nueva Variable" : $"Editar – {variable.Id}",
             new DialogParameters
             {
-                ["Variable"]      = variable,
-                ["IsNew"]         = isNew,
-                ["ExistingLinks"] = existingLinks ?? new List<TrdpVariableLink>(),
-                ["ControlVarTags"] = _controlVarTags
+                ["Variable"]         = variable,
+                ["IsNew"]            = isNew,
+                ["ExistingLinks"]    = existingLinks ?? new List<TrdpVariableLink>(),
+                ["ControlVarTags"]   = _controlVarTags,
+                ["ControlVariables"] = _activeConfig?.ControlFrame?.Variables ?? new(),
+                ["Signals"]          = _signals
             },
             new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
         var result = await dlg.Result;

@@ -13,6 +13,18 @@
                     @_links.Count mapping(s)
                 </MudChip>
             }
+            @if (Variable.Persistent)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Save">
+                    cosmos_data.txt
+                </MudChip>
+            }
+            @if (Variable.Cumulative)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Filled" Icon="@Icons.Material.Filled.TrendingUp">
+                    Acumulativa
+                </MudChip>
+            }
         </div>
     </TitleContent>
     <DialogContent>
@@ -80,6 +92,41 @@
                             <MudCheckBox @bind-Value="Variable.ReverseBits" Label="reverse_bits" Color="Color.Info" />
                         </MudItem>
                     }
+
+                    <!-- ── Persistencia y Fórmulas ───────────────────────────── -->
+                    <MudItem xs="12"><MudDivider /></MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <div class="d-flex align-center gap-2">
+                                <MudCheckBox @bind-Value="Variable.Persistent" Color="Color.Warning" />
+                                <div>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">Guardar en cosmos_data.txt</MudText>
+                                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                                        Persistencia de valor en <code>/root/cosmos_data.txt</code> entre reinicios.
+                                    </MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <div class="d-flex align-center gap-2">
+                                <MudCheckBox @bind-Value="Variable.Cumulative" Color="Color.Tertiary" />
+                                <div>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">Variable Acumulativa</MudText>
+                                    <MudText Typo="Typo.caption" Class="trdp-muted">
+                                        Acumula los incrementos positivos a lo largo del tiempo.
+                                    </MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Variable.Formula" Label="Fórmula directa en dataset (opcional)"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                                      Placeholder="p.ej. (v1 + v2) / 2 o max(v1, v2) * 1.5"
+                                      HelperText="Si se define, se evaluará la expresión matemática al generar la variable." />
+                    </MudItem>
                 </MudGrid>
             </MudTabPanel>
 
@@ -162,6 +209,8 @@
     /// <summary>All existing variable_links for this dataset, pre-filtered to this variable's Id.</summary>
     [Parameter] public List<TrdpVariableLink> ExistingLinks { get; set; } = new();
     [Parameter] public List<string> ControlVarTags { get; set; } = new();
+    [Parameter] public List<TrdpControlVariable> ControlVariables { get; set; } = new();
+    [Parameter] public List<Signal> Signals { get; set; } = new();
 
     // ── Internal state ─────────────────────────────────────────────────────
     private int _tab = 0;
@@ -224,10 +273,12 @@
             isNew ? "Nuevo Mapping" : "Editar Mapping",
             new DialogParameters
             {
-                ["Link"]           = link,
-                ["IsNew"]          = isNew,
-                ["FixedTarget"]    = Variable.Id,
-                ["ControlVarTags"] = ControlVarTags
+                ["Link"]             = link,
+                ["IsNew"]            = isNew,
+                ["FixedTarget"]      = Variable.Id,
+                ["ControlVarTags"]   = ControlVarTags,
+                ["ControlVariables"] = ControlVariables,
+                ["Signals"]          = Signals
             },
             new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
         var r = await dlg.Result;
@@ -267,6 +318,8 @@
     private static Color LinkTypeColor(string type) => type switch
     {
         "analog"           => Color.Info,
+        "max_value"        => Color.Primary,
+        "formula"          => Color.Tertiary,
         "bit_to_bit"       => Color.Warning,
         "condition_to_bit" => Color.Secondary,
         "logic_to_bit"     => Color.Error,
@@ -288,6 +341,13 @@
                 break;
             case "analog":
                 __builder.AddContent(0, $"{lnk.SourceControlVar} × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                break;
+            case "max_value":
+                var vars = lnk.SourceControlVars is { Count: > 0 } ? string.Join(", ", lnk.SourceControlVars) : "—";
+                __builder.AddContent(0, $"max({vars}) × {lnk.Scale:G4} + {lnk.Offset:G4}");
+                break;
+            case "formula":
+                __builder.AddContent(0, $"formula: {lnk.Formula} × {lnk.Scale:G4} + {lnk.Offset:G4}");
                 break;
             case "direct_copy":
                 __builder.AddContent(0, $"{lnk.SourceControlVar}  →  {lnk.Length} byte(s)");

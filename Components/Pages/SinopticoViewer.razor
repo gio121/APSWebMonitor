@@ -986,8 +986,8 @@
     }
 
     /// <summary>
-    /// Envía comando Start/Stop al converter correspondiente.
-    /// SubCmds (frameType 0x7A): Inversor Stop=0x0005/Start=0x0006, LVPS Stop=0x0003/Start=0x0004, Chopper Stop=0x00FE/Start=0x00FF.
+    /// Envía comando Start/Stop al converter correspondiente usando los subcomandos configurados en la categoría
+    /// o sus fallbacks por defecto (Inversor Stop=0x0005/Start=0x0006, LVPS Stop=0x0003/Start=0x0004, Chopper Stop=0x00FE/Start=0x00FF).
     /// </summary>
     private async Task HandleConverterAction(FailureCategoryConfig category, StatusDisplayInfo statusInfo)
     {
@@ -997,42 +997,49 @@
             return;
         }
 
-        ushort stopCmd, startCmd;
         string catName = category.Name;
+        ushort? stopCmd = ParseSubCmd(category.StopSubCmd);
+        ushort? startCmd = ParseSubCmd(category.StartSubCmd);
+        byte cmdFrameType = ParseFrameType(category.CmdFrameType, 0x7A);
 
-        if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
-        { stopCmd = 0x0005; startCmd = 0x0006; }
-        else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
-        { stopCmd = 0x0003; startCmd = 0x0004; }
-        else if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
-        { stopCmd = 0x00FE; startCmd = 0x00FF; }
-        else
+        // Fallbacks por nombre de categoría si no están explícitamente configurados
+        if (!stopCmd.HasValue || !startCmd.HasValue)
         {
-            Snackbar.Add($"Categoría '{catName}' no tiene comandos configurados", Severity.Info);
+            if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+            { stopCmd ??= 0x0005; startCmd ??= 0x0006; }
+            else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+            { stopCmd ??= 0x0003; startCmd ??= 0x0004; }
+            else if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+            { stopCmd ??= 0x00FE; startCmd ??= 0x00FF; }
+        }
+
+        if (!stopCmd.HasValue || !startCmd.HasValue)
+        {
+            Snackbar.Add($"Categoría '{catName}' no tiene subcomandos Start/Stop configurados", Severity.Warning);
             return;
         }
 
         bool isRunning = statusInfo.Css == "status-run";
-        ushort subCmd = isRunning ? stopCmd : startCmd;
+        ushort subCmd = isRunning ? stopCmd.Value : startCmd.Value;
         string action = isRunning ? "PARAR" : "ARRANCAR";
 
         var confirmed = await DialogService.ShowMessageBoxAsync(
             $"Confirmar {action}",
-            $"¿Confirmar {action} de {catName}?",
+            $"¿Confirmar {action} de {catName} (SubCmd 0x{subCmd:X4}, FT 0x{cmdFrameType:X2})?",
             yesText: "Confirmar", cancelText: "Cancelar");
 
         if (confirmed == true)
         {
-            var result = await MonitorState.SendControlCommandAsync(0x7A, subCmd);
+            var result = await MonitorState.SendControlCommandAsync(cmdFrameType, subCmd);
             if (result)
-                Snackbar.Add($"{catName}: comando {action} enviado", Severity.Success);
+                Snackbar.Add($"{catName}: comando {action} (0x{subCmd:X4}) enviado", Severity.Success);
             else
                 Snackbar.Add($"{catName}: error al enviar comando {action}", Severity.Error);
         }
     }
 
     /// <summary>
-    /// Envía un comando de Reset al converter correspondiente (frameType 0x2A).
+    /// Envía un comando de Reset al converter correspondiente (frameType 0x2A por defecto).
     /// SubCmds: Chopper=0x0000, LVPS=0x0001, Inversor=0x0004.
     /// </summary>
     private async Task HandleResetFailures(FailureCategoryConfig category)
@@ -1043,34 +1050,67 @@
             return;
         }
 
-        ushort resetSubCmd;
         string catName = category.Name;
+        ushort? resetSubCmd = ParseSubCmd(category.ResetSubCmd);
+        byte resetFrameType = ParseFrameType(category.ResetFrameType, 0x2A);
 
-        if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
-            resetSubCmd = 0x0000;
-        else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
-            resetSubCmd = 0x0001;
-        else if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
-            resetSubCmd = 0x0004;
-        else
+        if (!resetSubCmd.HasValue)
         {
-            Snackbar.Add($"Categoría '{catName}' no tiene reset configurado", Severity.Info);
+            if (catName.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+                resetSubCmd = 0x0000;
+            else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+                resetSubCmd = 0x0001;
+            else if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+                resetSubCmd = 0x0004;
+        }
+
+        if (!resetSubCmd.HasValue)
+        {
+            Snackbar.Add($"Categoría '{catName}' no tiene reset configurado", Severity.Warning);
             return;
         }
 
         var confirmed = await DialogService.ShowMessageBoxAsync(
             "Confirmar RESET",
-            $"¿Confirmar RESET de fallos de {catName}?",
+            $"¿Confirmar RESET de fallos de {catName} (SubCmd 0x{resetSubCmd.Value:X4})?",
             yesText: "Confirmar", cancelText: "Cancelar");
 
         if (confirmed == true)
         {
-            var result = await MonitorState.SendControlCommandAsync(0x2A, resetSubCmd);
+            var result = await MonitorState.SendControlCommandAsync(resetFrameType, resetSubCmd.Value);
             if (result)
                 Snackbar.Add($"{catName}: reset enviado", Severity.Success);
             else
                 Snackbar.Add($"{catName}: error al enviar reset", Severity.Error);
         }
+    }
+
+    private static ushort? ParseSubCmd(string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val)) return null;
+        val = val.Trim();
+        if (val.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            if (ushort.TryParse(val.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out var h))
+                return h;
+        }
+        else if (ushort.TryParse(val, out var d))
+            return d;
+        return null;
+    }
+
+    private static byte ParseFrameType(string? val, byte defaultVal)
+    {
+        if (string.IsNullOrWhiteSpace(val)) return defaultVal;
+        val = val.Trim();
+        if (val.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            if (byte.TryParse(val.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out var h))
+                return h;
+        }
+        else if (byte.TryParse(val, out var d))
+            return d;
+        return defaultVal;
     }
 
     private struct ActiveFailure

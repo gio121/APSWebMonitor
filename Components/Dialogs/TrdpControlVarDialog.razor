@@ -1,0 +1,90 @@
+@using ApsMonitor.Models
+@inject ISnackbar Snackbar
+
+<MudDialog Class="trdp-var-dialog">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@(IsNew ? "Nueva Variable de Control" : $"Editar – {Variable.Id}")</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3" Class="pt-2">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Variable.Id" Label="ID / Tag *" Required="true"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="p.ej. VELOCIDAD_TREN" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudNumericField @bind-Value="Variable.Offset" Label="Offset (bytes) *"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudSelect @bind-Value="Variable.Type" Label="Tipo *" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" FullWidth="true" T="string">
+                    @foreach (var t in _types)
+                    {
+                        <MudSelectItem Value="@t">@t</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Variable.Description" Label="Descripción"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-1" />
+                <MudText Typo="Typo.caption" Class="trdp-muted fw-bold">VALORES POR DEFECTO PARA MAPPINGS</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="Variable.Scale" Label="Escala por defecto"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6"
+                                 Placeholder="1.0" HelperText="Se aplicará automáticamente al seleccionar esta variable en mappings" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="Variable.OffsetVal" Label="Offset de valor por defecto"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6"
+                                 Placeholder="0.0" HelperText="Offset numérico de conversión" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="Variable.Unit" Label="Unidad"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
+                              Placeholder="km/h, V, bar, °C…" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
+                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .trdp-muted { color: #94a3b8 !important; }
+</style>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public TrdpControlVariable Variable { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; } = true;
+
+    private static readonly string[] _types =
+        { "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "bytes" };
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Variable.Id))
+        {
+            Snackbar.Add("El ID de la variable de control es obligatorio.", Severity.Warning);
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(Variable));
+    }
+}

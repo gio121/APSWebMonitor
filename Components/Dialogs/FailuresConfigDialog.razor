@@ -111,6 +111,52 @@
                             </MudExpansionPanel>
                         </MudExpansionPanels>
                     </div>
+
+                    @* ── Subcomandos Start/Stop/Reset ── *@
+                    <div class="mt-4">
+                        <MudExpansionPanels Elevation="0">
+                            <MudExpansionPanel Style="background: transparent; border: 1px solid rgba(255,255,255,0.05);">
+                                <TitleContent>
+                                    <div class="d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Class="mr-2" />
+                                        <MudText Typo="Typo.body2">Subcomandos Start / Stop / Reset</MudText>
+                                        @if (!string.IsNullOrEmpty(category.StopSubCmd) || !string.IsNullOrEmpty(category.StartSubCmd))
+                                        {
+                                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">Configurado</MudChip>
+                                        }
+                                    </div>
+                                </TitleContent>
+                                <ChildContent>
+                                    <div class="pa-2">
+                                        <MudText Typo="Typo.caption" Class="mb-2 d-block" Style="opacity: 0.6">
+                                            Configura los subcomandos SEPSA para arrancar/parar/resetear este converter. Valores en hexadecimal (ej: 0x0005).
+                                        </MudText>
+                                        <div class="d-flex gap-2 mb-2">
+                                            <MudTextField @bind-Value="category.CmdFrameType" Label="FrameType Cmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                         Placeholder="0x7A" Style="max-width: 120px" />
+                                            <MudTextField @bind-Value="category.StopSubCmd" Label="Stop SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                         Placeholder="ej: 0x0005" Class="flex-grow-1" />
+                                            <MudTextField @bind-Value="category.StartSubCmd" Label="Start SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                         Placeholder="ej: 0x0006" Class="flex-grow-1" />
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <MudTextField @bind-Value="category.ResetFrameType" Label="FrameType Reset" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                         Placeholder="0x2A" Style="max-width: 120px" />
+                                            <MudTextField @bind-Value="category.ResetSubCmd" Label="Reset SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                                         Placeholder="ej: 0x0004" Class="flex-grow-1" />
+                                        </div>
+                                        <div class="d-flex justify-end mt-2">
+                                            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" 
+                                                       StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                                                       OnClick="@(() => ResetToStandardDefaults(category))">
+                                                Asignar valores estándar (@category.Name)
+                                            </MudButton>
+                                        </div>
+                                    </div>
+                                </ChildContent>
+                            </MudExpansionPanel>
+                        </MudExpansionPanels>
+                    </div>
                 </MudPaper>
             }
         </div>
@@ -165,16 +211,6 @@
             var lvps = new FailureCategoryConfig { Name = "LVPS" };
             var chopper = new FailureCategoryConfig { Name = "Chopper" };
 
-            // Intentar mapear automáticamente nfails y status si existen (Mapeo solicitado por usuario: Inv=AC, Chop=IN)
-            inversor.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
-            chopper.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
-            lvps.CountSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
-
-            inversor.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
-            chopper.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
-            lvps.StatusSignalId = AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
-
-            // Dejamos las listas de señales de detalle vacías para que el usuario elija
             inversor.SignalIds = new List<int>();
             lvps.SignalIds = new List<int>();
             chopper.SignalIds = new List<int>();
@@ -184,17 +220,72 @@
             Categories.Add(chopper);
         }
 
-        // Asegurar que todas las categorías tengan una entrada en el diccionario de búsqueda
+        // Aplicar valores por defecto para señales de estado, contadores y subcomandos
         foreach (var cat in Categories)
         {
+            ApplyDefaultsIfEmpty(cat);
             if (!_searchTerms.ContainsKey(cat.Id))
                 _searchTerms[cat.Id] = "";
         }
     }
 
+    private void ApplyDefaultsIfEmpty(FailureCategoryConfig cat)
+    {
+        string name = cat.Name?.Trim() ?? "";
+        if (name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+        {
+            cat.StatusSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            cat.CountSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
+            if (string.IsNullOrWhiteSpace(cat.CmdFrameType)) cat.CmdFrameType = "0x7A";
+            if (string.IsNullOrWhiteSpace(cat.StopSubCmd)) cat.StopSubCmd = "0x0005";
+            if (string.IsNullOrWhiteSpace(cat.StartSubCmd)) cat.StartSubCmd = "0x0006";
+            if (string.IsNullOrWhiteSpace(cat.ResetFrameType)) cat.ResetFrameType = "0x2A";
+            if (string.IsNullOrWhiteSpace(cat.ResetSubCmd)) cat.ResetSubCmd = "0x0004";
+        }
+        else if (name.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
+        {
+            cat.StatusSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+            cat.CountSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_dc", StringComparison.OrdinalIgnoreCase))?.Id;
+            if (string.IsNullOrWhiteSpace(cat.CmdFrameType)) cat.CmdFrameType = "0x7A";
+            if (string.IsNullOrWhiteSpace(cat.StopSubCmd)) cat.StopSubCmd = "0x0003";
+            if (string.IsNullOrWhiteSpace(cat.StartSubCmd)) cat.StartSubCmd = "0x0004";
+            if (string.IsNullOrWhiteSpace(cat.ResetFrameType)) cat.ResetFrameType = "0x2A";
+            if (string.IsNullOrWhiteSpace(cat.ResetSubCmd)) cat.ResetSubCmd = "0x0001";
+        }
+        else if (name.Equals("Chopper", StringComparison.OrdinalIgnoreCase))
+        {
+            cat.StatusSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            cat.CountSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_in", StringComparison.OrdinalIgnoreCase))?.Id;
+            if (string.IsNullOrWhiteSpace(cat.CmdFrameType)) cat.CmdFrameType = "0x7A";
+            if (string.IsNullOrWhiteSpace(cat.StopSubCmd)) cat.StopSubCmd = "0x00FE";
+            if (string.IsNullOrWhiteSpace(cat.StartSubCmd)) cat.StartSubCmd = "0x00FF";
+            if (string.IsNullOrWhiteSpace(cat.ResetFrameType)) cat.ResetFrameType = "0x2A";
+            if (string.IsNullOrWhiteSpace(cat.ResetSubCmd)) cat.ResetSubCmd = "0x0000";
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(cat.CmdFrameType)) cat.CmdFrameType = "0x7A";
+            if (string.IsNullOrWhiteSpace(cat.ResetFrameType)) cat.ResetFrameType = "0x2A";
+        }
+    }
+
+    private void ResetToStandardDefaults(FailureCategoryConfig cat)
+    {
+        cat.StatusSignalId = null;
+        cat.CountSignalId = null;
+        cat.CmdFrameType = "";
+        cat.StopSubCmd = "";
+        cat.StartSubCmd = "";
+        cat.ResetFrameType = "";
+        cat.ResetSubCmd = "";
+        ApplyDefaultsIfEmpty(cat);
+        StateHasChanged();
+    }
+
     private void AddCategory()
     {
         var newCat = new FailureCategoryConfig { Name = "Nueva Categoría" };
+        ApplyDefaultsIfEmpty(newCat);
         _searchTerms[newCat.Id] = "";
         Categories.Add(newCat);
         StateHasChanged();

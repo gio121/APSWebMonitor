@@ -176,6 +176,9 @@ public class TrdpConfigService
                     Offset      = v.TryGetProperty("offset",      out var off)  ? off.GetInt32()         : 0,
                     Type        = v.TryGetProperty("type",        out var t)    ? t.GetString() ?? "uint16" : "uint16",
                     Size        = v.TryGetProperty("size",        out var s)    ? s.GetInt32()           : null,
+                    Scale       = v.TryGetProperty("scale",       out var sc)   ? sc.GetDouble()         : null,
+                    OffsetVal   = v.TryGetProperty("offset_val",  out var ov)   ? ov.GetDouble()         : null,
+                    Unit        = v.TryGetProperty("unit",        out var u)    ? u.GetString()          : null,
                     Description = v.TryGetProperty("description", out var desc) ? desc.GetString() ?? "" : ""
                 });
             }
@@ -288,6 +291,9 @@ public class TrdpConfigService
             Endian      = v.TryGetProperty("endian",      out var en)  ? en.GetString()            : null,
             Unit        = v.TryGetProperty("unit",        out var u)   ? u.GetString()             : null,
             ReverseBits = v.TryGetProperty("reverse_bits",out var rb)  && rb.GetBoolean(),
+            Persistent  = v.TryGetProperty("persistent",  out var ps)  && ps.GetBoolean(),
+            Cumulative  = v.TryGetProperty("cumulative",  out var cm)  && cm.GetBoolean(),
+            Formula     = v.TryGetProperty("formula",     out var fm)  ? fm.GetString()            : null,
             Description = v.TryGetProperty("description", out var ds)  ? ds.GetString() ?? ""      : ""
         };
     }
@@ -298,6 +304,7 @@ public class TrdpConfigService
         {
             Type           = lnk.TryGetProperty("type",               out var t)   ? t.GetString() ?? "analog"  : "analog",
             SourceControlVar = lnk.TryGetProperty("source_control_var",out var scv) ? scv.GetString()            : null,
+            Formula        = lnk.TryGetProperty("formula",            out var fml) ? fml.GetString()            : null,
             SourceBit      = lnk.TryGetProperty("source_bit",         out var sb)  ? sb.GetInt32()              : null,
             TargetCommsVar = lnk.TryGetProperty("target_comms_var",   out var tcv) ? tcv.GetString() ?? ""      : "",
             TargetBit      = lnk.TryGetProperty("target_bit",         out var tb)  ? tb.GetInt32()              : null,
@@ -314,6 +321,11 @@ public class TrdpConfigService
 
         if (lnk.TryGetProperty("values", out var valsEl) && valsEl.ValueKind == JsonValueKind.Array)
             link.Values = valsEl.EnumerateArray().Select(x => x.GetDouble()).ToList();
+
+        if (lnk.TryGetProperty("source_control_vars", out var scvsEl) && scvsEl.ValueKind == JsonValueKind.Array)
+            link.SourceControlVars = scvsEl.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => !string.IsNullOrEmpty(x)).ToList();
+        else if (lnk.TryGetProperty("sources", out var srcsEl) && srcsEl.ValueKind == JsonValueKind.Array)
+            link.SourceControlVars = srcsEl.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.String ? x.GetString() ?? "" : (x.TryGetProperty("source_control_var", out var sc) ? sc.GetString() ?? "" : "")).Where(x => !string.IsNullOrEmpty(x)).ToList();
 
         // logic_to_bit
         if (lnk.TryGetProperty("operator", out var opEl))

@@ -392,6 +392,36 @@ public sealed class TrdpBackendService
         }
     }
 
+    /// <summary>
+    /// Reinicia el servicio ecnmanager en el dispositivo vía SSH (systemctl restart ecnmanager)
+    /// y/o trama SEPSA 0x8B enviada a ControlManager por UDP puerto 50001.
+    /// </summary>
+    public async Task<TrdpBackendResult<bool>> RestartEcnManagerAsync(string deviceUrlOrHost, CancellationToken ct = default)
+    {
+        var host = ExtractHost(deviceUrlOrHost);
+        if (string.IsNullOrWhiteSpace(host))
+            return TrdpBackendResult<bool>.Fail("IP o host no especificado.");
+
+        bool restarted = false;
+        foreach (var cred in DefaultCredentials)
+        {
+            try
+            {
+                if (await RestartEcnManagerServiceAsync(host, cred, ct))
+                {
+                    restarted = true;
+                    break;
+                }
+            }
+            catch { }
+        }
+
+        if (restarted)
+            return TrdpBackendResult<bool>.Ok(true);
+
+        return TrdpBackendResult<bool>.Fail($"No se pudo conectar para reiniciar ecnmanager en {host}.");
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────
 
     private static async Task<bool> RestartEcnManagerServiceAsync(string host, SftpCredential cred, CancellationToken ct)
@@ -428,14 +458,18 @@ public sealed class TrdpBackendService
             }
 
             // Trama SEPSA 0x8B con comando 'R' (0x52)
+            // Header: sync(0xAA) [1 byte], length(0x0008 LE) [2 bytes], dest(0x03 Comms) [1 byte], src(0x01 PIU) [1 byte], req(0x8B) [1 byte]
+            // Payload: 'R' (0x52) [1 byte]
+            // Checksum: sum of bytes 0..6 % 256 [1 byte]
+            // Total: 8 bytes
             byte[] frame = new byte[8];
-            frame[0] = 0xAA;
-            frame[1] = 0x08;
-            frame[2] = 0x03; // Dest: Comms
-            frame[3] = 0x01; // Source: PIU
-            frame[4] = 0x8B; // FileCommandByName
-            frame[5] = 0x52; // 'R' = Reload / Restart
-            frame[6] = 0x00;
+            frame[0] = 0xAA; // Sync
+            frame[1] = 0x08; // Length LSB
+            frame[2] = 0x00; // Length MSB
+            frame[3] = 0x03; // Dest: CommsBoard
+            frame[4] = 0x01; // Source: PIU
+            frame[5] = 0x8B; // RequestFrameType: FileCommandByName
+            frame[6] = 0x52; // 'R' = Reload / Restart
             byte chk = 0;
             for (int i = 0; i < 7; i++) chk += frame[i];
             frame[7] = chk;
