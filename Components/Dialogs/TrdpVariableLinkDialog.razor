@@ -22,6 +22,7 @@
                     <MudSelectItem Value='"analog"'>Analog – escalar variable analógica</MudSelectItem>
                     <MudSelectItem Value='"max_value"'>Max value – mayor valor entre 2 o más variables</MudSelectItem>
                     <MudSelectItem Value='"formula"'>Formula – expresión matemática / aritmética</MudSelectItem>
+                    <MudSelectItem Value='"rising_edge_increment"'>Rising edge increment – sumar valor en flanco 0→1</MudSelectItem>
                     <MudSelectItem Value='"bit_to_bit"'>Bit to bit – copiar un bit</MudSelectItem>
                     <MudSelectItem Value='"condition_to_bit"'>Condition to bit – condición → bit</MudSelectItem>
                     <MudSelectItem Value='"logic_to_bit"'>Logic to bit – OR/AND de múltiples fuentes</MudSelectItem>
@@ -32,12 +33,12 @@
             </MudItem>
 
             <!-- Source (single-source types) -->
-            @if (Link.Type is "analog" or "bit_to_bit" or "condition_to_bit" or "direct_copy")
+            @if (Link.Type is "analog" or "bit_to_bit" or "condition_to_bit" or "direct_copy" or "rising_edge_increment")
             {
                 <MudItem xs="12" sm="6">
                     <MudAutocomplete Value="Link.SourceControlVar"
                                      ValueChanged="OnSourceControlVarChanged"
-                                     Label="Variable de control (source)"
+                                     Label="Variable de control (source) *"
                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                                      SearchFunc="SearchControlVars" ShowProgressIndicator="true"
                                      Placeholder="Escribir tag de señal…" MaxItems="40" T="string"
@@ -108,35 +109,105 @@
                         <MudTextField @bind-Value="Link.Formula"
                                       Label="Expresión *"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                      Placeholder="p.ej. (v1 + v2) / 2  o  max(v1, v2) * 1.5"
+                                      Placeholder="p.ej. POTENCIA * delta_h o (v1 + v2) / 2"
                                       HelperText="Operadores: +, -, *, /, (, ). Funciones: max(a,b), min(a,b), abs(x)." />
 
-                        @if (ControlVarTags.Count > 0)
-                        {
-                            <div class="mt-2">
-                                <MudText Typo="Typo.caption" Class="trdp-muted mb-1 d-block">
-                                    Haz clic en una variable para insertarla en la fórmula:
+                        <!-- Asistente de Fórmula -->
+                        <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:#0f172a; border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
+                            <div class="d-flex align-center justify-space-between mb-2">
+                                <div class="d-flex align-center gap-1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Functions" Size="Size.Small" Style="color:#38bdf8;" />
+                                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">
+                                        Asistente de Fórmula
+                                    </MudText>
+                                </div>
+                                <MudText Typo="Typo.caption" Class="trdp-muted">
+                                    Haz clic para insertar en la fórmula
                                 </MudText>
-                                <div class="d-flex flex-wrap gap-1" style="max-height:80px; overflow-y:auto;">
-                                    @foreach (var tag in ControlVarTags.Take(30))
+                            </div>
+
+                            <!-- Deltas de tiempo -->
+                            <div class="mb-2">
+                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:#a78bfa;">
+                                    ⏱️ Variable delta de tiempo transcurrido (para integrar energía, distancia, etc.):
+                                </MudText>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
+                                             OnClick="@(() => InsertFormulaToken("delta_s"))">
+                                        delta_s (seg)
+                                    </MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
+                                             OnClick="@(() => InsertFormulaToken("delta_m"))">
+                                        delta_m (min)
+                                    </MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
+                                             OnClick="@(() => InsertFormulaToken("delta_h"))">
+                                        delta_h (horas)
+                                    </MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
+                                             OnClick="@(() => InsertFormulaToken("delta_ms"))">
+                                        delta_ms (ms)
+                                    </MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Outlined"
+                                             OnClick="@(() => InsertFormulaToken("* delta_s"))">
+                                        * delta_s
+                                    </MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Outlined"
+                                             OnClick="@(() => InsertFormulaToken("* delta_h"))">
+                                        * delta_h (ej. kWh)
+                                    </MudChip>
+                                </div>
+                            </div>
+
+                            <!-- Operadores y funciones matemáticas -->
+                            <div class="mb-2">
+                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:#94a3b8;">
+                                    Operadores y Funciones:
+                                </MudText>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var op in new[] { "+", "-", "*", "/", "(", ")", "max(", "min(", "abs(" })
                                     {
                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
-                                                 OnClick="@(() => InsertFormulaTag(tag))">
-                                            @tag
+                                                 OnClick="@(() => InsertFormulaToken(op))">
+                                            @op
                                         </MudChip>
                                     }
                                 </div>
                             </div>
-                        }
+
+                            <!-- Recomendación de variables de control -->
+                            @if (ControlVarTags.Count > 0)
+                            {
+                                <div>
+                                    <div class="d-flex align-center justify-space-between mb-1">
+                                        <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#38bdf8;">
+                                            Variables recomendadas:
+                                        </MudText>
+                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable…"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
+                                                      Style="max-width:200px; font-size:0.75rem;" Class="my-0 py-0" />
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1" style="max-height:100px; overflow-y:auto;">
+                                        @foreach (var tag in FilteredControlVars)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                                     OnClick="@(() => InsertFormulaToken(tag))">
+                                                @tag
+                                            </MudChip>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </MudPaper>
                     </MudPaper>
                 </MudItem>
             }
 
-            <!-- Source bit (bit_to_bit) -->
-            @if (Link.Type is "bit_to_bit")
+            <!-- Source bit (bit_to_bit / rising_edge_increment) -->
+            @if (Link.Type is "bit_to_bit" or "rising_edge_increment")
             {
                 <MudItem xs="12" sm="6">
-                    <MudNumericField @bind-Value="_sourceBit" Label="Bit origen (0-15)"
+                    <MudNumericField @bind-Value="_sourceBit" Label="Bit origen (0-15) *"
                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
                 </MudItem>
             }
@@ -147,6 +218,19 @@
                 <MudItem xs="12" sm="@(Link.Type == "logic_to_bit" ? 12 : 6)">
                     <MudNumericField @bind-Value="_targetBit" Label="Bit destino (0-15)"
                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
+                </MudItem>
+            }
+
+            <!-- Rising edge increment parameters -->
+            @if (Link.Type == "rising_edge_increment")
+            {
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_increment" Label="Valor a sumar en flanco *"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6"
+                                     Placeholder="1.0" HelperText="Cantidad a sumar a la variable al activarse el bit (0→1)" />
+                </MudItem>
+                <MudItem xs="12" sm="6" Class="d-flex align-end pb-1">
+                    <MudCheckBox @bind-Value="Link.Invert" Label="Invertir flanco (detectar flanco de 1 a 0)" Color="Color.Info" />
                 </MudItem>
             }
 
@@ -209,12 +293,25 @@
                                       Placeholder="1, 76, 77, 78" HelperText="Enteros separados por coma" />
                     </MudItem>
                 }
+
+                <MudItem xs="12" sm="6" Class="d-flex align-end pb-1">
+                    <MudCheckBox @bind-Value="Link.Invert" Label="Invertir condición (NOT: se cumple si no coincide)" Color="Color.Info" />
+                </MudItem>
             }
 
-            <!-- set_only flag -->
-            @if (Link.Type is "bit_to_bit" or "condition_to_bit")
+            <!-- set_only flag & bit negation for bit_to_bit -->
+            @if (Link.Type == "bit_to_bit")
             {
-                <MudItem xs="12">
+                <MudItem xs="12" sm="6">
+                    <MudCheckBox @bind-Value="Link.SetOnly" Label="set_only (solo activar, no resetear)" Color="Color.Info" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCheckBox @bind-Value="Link.Invert" Label="Invertir bit (NOT: bit 0 → 1, bit 1 → 0)" Color="Color.Info" />
+                </MudItem>
+            }
+            else if (Link.Type == "condition_to_bit")
+            {
+                <MudItem xs="12" sm="6">
                     <MudCheckBox @bind-Value="Link.SetOnly" Label="set_only (solo activar, no resetear)" Color="Color.Info" />
                 </MudItem>
             }
@@ -251,11 +348,11 @@
                             <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
                                 <MudGrid Spacing="2">
                                     <!-- Modo: bit o condición -->
-                                    <MudItem xs="12" sm="3">
+                                    <MudItem xs="12" sm="2">
                                         <MudSelect Value="@(inp.SourceBit.HasValue ? "bit" : "condition")"
                                                    ValueChanged="@((string m) => OnInputModeChanged(inp, m))"
                                                    Label="Modo" Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" T="string">
-                                            <MudSelectItem Value='"bit"'>Bit de control</MudSelectItem>
+                                            <MudSelectItem Value='"bit"'>Bit</MudSelectItem>
                                             <MudSelectItem Value='"condition"'>Condición</MudSelectItem>
                                         </MudSelect>
                                     </MudItem>
@@ -272,11 +369,14 @@
                                     @if (inp.SourceBit.HasValue)
                                     {
                                         <!-- Bit mode -->
-                                        <MudItem xs="12" sm="4">
+                                        <MudItem xs="12" sm="2">
                                             <MudNumericField Value="@(inp.SourceBit ?? 0)"
                                                              ValueChanged="@((int b) => inp.SourceBit = b)"
                                                              Label="Bit (0-15)" Variant="Variant.Outlined"
                                                              Margin="Margin.Dense" FullWidth="true" Min="0" Max="15" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="3" Class="d-flex align-center">
+                                            <MudCheckBox @bind-Value="inp.Invert" Label="Invertir (NOT: si bit=0)" Color="Color.Warning" Dense="true" />
                                         </MudItem>
                                     }
                                     else
@@ -290,12 +390,12 @@
                                                 <MudSelectItem Value='"in_list"'>in</MudSelectItem>
                                             </MudSelect>
                                         </MudItem>
-                                        <MudItem xs="12" sm="5">
+                                        <MudItem xs="12" sm="2">
                                             @if (inp.Condition == "in_list")
                                             {
                                                 <MudTextField Value="@ValuesToText(inp.Values)"
                                                               ValueChanged="@((string t) => inp.Values = TextToValues(t))"
-                                                              Label="Valores (coma)" Variant="Variant.Outlined"
+                                                              Label="Valores" Variant="Variant.Outlined"
                                                               Margin="Margin.Dense" FullWidth="true"
                                                               Placeholder="1, 76, 77" />
                                             }
@@ -306,6 +406,9 @@
                                                                  Label="Valor" Variant="Variant.Outlined"
                                                                  Margin="Margin.Dense" FullWidth="true" />
                                             }
+                                        </MudItem>
+                                        <MudItem xs="12" sm="2" Class="d-flex align-center">
+                                            <MudCheckBox @bind-Value="inp.Invert" Label="NOT" Color="Color.Warning" Dense="true" />
                                         </MudItem>
                                     }
 
@@ -355,15 +458,22 @@
     [Parameter] public List<Signal> Signals { get; set; } = new();
 
     // Numeric helpers
-    private double _scale      { get => Link.Scale    ?? 1.0; set => Link.Scale    = value; }
-    private double _offset     { get => Link.Offset   ?? 0.0; set => Link.Offset   = value; }
-    private double _constValue { get => Link.Value    ?? 0.0; set => Link.Value    = value; }
-    private double _condValue  { get => Link.Value    ?? 0.0; set => Link.Value    = value; }
-    private int    _sourceBit  { get => Link.SourceBit  ?? 0; set => Link.SourceBit  = value; }
-    private int    _targetBit  { get => Link.TargetBit  ?? 0; set => Link.TargetBit  = value; }
-    private int    _length     { get => Link.Length   ?? 1;   set => Link.Length   = value; }
+    private double _scale      { get => Link.Scale     ?? 1.0; set => Link.Scale     = value; }
+    private double _offset     { get => Link.Offset    ?? 0.0; set => Link.Offset    = value; }
+    private double _constValue { get => Link.Value     ?? 0.0; set => Link.Value     = value; }
+    private double _condValue  { get => Link.Value     ?? 0.0; set => Link.Value     = value; }
+    private double _increment  { get => Link.Increment ?? 1.0; set => Link.Increment = value; }
+    private int    _sourceBit  { get => Link.SourceBit   ?? 0; set => Link.SourceBit   = value; }
+    private int    _targetBit  { get => Link.TargetBit   ?? 0; set => Link.TargetBit   = value; }
+    private int    _length     { get => Link.Length    ?? 1;   set => Link.Length    = value; }
     private string _valuesText = "";
     private string _selectedVarToAdd = "";
+    private string _formulaVarFilter = "";
+
+    private IEnumerable<string> FilteredControlVars =>
+        string.IsNullOrWhiteSpace(_formulaVarFilter)
+            ? ControlVarTags.Take(40)
+            : ControlVarTags.Where(t => t.Contains(_formulaVarFilter, StringComparison.OrdinalIgnoreCase)).Take(40);
 
     protected override void OnInitialized()
     {
@@ -384,6 +494,10 @@
         else if (Link.Type == "max_value")
         {
             Link.SourceControlVars ??= new();
+        }
+        else if (Link.Type == "rising_edge_increment")
+        {
+            Link.Increment ??= 1.0;
         }
     }
 
@@ -443,12 +557,20 @@
         StateHasChanged();
     }
 
-    private void InsertFormulaTag(string tag)
+    private void InsertFormulaTag(string tag) => InsertFormulaToken(tag);
+
+    private void InsertFormulaToken(string token)
     {
         if (string.IsNullOrEmpty(Link.Formula))
-            Link.Formula = tag;
+        {
+            Link.Formula = token;
+        }
         else
-            Link.Formula += $" {tag}";
+        {
+            var needsSpace = !token.StartsWith(" ") && !token.StartsWith(")") && !token.StartsWith(",") &&
+                             !Link.Formula.EndsWith(" ") && !Link.Formula.EndsWith("(") && !Link.Formula.EndsWith(",");
+            Link.Formula += (needsSpace ? " " : "") + token;
+        }
         StateHasChanged();
     }
 
@@ -456,8 +578,8 @@
     {
         Link.Type = newType;
         if (newType is "constant" or "sequence" or "max_value" or "formula") Link.SourceControlVar = null;
-        if (newType is not ("bit_to_bit" or "condition_to_bit" or "logic_to_bit"))
-        { Link.SourceBit = null; Link.TargetBit = null; Link.SetOnly = false; }
+        if (newType is not ("bit_to_bit" or "condition_to_bit" or "logic_to_bit" or "rising_edge_increment"))
+        { Link.SourceBit = null; Link.TargetBit = null; Link.SetOnly = false; Link.Invert = false; }
         if (newType is not ("analog" or "max_value" or "formula")) { Link.Scale = null; Link.Offset = null; }
         if (newType != "constant")      Link.Value = null;
         if (newType != "direct_copy")   Link.Length = null;
@@ -467,6 +589,8 @@
         if (newType == "max_value")     { Link.SourceControlVars ??= new(); }
         else                            { Link.SourceControlVars = null; }
         if (newType != "formula")       { Link.Formula = null; }
+        if (newType == "rising_edge_increment") { Link.Increment ??= 1.0; Link.SourceBit ??= 0; }
+        else                                    { Link.Increment = null; }
     }
 
     private void AddInput()
@@ -510,6 +634,15 @@
         {
             Snackbar.Add("La variable de dataset destino es obligatoria.", Severity.Warning);
             return;
+        }
+        if (Link.Type == "rising_edge_increment")
+        {
+            if (string.IsNullOrWhiteSpace(Link.SourceControlVar))
+            {
+                Snackbar.Add("rising_edge_increment requiere una variable de control origen.", Severity.Warning);
+                return;
+            }
+            Link.Increment ??= _increment;
         }
         if (Link.Type == "logic_to_bit" && (Link.Inputs == null || Link.Inputs.Count < 2))
         {

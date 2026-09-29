@@ -291,10 +291,16 @@ else
                                 (se asocian con los Tags de las señales cargadas en la sección Señales)
                             </MudText>
                         </div>
-                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
-                                   StartIcon="@Icons.Material.Filled.Add" OnClick="AddControlVar">
-                            Añadir Variable de Control
-                        </MudButton>
+                        <div class="d-flex gap-2">
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                       StartIcon="@Icons.Material.Filled.Sort" OnClick="SortControlVarsByOffset">
+                                Ordenar por VarOffset (bits)
+                            </MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
+                                       StartIcon="@Icons.Material.Filled.Add" OnClick="AddControlVar">
+                                Añadir Variable de Control
+                            </MudButton>
+                        </div>
                     </div>
                 </MudItem>
 
@@ -303,13 +309,15 @@ else
                     <MudDataGrid T="TrdpControlVariable" Items="_activeConfig.ControlFrame.Variables" Dense="true"
                                  Hover="true" Elevation="0" Class="trdp-grid">
                         <Columns>
-                            <PropertyColumn Property="x => x.Id"          Title="ID / Tag" />
-                            <PropertyColumn Property="x => x.Offset"      Title="Offset" />
-                            <PropertyColumn Property="x => x.Type"        Title="Tipo" />
-                            <PropertyColumn Property="x => x.Scale"       Title="Escala def." Format="G6" />
-                            <PropertyColumn Property="x => x.OffsetVal"   Title="Offset def." Format="G6" />
-                            <PropertyColumn Property="x => x.Unit"        Title="Unidad" />
-                            <PropertyColumn Property="x => x.Description" Title="Descripción" />
+                            <PropertyColumn Property="x => x.Id"            Title="ID / Tag" />
+                            <PropertyColumn Property="x => x.Offset"        Title="Offset (B)" />
+                            <PropertyColumn Property="x => x.BitOffset"     Title="Bit" />
+                            <PropertyColumn Property="x => x.VarOffsetBits" Title="VarOffset (bits)" SortBy="@(x => x.VarOffsetBits)" />
+                            <PropertyColumn Property="x => x.Type"          Title="Tipo" />
+                            <PropertyColumn Property="x => x.Scale"         Title="Escala def." Format="G6" />
+                            <PropertyColumn Property="x => x.OffsetVal"     Title="Offset def." Format="G6" />
+                            <PropertyColumn Property="x => x.Unit"          Title="Unidad" />
+                            <PropertyColumn Property="x => x.Description"   Title="Descripción" />
                             <TemplateColumn Title="Acciones" CellClass="d-flex justify-end">
                                 <CellTemplate>
                                     <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
@@ -412,6 +420,11 @@ else
                                            Href="/trdp-live">
                                     Ver en Tiempo Real
                                 </MudButton>
+                                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default"
+                                           StartIcon="@Icons.Material.Filled.Sort"
+                                           OnClick="@(() => SortDatasetVarsByOffset(dsName))">
+                                    Ordenar por VarOffset (bits)
+                                </MudButton>
                                 <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
                                            StartIcon="@Icons.Material.Filled.Add"
                                            OnClick="@(() => AddDatasetVar(dsName))">
@@ -438,9 +451,11 @@ else
                                 <MudDataGrid T="TrdpDatasetVariable" Items="ds.Variables" Dense="true"
                                              Hover="true" Elevation="0" Class="trdp-grid mt-2">
                                     <Columns>
-                                        <PropertyColumn Property="x => x.Id"          Title="ID" />
-                                        <PropertyColumn Property="x => x.Offset"      Title="Offset" />
-                                        <PropertyColumn Property="x => x.Type"        Title="Tipo" />
+                                        <PropertyColumn Property="x => x.Id"            Title="ID" />
+                                        <PropertyColumn Property="x => x.Offset"        Title="Offset (B)" />
+                                        <PropertyColumn Property="x => x.BitOffset"     Title="Bit" />
+                                        <PropertyColumn Property="x => x.VarOffsetBits" Title="VarOffset (bits)" SortBy="@(x => x.VarOffsetBits)" />
+                                        <PropertyColumn Property="x => x.Type"          Title="Tipo" />
                                         <TemplateColumn Title="Escala / Offset">
                                             <CellTemplate>
                                                 @if (context.Item.Scale.HasValue || context.Item.OffsetVal.HasValue)
@@ -905,6 +920,18 @@ else
         StateHasChanged();
     }
 
+    private void SortControlVarsByOffset()
+    {
+        if (_activeConfig?.ControlFrame?.Variables is not null)
+        {
+            _activeConfig.ControlFrame.Variables = _activeConfig.ControlFrame.Variables
+                .OrderBy(v => v.VarOffsetBits)
+                .ToList();
+            Snackbar.Add("Variables de trama de control ordenadas por VarOffset (bits).", Severity.Info);
+            StateHasChanged();
+        }
+    }
+
     // ── Backend: Deploy / Receive ──────────────────────────────────────────
 
     private async Task OpenSendDialog()
@@ -1074,6 +1101,18 @@ else
             ds.Variables.RemoveAll(v => v.Id == variable.Id || v == variable);
             ds.VariableLinks.RemoveAll(l => l.TargetCommsVar == variable.Id);
             _activeConfig.CommsDatasets = datasets;
+            StateHasChanged();
+        }
+    }
+
+    private void SortDatasetVarsByOffset(string dsName)
+    {
+        if (_activeConfig is not null && _activeConfig.CommsDatasets.TryGetValue(dsName, out var ds))
+        {
+            ds.Variables = ds.Variables
+                .OrderBy(v => v.VarOffsetBits)
+                .ToList();
+            Snackbar.Add($"Variables del dataset '{dsName}' ordenadas por VarOffset (bits).", Severity.Info);
             StateHasChanged();
         }
     }

@@ -171,6 +171,17 @@ public class TrdpControlVariable
     [JsonPropertyName("offset")]
     public int Offset { get; set; }
 
+    [JsonPropertyName("var_offset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? VarOffset { get; set; }
+
+    [JsonPropertyName("bit_offset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? BitOffset { get; set; }
+
+    [JsonIgnore]
+    public int VarOffsetBits => VarOffset ?? (Offset * 8 + (BitOffset ?? 0));
+
     [JsonPropertyName("type")]
     public string Type { get; set; } = "uint16";
 
@@ -238,6 +249,17 @@ public class TrdpDatasetVariable
 
     [JsonPropertyName("offset")]
     public int Offset { get; set; }
+
+    [JsonPropertyName("var_offset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? VarOffset { get; set; }
+
+    [JsonPropertyName("bit_offset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? BitOffset { get; set; }
+
+    [JsonIgnore]
+    public int VarOffsetBits => VarOffset ?? (Offset * 8 + (BitOffset ?? 0));
 
     [JsonPropertyName("type")]
     public string Type { get; set; } = "uint8";
@@ -339,6 +361,14 @@ public class TrdpVariableLink
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool SetOnly { get; set; }
 
+    [JsonPropertyName("invert")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Invert { get; set; }
+
+    [JsonPropertyName("increment")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Increment { get; set; }
+
     // condition_to_bit
     [JsonPropertyName("condition")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -385,6 +415,10 @@ public class TrdpLogicInput
     [JsonPropertyName("values")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<double>? Values { get; set; }
+
+    [JsonPropertyName("invert")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Invert { get; set; }
 
     /// <summary>Derived input mode for UI: "bit" or "condition"</summary>
     [JsonIgnore]

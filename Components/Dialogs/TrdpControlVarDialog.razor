@@ -15,11 +15,7 @@
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                               Placeholder="p.ej. VELOCIDAD_TREN" />
             </MudItem>
-            <MudItem xs="12" sm="3">
-                <MudNumericField @bind-Value="Variable.Offset" Label="Offset (bytes) *"
-                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" />
-            </MudItem>
-            <MudItem xs="12" sm="3">
+            <MudItem xs="12" sm="6">
                 <MudSelect @bind-Value="Variable.Type" Label="Tipo *" Variant="Variant.Outlined"
                            Margin="Margin.Dense" FullWidth="true" T="string">
                     @foreach (var t in _types)
@@ -27,6 +23,22 @@
                         <MudSelectItem Value="@t">@t</MudSelectItem>
                     }
                 </MudSelect>
+            </MudItem>
+
+            <!-- ── Offset y Posición en bits ── -->
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="_offsetBytes" Label="Offset (bytes) *"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="_bitOffset" Label="Bit (0-7, opcional)"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="7"
+                                 Placeholder="0" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudNumericField @bind-Value="_varOffsetBits" Label="VarOffset (bits) *"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0"
+                                 HelperText="Offset total en bits (byte × 8 + bit)" />
             </MudItem>
 
             <MudItem xs="12">
@@ -75,6 +87,48 @@
 
     private static readonly string[] _types =
         { "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "bytes" };
+
+    private int _offsetBytes
+    {
+        get => Variable.Offset;
+        set
+        {
+            Variable.Offset = value;
+            Variable.VarOffset = value * 8 + (Variable.BitOffset ?? 0);
+        }
+    }
+
+    private int? _bitOffset
+    {
+        get => Variable.BitOffset;
+        set
+        {
+            Variable.BitOffset = value;
+            Variable.VarOffset = Variable.Offset * 8 + (value ?? 0);
+        }
+    }
+
+    private int? _varOffsetBits
+    {
+        get => Variable.VarOffset ?? (Variable.Offset * 8 + (Variable.BitOffset ?? 0));
+        set
+        {
+            Variable.VarOffset = value;
+            if (value.HasValue)
+            {
+                Variable.Offset = value.Value / 8;
+                Variable.BitOffset = value.Value % 8;
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!Variable.VarOffset.HasValue)
+        {
+            Variable.VarOffset = Variable.Offset * 8 + (Variable.BitOffset ?? 0);
+        }
+    }
 
     private void Cancel() => MudDialog.Cancel();
 

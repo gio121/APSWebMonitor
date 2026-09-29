@@ -174,6 +174,8 @@ public class TrdpConfigService
                 {
                     Id          = v.TryGetProperty("id",          out var id)   ? id.GetString() ?? ""  : "",
                     Offset      = v.TryGetProperty("offset",      out var off)  ? off.GetInt32()         : 0,
+                    VarOffset   = v.TryGetProperty("var_offset",  out var vo)   ? vo.GetInt32()          : null,
+                    BitOffset   = v.TryGetProperty("bit_offset",  out var bo)   ? bo.GetInt32()          : null,
                     Type        = v.TryGetProperty("type",        out var t)    ? t.GetString() ?? "uint16" : "uint16",
                     Size        = v.TryGetProperty("size",        out var s)    ? s.GetInt32()           : null,
                     Scale       = v.TryGetProperty("scale",       out var sc)   ? sc.GetDouble()         : null,
@@ -284,6 +286,8 @@ public class TrdpConfigService
         {
             Id          = v.TryGetProperty("id",          out var id)  ? id.GetString() ?? ""     : "",
             Offset      = v.TryGetProperty("offset",      out var off) ? off.GetInt32()            : 0,
+            VarOffset   = v.TryGetProperty("var_offset",  out var vo)  ? vo.GetInt32()             : null,
+            BitOffset   = v.TryGetProperty("bit_offset",  out var bo)  ? bo.GetInt32()             : null,
             Type        = v.TryGetProperty("type",        out var t)   ? t.GetString() ?? "uint8"  : "uint8",
             Size        = v.TryGetProperty("size",        out var sz)  ? sz.GetInt32()             : null,
             Scale       = v.TryGetProperty("scale",       out var sc)  ? sc.GetDouble()            : null,
@@ -311,6 +315,8 @@ public class TrdpConfigService
             Scale          = lnk.TryGetProperty("scale",              out var sc)  ? sc.GetDouble()             : null,
             Offset         = lnk.TryGetProperty("offset",             out var of)  ? of.GetDouble()             : null,
             SetOnly        = lnk.TryGetProperty("set_only",           out var so)  && so.GetBoolean(),
+            Invert         = lnk.TryGetProperty("invert",             out var inv) && inv.GetBoolean(),
+            Increment      = lnk.TryGetProperty("increment",          out var inc) ? inc.GetDouble()            : null,
             Condition      = lnk.TryGetProperty("condition",          out var cond)? cond.GetString()           : null,
             Comment        = lnk.TryGetProperty("comment",            out var cm)  ? cm.GetString()             : null,
             Length         = lnk.TryGetProperty("length",             out var len) ? len.GetInt32()             : null,
@@ -341,6 +347,7 @@ public class TrdpConfigService
                     SourceControlVar = inp.TryGetProperty("source_control_var", out var isrc) ? isrc.GetString() ?? "" : "",
                     SourceBit        = inp.TryGetProperty("source_bit",         out var isb)  ? isb.GetInt32()         : null,
                     Condition        = inp.TryGetProperty("condition",           out var ic)   ? ic.GetString()         : null,
+                    Invert           = inp.TryGetProperty("invert",              out var iinv) && iinv.GetBoolean(),
                 };
                 if (inp.TryGetProperty("value", out var iv))  input.Value  = iv.GetDouble();
                 if (inp.TryGetProperty("values", out var ivs) && ivs.ValueKind == JsonValueKind.Array)
