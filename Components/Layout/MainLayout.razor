@@ -12,11 +12,7 @@
 <MudLayout>
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Variant="DrawerVariant.Persistent">
         <div class="px-4 py-4 d-flex align-center justify-space-between logo-header">
-            <div class="d-flex flex-column align-center flex-grow-1">
-                <img src="SepsaMedha.jpg" style="width: 100%; max-width: 180px; height: auto; border-radius: 4px;" class="mb-2" alt="Logo" />
-                <MudText Typo="Typo.h6" Class="fw-bold" Color="Color.Primary">APS Monitor</MudText>
-                <MudText Typo="Typo.caption" Class="text-muted text-uppercase" Style="letter-spacing: 1px;">SISTEMA SCADA</MudText>
-            </div>
+            <ProjectIdentity />
             <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Inherit" Size="Size.Small" OnClick="@(() => _drawerOpen = false)" Title="Ocultar panel" />
         </div>
         
