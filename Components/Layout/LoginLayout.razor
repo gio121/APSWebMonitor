@@ -8,10 +8,11 @@
 <div class="login-layout">
     @Body
 </div>
+<DeviceConnectionStatus />
 
 <style>
     .login-layout {
-        min-height: 100vh;
+        min-height: calc(100vh - var(--device-status-height));
         background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1a1f2e 100%);
         display: flex;
         align-items: center;

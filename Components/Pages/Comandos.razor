@@ -5,7 +5,7 @@
 @using ApsMonitor.Services
 @using ApsMonitor.Components.Dialogs
 @inject ApsDataService DataService
-@inject ReprogrammingService Programmer
+@implements IDisposable
 @inject MonitorStateService Monitor
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -17,6 +17,11 @@
     </div>
     <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="OpenNewCommandDialog">Nuevo Comando</MudButton>
 </div>
+
+@if (!Monitor.IsMonitoring || Monitor.IsReprogramming)
+{
+    <MudAlert Severity="Severity.Info" Class="mb-4">Active la monitorización para enviar comandos a control.</MudAlert>
+}
 
 @if (_isLoading)
 {
@@ -31,20 +36,29 @@ else
                 <MudPaper Class="pa-4 command-card h-100 d-flex flex-column" Elevation="0">
                     <div class="d-flex justify-space-between align-start mb-2">
                         <MudText Typo="Typo.subtitle1" Class="fw-bold">@cmd.Nombre</MudText>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="command-value-chip">@cmd.CommandValue</MudChip>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="command-value-chip">@CommandLabel(cmd)</MudChip>
                     </div>
                     
                     <MudText Typo="Typo.caption" Class="text-muted mb-4 d-block">
                         Confirmación: @(cmd.RequiereConfirmacion ? "Sí" : "No") &middot; Estilo: @cmd.Estilo
                     </MudText>
+                    @if (cmd.FrameType == 0x6A)
+                    {
+                        <MudText Typo="Typo.body2" Class="mb-3">@VariableLabel(cmd) · Valor bruto: @cmd.VariableValue</MudText>
+                    }
+                    @if (cmd.FrameType is not (0x6A or 0x7A))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Warning" Class="mb-3">Editar para configurar como comando 6A o 7A.</MudText>
+                    }
                     
                     <div class="mt-auto d-flex align-center gap-3">
                         <MudButton Variant="Variant.Outlined" 
                                    StartIcon="@Icons.Material.Filled.PlayArrow" 
                                    Size="Size.Small" 
                                    Class="exec-btn"
+                                   Disabled="@(!CanSend(cmd))"
                                    OnClick="@(() => ExecuteCommand(cmd))">
-                            Ejecutar
+                            Enviar a control
                         </MudButton>
                         <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Class="text-muted icon-btn" OnClick="@(() => OpenEditCommandDialog(cmd))" />
                         <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" Class="icon-btn-error" OnClick="@(() => DeleteCommand(cmd))" />
@@ -72,7 +86,7 @@ else
                         <span class="log-msg">@ev.Mensaje</span>
                         @if(!string.IsNullOrEmpty(ev.Estado))
                         {
-                            <span class="log-status ml-2" style="color: @(ev.Estado == "OK" ? "#4caf50" : "#f44336")">[@ev.Estado]</span>
+                            <span class="log-status ml-2" style="color: @(ev.Estado is "OK" or "ENVIADO" ? "#4caf50" : "#f44336")">[@ev.Estado]</span>
                         }
                     </div>
                 }
@@ -142,6 +156,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _lastCanSend = MonitoringReady;
+        Monitor.OnStateChanged += OnMonitorChanged;
         await LoadData();
     }
 
@@ -149,21 +165,7 @@ else
     {
         _isLoading = true;
         _commands = await DataService.GetCommandsAsync();
-
-        if (!_commands.Any(c => c.CommandValue != null &&
-            (c.CommandValue.Equals("0x8A", StringComparison.OrdinalIgnoreCase) ||
-             c.CommandValue.Equals("8A", StringComparison.OrdinalIgnoreCase))))
-        {
-            var cmd8A = new ScadaCommand
-            {
-                Nombre = "Reprogramación 8A",
-                CommandValue = "0x8A",
-                RequiereConfirmacion = true,
-                Estilo = "warning"
-            };
-            await DataService.AddCommandAsync(cmd8A);
-            _commands = await DataService.GetCommandsAsync();
-        }
+        _signals = await DataService.GetSignalsAsync(includeDeleted: true);
 
         _events = await DataService.GetEventsAsync();
         _isLoading = false;
@@ -211,52 +213,57 @@ else
         }
     }
 
+    private bool _sending, _disposed;
+    private bool _lastCanSend;
+    private List<Signal> _signals = [];
+    private bool MonitoringReady => Monitor.IsConnected && Monitor.IsMonitoring && !Monitor.IsReprogramming;
+    private bool CanSend(ScadaCommand command) => !_sending && MonitoringReady && command.FrameType is 0x6A or 0x7A;
+    private string CommandLabel(ScadaCommand command) => command.FrameType.HasValue
+        ? $"{command.FrameType:X2} · SC {command.Subcommand:X4}" : "Sin configurar";
+    private string VariableLabel(ScadaCommand command) => _signals.FirstOrDefault(s => s.Id == command.SignalId)?.BindingLabel ?? "Variable no disponible";
+    private void OnMonitorChanged()
+    {
+        if (_disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (_lastCanSend == MonitoringReady) return;
+            _lastCanSend = MonitoringReady;
+            StateHasChanged();
+        });
+    }
+
     private async Task ExecuteCommand(ScadaCommand command)
     {
-        if (command.RequiereConfirmacion)
+        if (!CanSend(command)) return;
+        _sending = true;
+        try
         {
-            var result = await DialogService.ShowMessageBoxAsync(
-                "Confirmar Envío",
-                $"¿Estás seguro de que deseas enviar: {command.Nombre}?",
-                yesText: "Ejecutar", cancelText: "Cancelar"
-            );
-
-            if (result != true) return;
+            var signal = command.SignalId.HasValue ? await DataService.GetSignalAsync(command.SignalId.Value) : null;
+            var frame = ControlCommandProtocol.Build(command, signal);
+            string details = CommandLabel(command) + (command.FrameType == 0x6A ? $" · {VariableLabel(command)} = {command.VariableValue} (bruto)" : "");
+            if (command.RequiereConfirmacion)
+            {
+                var confirmed = await DialogService.ShowMessageBoxAsync("Confirmar envío a control",
+                    $"{command.Nombre}: {details}. ¿Enviar?", yesText: "Enviar", cancelText: "Cancelar");
+                if (confirmed != true) return;
+            }
+            // The service rechecks monitoring after waiting for the shared transport.
+            bool sent = await Monitor.SendControlCommandAsync(command);
+            await DataService.AddEventAsync(new EventMessage
+            {
+                Fecha = DateTime.Now,
+                Mensaje = $"{command.Nombre}: {details}. " + (sent ? $"TX {SepsaProtocolClient.ToHex(frame)}. Sin confirmación de ejecución." : "No se pudo enviar; revise la monitorización y el log del monitor."),
+                Estado = sent ? "ENVIADO" : "ERROR"
+            });
+            Snackbar.Add(sent ? "Comando enviado a control; ejecución no confirmada." : "No se pudo enviar el comando a control.", sent ? Severity.Success : Severity.Error);
         }
-
-        string val = command.CommandValue?.Trim() ?? "";
-        bool is8A = val.Equals("0x8A", StringComparison.OrdinalIgnoreCase) ||
-                    val.Equals("8A", StringComparison.OrdinalIgnoreCase) ||
-                    val.Equals("CMD_8A", StringComparison.OrdinalIgnoreCase) ||
-                    val.Equals("CMD_REPROGRAM_8A", StringComparison.OrdinalIgnoreCase);
-
-        if (is8A)
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally
         {
-            var targetAddress = !string.IsNullOrWhiteSpace(Monitor.IpAddress) ? Monitor.IpAddress : "192.168.1.10";
-            var (success, message) = await Programmer.SendReprogramming8ACommandAsync(targetAddress);
-            var ev8A = new EventMessage 
-            { 
-                Fecha = DateTime.Now, 
-                Mensaje = $"Comando {command.Nombre} [{command.CommandValue}]: {message}",
-                Estado = success ? "OK" : "ERROR" 
-            };
-            await DataService.AddEventAsync(ev8A);
-            Snackbar.Add($"Comando '{command.Nombre}': {message}", success ? Severity.Success : Severity.Error);
+            _sending = false;
+            _events = await DataService.GetEventsAsync();
         }
-        else
-        {
-            var ev = new EventMessage 
-            { 
-                Fecha = DateTime.Now, 
-                Mensaje = $"Ejecutado comando: {command.Nombre} [{command.CommandValue}]",
-                Estado = "OK" 
-            };
-            await DataService.AddEventAsync(ev);
-            Snackbar.Add($"Comando '{command.Nombre}' ejecutado.", Severity.Success);
-        }
-        
-        // Refresh logs
-        _events = await DataService.GetEventsAsync();
-        StateHasChanged();
     }
+
+    public void Dispose() { _disposed = true; Monitor.OnStateChanged -= OnMonitorChanged; }
 }

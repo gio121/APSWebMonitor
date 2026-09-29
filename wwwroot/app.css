@@ -2,6 +2,11 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+:root { --device-status-height: 32px; }
+html { scroll-padding-bottom: var(--device-status-height); }
+.mud-main-content { padding-bottom: var(--device-status-height) !important; }
+.mud-drawer { height: calc(100% - var(--device-status-height)) !important; }
+
 a, .btn-link {
     color: #006bb7;
 }

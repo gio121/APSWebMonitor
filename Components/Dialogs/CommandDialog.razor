@@ -1,96 +1,79 @@
-@using ApsMonitor.Models
-@using ApsMonitor.Services
+﻿@using ApsMonitor.Models
 @inject ApsDataService DataService
 
-<MudDialog Class="command-dialog">
+<MudDialog>
     <DialogContent>
-        <MudGrid Spacing="3">
-            <MudItem xs="12">
-                <MudTextField @bind-Value="Command.Nombre"
-                              Label="Nombre del Comando *"
-                              Required="true"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              FullWidth="true"
-                              Placeholder="Ej: Arrancar Inversor" />
-            </MudItem>
-            
-            <MudItem xs="12">
-                <MudTextField @bind-Value="Command.CommandValue"
-                              Label="Valor de Comando/Trama *"
-                              Required="true"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              FullWidth="true"
-                              Placeholder="Ej: CMD_START_INV" />
-            </MudItem>
-
-            <MudItem xs="12">
-                <MudSelect T="string" @bind-Value="Command.Tipo"
-                           Label="Tipo de Comando"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           FullWidth="true">
-                    <MudSelectItem Value="@("Interna")">Comando Interno</MudSelectItem>
-                    <MudSelectItem Value="@("Modificación de Variables")">Modificación de Variables</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-
-            <MudItem xs="12" sm="6">
-                <MudSelect T="string" @bind-Value="Command.Estilo"
-                           Label="Estilo Visual"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           FullWidth="true">
-                    <MudSelectItem Value="@("success")">Success (Verde)</MudSelectItem>
-                    <MudSelectItem Value="@("warning")">Warning (Naranja)</MudSelectItem>
-                    <MudSelectItem Value="@("destructive")">Destructive (Rojo)</MudSelectItem>
-                    <MudSelectItem Value="@("default")">Default (Gris/Azul)</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" Class="d-flex align-center">
-                <MudCheckBox @bind-Value="Command.RequiereConfirmacion" Label="Requiere confirmación" Color="Color.Info" Dense="true" />
-            </MudItem>
-        </MudGrid>
+        <MudTextField @bind-Value="_draft.Nombre" Label="Nombre del comando" Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+        <MudSelect T="int?" @bind-Value="_draft.FrameType" Label="Tipo de comando" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem T="int?" Value="@((int?)0x6A)">6A · Modificación de variable</MudSelectItem>
+            <MudSelectItem T="int?" Value="@((int?)0x7A)">7A · Comando interno</MudSelectItem>
+        </MudSelect>
+        <MudTextField @bind-Value="_subcommandHex" Label="Subcomando hexadecimal" HelperText="0000–FFFF; se admite el prefijo 0x" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+        @if (_draft.FrameType == 0x6A)
+        {
+            <MudSelect T="int?" @bind-Value="_draft.SignalId" Label="Variable asociada de control" Required="true" Variant="Variant.Outlined" Class="mb-3">
+                @foreach (var signal in _signals)
+                {
+                    <MudSelectItem T="int?" Value="@((int?)signal.Id)">@signal.BindingLabel · @signal.TipoVariable</MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField T="double?" @bind-Value="_draft.VariableValue" Label="Valor a escribir" HelperText="Valor bruto de protocolo, sin aplicar escala ni offset. Se codifica según el tipo de la variable." Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+        }
+        <MudSelect T="string" @bind-Value="_draft.Estilo" Label="Estilo visual" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem Value='@("success")'>Verde</MudSelectItem>
+            <MudSelectItem Value='@("warning")'>Naranja</MudSelectItem>
+            <MudSelectItem Value='@("destructive")'>Rojo</MudSelectItem>
+            <MudSelectItem Value='@("default")'>Predeterminado</MudSelectItem>
+        </MudSelect>
+        <MudCheckBox @bind-Value="_draft.RequiereConfirmacion" Label="Requiere confirmación" />
+        <MudText Typo="Typo.caption">Destino: control (nodo 2). Solo se envía con monitorización activa.</MudText>
+        @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert> }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="mr-2">Cancelar</MudButton>
-        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+        <MudButton OnClick="Cancel" Disabled="_saving">Cancelar</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving">Guardar</MudButton>
     </DialogActions>
 </MudDialog>
 
-<style>
-    .command-dialog .mud-dialog-title {
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        padding-bottom: 12px;
-    }
-    .command-dialog .mud-dialog-actions {
-        border-top: 1px solid rgba(255,255,255,0.05);
-        padding: 16px;
-    }
-</style>
-
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public ScadaCommand Command { get; set; } = new ScadaCommand();
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public ScadaCommand Command { get; set; } = new();
+    private ScadaCommand _draft = new();
+    private List<Signal> _signals = [];
+    private string _subcommandHex = "";
+    private string? _error;
+    private bool _saving;
 
-    private bool IsEditMode => Command.Id > 0;
+    protected override async Task OnInitializedAsync()
+    {
+        _draft = System.Text.Json.JsonSerializer.Deserialize<ScadaCommand>(System.Text.Json.JsonSerializer.Serialize(Command))!;
+        _draft.FrameType ??= 0x7A;
+        _subcommandHex = _draft.Subcommand?.ToString("X4") ?? "";
+        _signals = (await DataService.GetSignalsAsync(includeDeleted: true)).Where(s => s.NodoNumero == 2).OrderBy(s => s.Tag).ToList();
+    }
 
     private async Task Submit()
     {
-        if (string.IsNullOrWhiteSpace(Command.Nombre) || string.IsNullOrWhiteSpace(Command.CommandValue))
+        if (_saving) return;
+        _saving = true; _error = null;
+        try
         {
-            return; // required
+            if (string.IsNullOrWhiteSpace(_draft.Nombre)) throw new ArgumentException("Indique el nombre del comando.");
+            string hex = _subcommandHex.Trim();
+            if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) hex = hex[2..];
+            if (!ushort.TryParse(hex, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out var subcommand))
+                throw new ArgumentException("Subcomando hexadecimal no válido (0000–FFFF).");
+            _draft.Subcommand = subcommand;
+            if (_draft.FrameType == 0x7A) { _draft.SignalId = null; _draft.VariableValue = null; }
+            _ = ControlCommandProtocol.Build(_draft, _signals.FirstOrDefault(s => s.Id == _draft.SignalId));
+            _draft.Tipo = _draft.FrameType == 0x6A ? "Modificación de Variables" : "Interna";
+            if (string.IsNullOrWhiteSpace(_draft.CommandValue)) _draft.CommandValue = $"CONTROL_{Guid.NewGuid():N}";
+            if (_draft.Id > 0) await DataService.UpdateCommandAsync(_draft);
+            else await DataService.AddCommandAsync(_draft);
+            MudDialog.Close(DialogResult.Ok(true));
         }
-
-        if (IsEditMode)
-            await DataService.UpdateCommandAsync(Command);
-        else
-            await DataService.AddCommandAsync(Command);
-
-        MudDialog.Close(DialogResult.Ok(true));
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _saving = false; }
     }
-
     private void Cancel() => MudDialog.Cancel();
 }

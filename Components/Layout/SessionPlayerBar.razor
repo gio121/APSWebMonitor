@@ -7,14 +7,14 @@
 {
     @if (_minimized)
     {
-        <div class="session-player-minimized" style="bottom: @(_barBottomPx + 20)px;">
+        <div class="session-player-minimized" style="bottom: calc(@(_barBottomPx + 20)px + var(--device-status-height));">
             <MudIconButton Icon="@Icons.Material.Filled.PlayCircle" Color="Color.Primary" Size="Size.Large" 
                            OnClick="@(() => _minimized = false)" Title="Mostrar reproductor" />
         </div>
     }
     else
     {
-        <div class="session-player-global-bar" style="bottom: @(_barBottomPx)px;">
+        <div class="session-player-global-bar" style="bottom: calc(@(_barBottomPx)px + var(--device-status-height));">
             <MudPaper Elevation="25" Class="pa-2 px-4 d-flex align-center gap-4">
                 
 
