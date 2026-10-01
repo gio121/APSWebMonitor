@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SharpPcap" Version="6.3.1" />
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">

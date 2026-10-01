@@ -152,7 +152,123 @@ Assert(!dhcpSvc.IsIpInRange(IPAddress.Parse("172.19.181.12")), "172.19.181.12 fu
 
 Console.WriteLine("   Filtros DHCP validados con éxito.");
 
+// 8. Probar ClearLoadedFile()
+Console.WriteLine("-> Probando ClearLoadedFile()...");
+service.ClearLoadedFile();
+Assert(service.FileInfo == null, "FileInfo debe ser null tras ClearLoadedFile");
+Assert(service.Packets.Count == 0, "Packets debe estar vacío tras ClearLoadedFile");
+Assert(service.TotalLoadedPackets == 0, "TotalLoadedPackets debe ser 0 tras ClearLoadedFile");
+Assert(service.Stats.TotalPackets == 0, "Stats.TotalPackets debe ser 0 tras ClearLoadedFile");
+Console.WriteLine("   ClearLoadedFile() OK: Estado y lista completamente reseteados.");
+
+// 9. Probar cálculo de CRC32 IEEE 802.3 con vector estándar
+Console.WriteLine("-> Probando CRC32 IEEE 802.3 estándar...");
+byte[] testVector = Encoding.ASCII.GetBytes("123456789");
+uint crcResult = PacketSenderService.ComputeCrc32(testVector);
+Assert(crcResult == 0xCBF43926, $"CRC32 de '123456789' debe ser 0xCBF43926, obtenido: 0x{crcResult:X8}");
+Console.WriteLine($"   CRC32 IEEE 802.3 OK: 0x{crcResult:X8}");
+
+// 10. Probar validación y corrección automática de CRC TRDP
+Console.WriteLine("-> Probando validación y corrección de CRC TRDP...");
+// Crear paquete TRDP PD estándar de 48 bytes (40 cabecera + 8 datos) con CRC erróneo (0x00000000)
+byte[] trdpRaw = new byte[48];
+trdpRaw[3] = 0x01; // SeqCount = 1
+trdpRaw[4] = 0x01; trdpRaw[5] = 0x00; // Version 1.0
+trdpRaw[6] = 0x50; trdpRaw[7] = 0x64; // 'P' 'd' (PD)
+trdpRaw[10] = 0x03; trdpRaw[11] = 0xE9; // ComID = 1001
+trdpRaw[23] = 0x08; // DatasetLength = 8
+// Datos (8 bytes)
+for (int i = 0; i < 8; i++) trdpRaw[40 + i] = (byte)(i + 1);
+
+var (isTrdp, origCrc, expectedCrc, isValid) = PacketSenderService.ValidateTrdpCrc(trdpRaw, 17224, 17224);
+Assert(isTrdp, "Debe ser detectado como paquete TRDP");
+Assert(!isValid, "El CRC original no debe ser válido (es 0x00000000)");
+
+byte[] fixedTrdp = PacketSenderService.FixTrdpCrc(trdpRaw);
+var (_, fixedHeaderCrc, fixedExpectedCrc, isFixedValid) = PacketSenderService.ValidateTrdpCrc(fixedTrdp, 17224, 17224);
+Assert(isFixedValid, "El paquete corregido debe tener CRC válido");
+Assert(fixedHeaderCrc == fixedExpectedCrc, "Header CRC debe coincidir con Expected CRC");
+Console.WriteLine($"   TRDP CRC OK: Original=0x{origCrc:X8} (Invalido) -> Corregido=0x{fixedHeaderCrc:X8} (Valido)");
+
+// 11. Probar extracción de bytes de líneas de volcado hexadecimal de Wireshark
+Console.WriteLine("-> Probando extracción de líneas Wireshark Hex Dump...");
+string wiresharkLine = "0010  00 44 1a 2b 00 00 40 11 3b 4c c0 a8 01 0a ef ff  .D.+..@.;L......";
+var extractedBytes = PacketSenderService.ExtractHexBytesFromLine(wiresharkLine);
+Assert(extractedBytes.Count == 16, $"Se debieron extraer 16 bytes, extraídos: {extractedBytes.Count}");
+Assert(extractedBytes[0] == 0x00 && extractedBytes[1] == 0x44 && extractedBytes[2] == 0x1A && extractedBytes[3] == 0x2B, "Primeros bytes de línea Wireshark no coinciden");
+Assert(extractedBytes[14] == 0xEF && extractedBytes[15] == 0xFF, "Últimos bytes de línea Wireshark no coinciden");
+Console.WriteLine($"   Extracción Wireshark Hex Dump OK: 16 bytes extraídos sin corromper por el texto ASCII.");
+
+// 12. Probar decodificación de captura Loopback (DLT_NULL / linkType = 0)
+Console.WriteLine("-> Probando captura en interfaz Loopback (DLT_NULL linkType=0)...");
+using var loopbackMs = new MemoryStream();
+using var loopbackBw = new BinaryWriter(loopbackMs);
+loopbackBw.Write(0xa1b2c3d4); // magic
+loopbackBw.Write((ushort)2);
+loopbackBw.Write((ushort)4);
+loopbackBw.Write(0);
+loopbackBw.Write(0);
+loopbackBw.Write(65535);
+loopbackBw.Write(0); // linktype = 0 (DLT_NULL / Loopback)
+
+// Construir paquete de loopback: 4 bytes AF_INET (2) + IPv4 (20B) + UDP (8B) + TRDP (48B)
+byte[] loopbackPacket = BuildLoopbackUdpPacket("127.0.0.1", 17224, "127.0.0.1", 17224, fixedTrdp);
+loopbackBw.Write(2000);
+loopbackBw.Write(0);
+loopbackBw.Write(loopbackPacket.Length);
+loopbackBw.Write(loopbackPacket.Length);
+loopbackBw.Write(loopbackPacket);
+loopbackBw.Flush();
+loopbackMs.Seek(0, SeekOrigin.Begin);
+
+var loopbackFileInfo = await service.LoadCaptureAsync(loopbackMs, "loopback_test.pcap", loopbackMs.Length);
+Assert(loopbackFileInfo.TotalPackets == 1, $"Se esperaba 1 paquete en loopback, obtenidos: {loopbackFileInfo.TotalPackets}");
+Assert(service.Packets[0].Protocol == "UDP", "Protocolo loopback debe ser UDP");
+Assert(service.Packets[0].SourcePort == 17224, $"Puerto origen loopback debe ser 17224, obtenido: {service.Packets[0].SourcePort}");
+Assert(service.Packets[0].DestinationPort == 17224, $"Puerto destino loopback debe ser 17224, obtenido: {service.Packets[0].DestinationPort}");
+Assert(service.Packets[0].Payload.Length == 48, $"Longitud payload loopback debe ser 48, obtenida: {service.Packets[0].Payload.Length}");
+Assert(service.Packets[0].HasValidTrdpCrc, "El paquete TRDP en captura loopback debe tener CRC válido");
+Console.WriteLine($"   Captura Loopback DLT_NULL OK: {service.Packets[0].Info}");
+
 Console.WriteLine("\n TODOS LOS TESTS PASARON CON ÉXITO.");
+
+static byte[] BuildLoopbackUdpPacket(string srcIp, ushort srcPort, string dstIp, ushort dstPort, byte[] payload)
+{
+    int totalLen = 4 + 20 + 8 + payload.Length;
+    byte[] pkt = new byte[totalLen];
+
+    // DLT_NULL Header (4B): AF_INET = 2 (en host byte order)
+    pkt[0] = 0x02; pkt[1] = 0x00; pkt[2] = 0x00; pkt[3] = 0x00;
+
+    // IPv4 Header (20B) a offset 4
+    pkt[4] = 0x45;
+    pkt[5] = 0x00;
+    int ipTotalLen = 20 + 8 + payload.Length;
+    pkt[6] = (byte)(ipTotalLen >> 8); pkt[7] = (byte)(ipTotalLen & 0xFF);
+    pkt[8] = 0x12; pkt[9] = 0x34;
+    pkt[10] = 0x00; pkt[11] = 0x00;
+    pkt[12] = 64;
+    pkt[13] = 17; // UDP
+    pkt[14] = 0x00; pkt[15] = 0x00;
+
+    var sIp = IPAddress.Parse(srcIp).GetAddressBytes();
+    Buffer.BlockCopy(sIp, 0, pkt, 16, 4);
+
+    var dIp = IPAddress.Parse(dstIp).GetAddressBytes();
+    Buffer.BlockCopy(dIp, 0, pkt, 20, 4);
+
+    // UDP Header (8B) a offset 24
+    int udpOffset = 24;
+    pkt[udpOffset] = (byte)(srcPort >> 8); pkt[udpOffset + 1] = (byte)(srcPort & 0xFF);
+    pkt[udpOffset + 2] = (byte)(dstPort >> 8); pkt[udpOffset + 3] = (byte)(dstPort & 0xFF);
+    int udpLen = 8 + payload.Length;
+    pkt[udpOffset + 4] = (byte)(udpLen >> 8); pkt[udpOffset + 5] = (byte)(udpLen & 0xFF);
+
+    // Payload a offset 32
+    Buffer.BlockCopy(payload, 0, pkt, udpOffset + 8, payload.Length);
+
+    return pkt;
+}
 
 // Helper para construir paquete Ethernet + IPv4 + UDP sintético
 static byte[] BuildUdpPacket(string srcIp, ushort srcPort, string dstIp, ushort dstPort, byte[] payload)

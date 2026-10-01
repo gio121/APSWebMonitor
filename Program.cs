@@ -40,6 +40,7 @@ builder.Services.AddHttpClient("TrdpBackend");  // cliente nombrado para TrdpBac
 builder.Services.AddScoped<TrdpBackendService>();
 builder.Services.AddScoped<TrdpWebSocketService>();
 builder.Services.AddScoped<TrdpPcapParserService>();
+builder.Services.AddScoped<TrdpSnifferService>();
 builder.Services.AddSingleton<MonitorStateService>();
 builder.Services.AddSingleton<ReprogrammingService>();
 builder.Services.AddSingleton<ISftpFirmwareUploader, SftpFirmwareUploader>();

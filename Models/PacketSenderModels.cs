@@ -43,6 +43,15 @@ public class ReplayPacket
     public bool Sent { get; set; }
     public string? ErrorMessage { get; set; }
 
+    /// <summary>Indica si la trama es un datagrama TRDP detectado.</summary>
+    public bool IsTrdp { get; set; }
+    /// <summary>FCS / CRC32 original de cabecera TRDP presente en la captura.</summary>
+    public uint? TrdpHeaderCrc { get; set; }
+    /// <summary>FCS / CRC32 esperado calculado con IEEE 802.3.</summary>
+    public uint? TrdpExpectedCrc { get; set; }
+    /// <summary>Indica si el CRC32 original de cabecera TRDP coincidía con el calculado.</summary>
+    public bool HasValidTrdpCrc { get; set; } = true;
+
     public string PayloadHex => Convert.ToHexString(Payload);
 
     public string PayloadPreview => Payload.Length > 24
@@ -76,6 +85,9 @@ public class PacketReplayConfig
     public bool OverrideDestination { get; set; } = false;
     public string TargetIp { get; set; } = "255.255.255.255";
     public int? TargetPort { get; set; } = null; // null = mantener puerto original del paquete
+    public int? BindSourcePort { get; set; } = null; // null o 0 = puerto efímero automático
+    public bool PreserveSourcePort { get; set; } = false; // si true, intenta enlazar al puerto origen de la trama (ej. 17224)
+    public bool AutoFixTrdpCrc { get; set; } = true; // Recalcular automáticamente CRC32 TRDP (headerFcs y dataFcs)
     public bool EnableBroadcast { get; set; } = true;
     public int MulticastTtl { get; set; } = 32;
     public PlaybackSpeedMode SpeedMode { get; set; } = PlaybackSpeedMode.RealTime;

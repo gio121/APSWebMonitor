@@ -181,6 +181,19 @@
                             </div>
                         </MudItem>
 
+                        <!-- Opción de corrección automática de CRC TRDP -->
+                        <MudItem xs="12">
+                            <div class="d-flex align-center gap-2 flex-wrap pt-1" style="border-top:1px dashed rgba(255,255,255,0.06);">
+                                <MudCheckBox @bind-Value="_config.AutoFixTrdpCrc"
+                                             Label="Auto-corregir CRC TRDP IEEE 802.3 (Header FCS y Data FCS)"
+                                             Color="Color.Success" Dense="true"
+                                             Disabled="@ReplayService.IsPlaying" />
+                                <span class="text-caption text-muted">
+                                    (Recalcula automáticamente el CRC32 Little-Endian para evitar error TRDP_CRC_ERR -35 en ecnmanager)
+                                </span>
+                            </div>
+                        </MudItem>
+
                         @if (_config.OverrideDestination)
                         {
                             <MudItem xs="12" sm="6" md="4">
@@ -427,7 +440,18 @@
                                 <MudTd><span style="font-family:monospace; font-size:0.8rem; color:#cbd5e1;">@context.SourceIp:@context.SourcePort</span></MudTd>
                                 <MudTd><span style="font-family:monospace; font-size:0.8rem; color:#38bdf8;">@context.DestinationIp:@context.DestinationPort</span></MudTd>
                                 <MudTd>@context.Payload.Length B</MudTd>
-                                <MudTd><span class="text-truncate" style="max-width:280px; display:inline-block; font-size:0.8rem;">@context.Info</span></MudTd>
+                                <MudTd>
+                                    <div class="d-flex align-center gap-1">
+                                        @if (context.IsTrdp)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="@(context.HasValidTrdpCrc ? Variant.Outlined : Variant.Filled)"
+                                                     Color="@(context.HasValidTrdpCrc ? Color.Success : Color.Error)">
+                                                @(context.HasValidTrdpCrc ? "CRC OK" : "CRC ERR")
+                                            </MudChip>
+                                        }
+                                        <span class="text-truncate" style="max-width:280px; display:inline-block; font-size:0.8rem;">@context.Info</span>
+                                    </div>
+                                </MudTd>
                                 <MudTd Style="text-align:right;">
                                     <MudIconButton Icon="@Icons.Material.Filled.Send" Size="Size.Small" Color="Color.Success"
                                                    Title="Enviar solo esta trama a la red" OnClick="@(() => SendSingle(context))" />
@@ -492,6 +516,11 @@
                                 </MudButton>
                                 <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => LoadPreset("ASCII_HELLO"))">
                                     Texto ASCII
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Calculate" OnClick="RecalculateManualTrdpCrc"
+                                           Title="Recalcula el CRC32 IEEE 802.3 Little-Endian de la cabecera y datos TRDP">
+                                    Recalcular CRC TRDP
                                 </MudButton>
                             </div>
                         </MudItem>
@@ -714,9 +743,12 @@
 
     private void ClearLoadedFile()
     {
-        ReplayService.StopPlayback();
-        ReplayService.DeleteTempFile();
+        ReplayService.ClearLoadedFile();
+        _uploadProgress = 0;
+        _uploadBytesRead = 0;
+        _totalFileBytes = 0;
         _currentStats = ReplayService.Stats;
+        Snackbar.Add("Fichero de captura quitado y lista vaciada.", Severity.Info);
         StateHasChanged();
     }
 
@@ -786,7 +818,8 @@
                 _manualReq.DestinationIp = "239.255.0.1";
                 _manualReq.DestinationPort = 17224;
                 _manualReq.DataFormat = "HEX";
-                _manualReq.Data = "54 52 44 50 00 01 50 00 00 00 03 E9 00 00 00 01 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00 00 01 02 03 04 05 06 07 08";
+                // Cabecera TRDP PD estándar de 40 bytes (IEC 61375-2-3) con ComID 1001, dataset de 8 bytes y CRC32 IEEE 802.3 recalculado
+                _manualReq.Data = PacketSenderService.RecalculateTrdpHexCrc("00 00 00 01 01 00 50 64 00 00 03 E9 00 00 00 00 00 00 00 00 00 00 00 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 02 03 04 05 06 07 08");
                 break;
             case "DHCP":
                 _manualReq.Protocol = "UDP";
@@ -809,6 +842,28 @@
                 _manualReq.DataFormat = "ASCII";
                 _manualReq.Data = "APS_MONITOR_PACKET_SENDER_PING";
                 break;
+        }
+    }
+
+    private void RecalculateManualTrdpCrc()
+    {
+        if (string.IsNullOrWhiteSpace(_manualReq.Data))
+        {
+            Snackbar.Add("El campo de payload está vacío.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            string recalculated = PacketSenderService.RecalculateTrdpHexCrc(_manualReq.Data);
+            _manualReq.Data = recalculated;
+            _manualReq.DataFormat = "HEX";
+            Snackbar.Add("CRC32 IEEE 802.3 recalculado con éxito para cabecera/datos TRDP.", Severity.Success);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al calcular CRC TRDP: {ex.Message}", Severity.Error);
         }
     }
 

@@ -18,6 +18,7 @@ public class PacketSenderService : IDisposable
     private Task? _playbackTask;
     private Socket? _udpSocket;
     private string _boundAdapterIp = string.Empty;
+    private int _boundPort = 0;
 
     // Fichero y tramas cargadas
     private readonly List<ReplayPacket> _allPackets = new();
@@ -116,6 +117,39 @@ public class PacketSenderService : IDisposable
             }
             return _fileInfo;
         }, ct);
+    }
+
+    /// <summary>
+    /// Limpia completamente el fichero cargado, resetea la playlist, elimina archivos temporales y reinicia estadísticas.
+    /// </summary>
+    public void ClearLoadedFile()
+    {
+        lock (_lock)
+        {
+            StopPlayback();
+            DeleteTempFile();
+
+            _fileInfo = null;
+            _allPackets.Clear();
+            _playlist.Clear();
+            _currentIndex = 0;
+
+            _stats.Status = ReplayStatus.Idle;
+            _stats.CurrentIndex = 0;
+            _stats.TotalPackets = 0;
+            _stats.PacketsSent = 0;
+            _stats.PacketsFailed = 0;
+            _stats.TotalBytesSent = 0;
+            _stats.CurrentPps = 0;
+            _stats.CurrentBitrateKbps = 0;
+            _stats.ElapsedRealTime = TimeSpan.Zero;
+            _stats.CurrentCaptureRelativeTime = TimeSpan.Zero;
+            _stats.CurrentPacketDescription = string.Empty;
+
+            OnPlaybackProgress?.Invoke(Stats);
+            OnStatusChanged?.Invoke(ReplayStatus.Idle);
+            OnLogMessage?.Invoke("[PacketReplay] Fichero de captura eliminado y estado reiniciado.");
+        }
     }
 
     private (List<ReplayPacket> Packets, CaptureFileInfo Info) ParseCaptureFile(string filePath, string fileName)
@@ -355,6 +389,141 @@ public class PacketSenderService : IDisposable
         }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // MOTOR DE CRC32 IEEE 802.3 Y CORRECCIÓN TRDP (IEC 61375-2-3)
+    // ─────────────────────────────────────────────────────────────
+
+    private static readonly uint[] Crc32Table = GenerateCrc32Table();
+
+    private static uint[] GenerateCrc32Table()
+    {
+        var table = new uint[256];
+        for (uint i = 0; i < 256; i++)
+        {
+            uint entry = i;
+            for (int j = 0; j < 8; j++)
+            {
+                if ((entry & 1) == 1)
+                    entry = (entry >> 1) ^ 0xEDB88320u;
+                else
+                    entry >>= 1;
+            }
+            table[i] = entry;
+        }
+        return table;
+    }
+
+    /// <summary>
+    /// Calcula el CRC32 estándar IEEE 802.3 (polinomio 0xEDB88320 reflejado, semilla 0xFFFFFFFF, xor final 0xFFFFFFFF).
+    /// Es el algoritmo utilizado por vos_crc32 en TCNOpen y por el estándar IEC 61375-2-3 para TRDP headerFcs y dataFcs.
+    /// </summary>
+    public static uint ComputeCrc32(ReadOnlySpan<byte> buffer)
+    {
+        uint crc = 0xFFFFFFFF;
+        foreach (byte b in buffer)
+        {
+            crc = (crc >> 8) ^ Crc32Table[(crc ^ b) & 0xFF];
+        }
+        return crc ^ 0xFFFFFFFF;
+    }
+
+    /// <summary>
+    /// Determina si un payload o paquete corresponde a TRDP (Train Real-Time Data Protocol).
+    /// </summary>
+    public static bool IsTrdpPacket(byte[] payload, ushort srcPort = 0, ushort dstPort = 0)
+    {
+        if (payload == null || payload.Length < 32) return false;
+        if (srcPort == 17224 || dstPort == 17224) return true;
+
+        // Byte 6 = 'P' (PD) o 'M' (MD) en Big-Endian (estándar IEC 61375-2-3)
+        if (payload[6] == 0x50 || payload[6] == 0x4D) return true;
+
+        // Byte 7 = 'P' o 'M' en Little-Endian
+        if (payload[7] == 0x50 || payload[7] == 0x4D) return true;
+
+        // Magic legacy "TRDP" o "TXDP" en offset 0
+        if (payload.Length >= 40)
+        {
+            uint magic = BitConverter.ToUInt32(payload, 0);
+            if (magic is 0x54524450 or 0x54584450) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Valida el CRC de cabecera TRDP (headerFcs en offset 36..39) comparándolo con el CRC32 calculado sobre los primeros 36 bytes.
+    /// </summary>
+    public static (bool IsTrdp, uint? HeaderCrc, uint? ExpectedCrc, bool IsValid) ValidateTrdpCrc(byte[] payload, ushort srcPort = 0, ushort dstPort = 0)
+    {
+        if (!IsTrdpPacket(payload, srcPort, dstPort) || payload.Length < 40)
+            return (false, null, null, true);
+
+        // Si es formato legacy no validar FCS estándar
+        uint magic = BitConverter.ToUInt32(payload, 0);
+        if (magic is 0x54524450 or 0x54584450)
+            return (true, null, null, true);
+
+        // HeaderFCS en TRDP según IEC 61375-2-3 se transmite siempre en Little-Endian en los bytes 36..39
+        uint headerCrc = BitConverter.ToUInt32(payload, 36);
+        uint expectedCrc = ComputeCrc32(payload.AsSpan(0, 36));
+
+        bool isValid = (headerCrc == expectedCrc);
+        return (true, headerCrc, expectedCrc, isValid);
+    }
+
+    /// <summary>
+    /// Corrige o recalcula automáticamente los FCS (headerFcs a offset 36..39 y dataFcs al final del dataset si aplica)
+    /// utilizando el algoritmo IEEE 802.3 requerido por ecnmanager y TCNOpen.
+    /// </summary>
+    public static byte[] FixTrdpCrc(byte[] payload)
+    {
+        if (payload == null || payload.Length < 40) return payload ?? Array.Empty<byte>();
+
+        // Si es TRDP legacy ("TRDP" o "TXDP" a offset 0), no modificar cabecera estándar
+        uint magic = BitConverter.ToUInt32(payload, 0);
+        if (magic is 0x54524450 or 0x54584450) return payload;
+
+        byte[] fixedBytes = (byte[])payload.Clone();
+
+        // 1. Recalcular Header FCS (CRC32 sobre los primeros 36 bytes)
+        uint headerFcs = ComputeCrc32(fixedBytes.AsSpan(0, 36));
+        // Guardar en Little-Endian según IEC 61375-2-3
+        fixedBytes[36] = (byte)(headerFcs & 0xFF);
+        fixedBytes[37] = (byte)((headerFcs >> 8) & 0xFF);
+        fixedBytes[38] = (byte)((headerFcs >> 16) & 0xFF);
+        fixedBytes[39] = (byte)((headerFcs >> 24) & 0xFF);
+
+        // 2. Comprobar si existe Dataset FCS (dataFcs)
+        // La longitud del dataset está en los bytes 20..23 (Big-Endian según IEC 61375-2-3)
+        uint datasetLen = (uint)((fixedBytes[20] << 24) | (fixedBytes[21] << 16) | (fixedBytes[22] << 8) | fixedBytes[23]);
+
+        if (datasetLen > 0 && fixedBytes.Length >= 40 + datasetLen + 4)
+        {
+            // El paquete contiene 4 bytes extra al final del dataset que corresponden al dataFcs
+            int dataFcsOffset = 40 + (int)datasetLen;
+            uint dataFcs = ComputeCrc32(fixedBytes.AsSpan(40, (int)datasetLen));
+
+            fixedBytes[dataFcsOffset] = (byte)(dataFcs & 0xFF);
+            fixedBytes[dataFcsOffset + 1] = (byte)((dataFcs >> 8) & 0xFF);
+            fixedBytes[dataFcsOffset + 2] = (byte)((dataFcs >> 16) & 0xFF);
+            fixedBytes[dataFcsOffset + 3] = (byte)((dataFcs >> 24) & 0xFF);
+        }
+
+        return fixedBytes;
+    }
+
+    /// <summary>
+    /// Recalcula el CRC TRDP de una cadena de texto hexadecimal y devuelve la cadena corregida en formato estándar separado por espacios.
+    /// </summary>
+    public static string RecalculateTrdpHexCrc(string hex)
+    {
+        byte[] bytes = ParseHexString(hex);
+        if (bytes.Length < 40) return hex;
+        byte[] fixedBytes = FixTrdpCrc(bytes);
+        return string.Join(" ", fixedBytes.Select(b => b.ToString("X2")));
+    }
+
     private static void ParseWiresharkJson(string json, List<ReplayPacket> packets)
     {
         try
@@ -408,10 +577,39 @@ public class PacketSenderService : IDisposable
                     if (tcpL.TryGetProperty("tcp.dstport", out var dpEl) && ushort.TryParse(dpEl.GetString(), out var dp)) dstPort = dp;
                     if (tcpL.TryGetProperty("tcp.payload", out var pEl)) payload = ParseHexString(pEl.GetString());
                 }
-                else if (layers.TryGetProperty("data", out var dataL) && dataL.TryGetProperty("data.data", out var hexEl))
+
+                // Fallbacks si Wireshark exportó capas RAW o disecó TRDP
+                if (payload.Length == 0)
                 {
-                    payload = ParseHexString(hexEl.GetString());
+                    if (layers.TryGetProperty("trdp_raw", out var trdpRawEl))
+                        payload = ParseHexString(trdpRawEl.GetString());
+                    else if (layers.TryGetProperty("udp_raw", out var udpRawEl))
+                    {
+                        byte[] rawUdp = ParseHexString(udpRawEl.GetString());
+                        if (rawUdp.Length >= 8)
+                        {
+                            payload = new byte[rawUdp.Length - 8];
+                            Buffer.BlockCopy(rawUdp, 8, payload, 0, payload.Length);
+                        }
+                    }
+                    else if (layers.TryGetProperty("data", out var dataL) && dataL.TryGetProperty("data.data", out var hexEl))
+                    {
+                        payload = ParseHexString(hexEl.GetString());
+                    }
+                    else if (layers.TryGetProperty("frame_raw", out var frameRawEl))
+                    {
+                        byte[] rawFrame = ParseHexString(frameRawEl.GetString());
+                        var decoded = DecodePacket(rawFrame, frameNumber, pktTime, relTime, deltaTime, 1);
+                        if (decoded != null)
+                        {
+                            packets.Add(decoded);
+                            frameNumber++;
+                            continue;
+                        }
+                    }
                 }
+
+                var (isTrdp, headerCrc, expectedCrc, hasValidCrc) = ValidateTrdpCrc(payload, srcPort, dstPort);
 
                 packets.Add(new ReplayPacket
                 {
@@ -428,7 +626,11 @@ public class PacketSenderService : IDisposable
                     PacketLength = payload.Length,
                     Payload = payload,
                     RawBytes = payload,
-                    Info = BuildPacketDescription(protocol, srcPort, dstPort, payload)
+                    IsTrdp = isTrdp,
+                    TrdpHeaderCrc = headerCrc,
+                    TrdpExpectedCrc = expectedCrc,
+                    HasValidTrdpCrc = hasValidCrc,
+                    Info = BuildPacketDescription(protocol, srcPort, dstPort, payload, isTrdp, hasValidCrc)
                 });
 
                 frameNumber++;
@@ -437,64 +639,154 @@ public class PacketSenderService : IDisposable
         catch { }
     }
 
+    public static List<byte> ExtractHexBytesFromLine(string line)
+    {
+        var result = new List<byte>();
+        if (string.IsNullOrWhiteSpace(line)) return result;
+
+        string trimmed = line.Trim();
+        if (trimmed.StartsWith("No.") || trimmed.StartsWith("Time") || trimmed.StartsWith("Frame ") || trimmed.StartsWith("Packet "))
+            return result;
+
+        int idx = 0;
+        int colonIdx = trimmed.IndexOf(':');
+        if (colonIdx > 0 && colonIdx <= 8 && trimmed.Substring(0, colonIdx).All(Uri.IsHexDigit))
+        {
+            idx = colonIdx + 1;
+        }
+        else if (trimmed.Length >= 6 && trimmed.Substring(0, 4).All(Uri.IsHexDigit) && (trimmed[4] == ' ' || trimmed[4] == '\t'))
+        {
+            idx = 4;
+            while (idx < trimmed.Length && (trimmed[idx] == ' ' || trimmed[idx] == '\t')) idx++;
+        }
+
+        int byteCountInLine = 0;
+        while (idx < trimmed.Length && byteCountInLine < 32)
+        {
+            while (idx < trimmed.Length && (trimmed[idx] == ' ' || trimmed[idx] == '\t' || trimmed[idx] == '-')) idx++;
+            if (idx + 1 < trimmed.Length && Uri.IsHexDigit(trimmed[idx]) && Uri.IsHexDigit(trimmed[idx + 1]))
+            {
+                if (idx + 2 >= trimmed.Length || char.IsWhiteSpace(trimmed[idx + 2]) || trimmed[idx + 2] == '-' || trimmed[idx + 2] == ':')
+                {
+                    string byteStr = trimmed.Substring(idx, 2);
+                    if (byte.TryParse(byteStr, System.Globalization.NumberStyles.HexNumber, null, out byte val))
+                    {
+                        result.Add(val);
+                        byteCountInLine++;
+                        idx += 2;
+                        continue;
+                    }
+                }
+            }
+            break;
+        }
+
+        if (result.Count == 0)
+        {
+            var tokens = trimmed.Split(new[] { ' ', '\t', ':', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var tok in tokens)
+            {
+                if (tok.Length == 2 && byte.TryParse(tok, System.Globalization.NumberStyles.HexNumber, null, out byte val))
+                {
+                    result.Add(val);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
     private static void ParseHexDump(string text, List<ReplayPacket> packets)
     {
         var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         int frameNumber = 1;
         DateTime start = DateTime.Now;
-        var sb = new StringBuilder();
+        var currentFrameBytes = new List<byte>();
+
+        void FlushFrame()
+        {
+            if (currentFrameBytes.Count == 0) return;
+
+            byte[] data = currentFrameBytes.ToArray();
+            currentFrameBytes.Clear();
+
+            // Comprobar si data es una trama Ethernet completa
+            if (data.Length >= 42 && ((data[12] == 0x08 && data[13] == 0x00) || (data[12] == 0x81 && data[13] == 0x00)))
+            {
+                var decoded = DecodePacket(data, frameNumber, start.AddMilliseconds((frameNumber - 1) * 50),
+                    TimeSpan.FromMilliseconds((frameNumber - 1) * 50), TimeSpan.FromMilliseconds(50), 1);
+                if (decoded != null)
+                {
+                    packets.Add(decoded);
+                    frameNumber++;
+                    return;
+                }
+            }
+            else if (data.Length >= 28 && (data[0] >> 4) == 4) // Trama IPv4 pura
+            {
+                var decoded = DecodePacket(data, frameNumber, start.AddMilliseconds((frameNumber - 1) * 50),
+                    TimeSpan.FromMilliseconds((frameNumber - 1) * 50), TimeSpan.FromMilliseconds(50), 101);
+                if (decoded != null)
+                {
+                    packets.Add(decoded);
+                    frameNumber++;
+                    return;
+                }
+            }
+
+            // Si es un payload directo (UDP / TRDP)
+            var (isTrdp, headerCrc, expectedCrc, hasValidCrc) = ValidateTrdpCrc(data, 17224, 17224);
+            ushort port = isTrdp ? (ushort)17224 : (ushort)0;
+
+            packets.Add(new ReplayPacket
+            {
+                Index = frameNumber,
+                OriginalFrameNumber = frameNumber,
+                Timestamp = start.AddMilliseconds((frameNumber - 1) * 50),
+                RelativeTime = TimeSpan.FromMilliseconds((frameNumber - 1) * 50),
+                DeltaTime = TimeSpan.FromMilliseconds(50),
+                Protocol = "UDP",
+                SourceIp = isTrdp ? "192.168.1.10" : "",
+                SourcePort = port,
+                DestinationIp = isTrdp ? "239.255.0.1" : "",
+                DestinationPort = port,
+                PacketLength = data.Length,
+                Payload = data,
+                RawBytes = data,
+                IsTrdp = isTrdp,
+                TrdpHeaderCrc = headerCrc,
+                TrdpExpectedCrc = expectedCrc,
+                HasValidTrdpCrc = hasValidCrc,
+                Info = BuildPacketDescription("UDP", port, port, data, isTrdp, hasValidCrc)
+            });
+            frameNumber++;
+        }
 
         foreach (var line in lines)
         {
             var clean = line.Trim();
-            if (clean.Contains(';') || clean.StartsWith("FRAME", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(clean)) continue;
+
+            if (clean.Contains(';') || clean.StartsWith("FRAME", StringComparison.OrdinalIgnoreCase) || clean.StartsWith("Packet ", StringComparison.OrdinalIgnoreCase))
             {
-                if (sb.Length > 0)
-                {
-                    byte[] data = ParseHexString(sb.ToString());
-                    if (data.Length > 0)
-                    {
-                        packets.Add(new ReplayPacket
-                        {
-                            Index = frameNumber,
-                            OriginalFrameNumber = frameNumber,
-                            Timestamp = start.AddMilliseconds((frameNumber - 1) * 50),
-                            RelativeTime = TimeSpan.FromMilliseconds((frameNumber - 1) * 50),
-                            DeltaTime = TimeSpan.FromMilliseconds(50),
-                            Protocol = "UDP",
-                            PacketLength = data.Length,
-                            Payload = data,
-                            RawBytes = data,
-                            Info = $"Hex Payload ({data.Length} B)"
-                        });
-                        frameNumber++;
-                    }
-                    sb.Clear();
-                }
+                FlushFrame();
+                continue;
             }
-            sb.Append(clean).Append(' ');
+
+            if (currentFrameBytes.Count > 0 && (clean.StartsWith("0000  ") || clean.StartsWith("0000: ") || clean.StartsWith("0x0000:")))
+            {
+                FlushFrame();
+            }
+
+            var lineBytes = ExtractHexBytesFromLine(clean);
+            currentFrameBytes.AddRange(lineBytes);
         }
 
-        if (sb.Length > 0)
-        {
-            byte[] data = ParseHexString(sb.ToString());
-            if (data.Length > 0)
-            {
-                packets.Add(new ReplayPacket
-                {
-                    Index = frameNumber,
-                    OriginalFrameNumber = frameNumber,
-                    Timestamp = start.AddMilliseconds((frameNumber - 1) * 50),
-                    RelativeTime = TimeSpan.FromMilliseconds((frameNumber - 1) * 50),
-                    DeltaTime = TimeSpan.FromMilliseconds(50),
-                    Protocol = "UDP",
-                    PacketLength = data.Length,
-                    Payload = data,
-                    RawBytes = data,
-                    Info = $"Hex Payload ({data.Length} B)"
-                });
-            }
-        }
+        FlushFrame();
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -519,12 +811,17 @@ public class PacketSenderService : IDisposable
             etherType = (pktBytes[12] << 8) | pktBytes[13];
             ipOffset = 14;
 
-            if (etherType == 0x8100 || etherType == 0x88A8) // VLAN Tag
+            // Manejo de múltiples etiquetas VLAN (802.1Q, 802.1ad, QinQ, 0x9100)
+            while ((etherType == 0x8100 || etherType == 0x88A8 || etherType == 0x9100) && pktBytes.Length >= ipOffset + 4)
             {
-                if (pktBytes.Length < 18) return null;
-                etherType = (pktBytes[16] << 8) | pktBytes[17];
-                ipOffset = 18;
+                etherType = (pktBytes[ipOffset + 2] << 8) | pktBytes[ipOffset + 3];
+                ipOffset += 4;
             }
+        }
+        else if (linkType == 0) // DLT_NULL / Loopback (Npcap / 127.0.0.1 con cabecera de 4 bytes de familia)
+        {
+            etherType = 0x0800;
+            ipOffset = (pktBytes.Length >= 24 && (pktBytes[4] >> 4) == 4) ? 4 : 0;
         }
         else if (linkType == 113) // Linux SLL (Cooked capture)
         {
@@ -538,7 +835,12 @@ public class PacketSenderService : IDisposable
             etherType = (pktBytes[0] << 8) | pktBytes[1];
             ipOffset = 20;
         }
-        else // Raw IP fallback
+        else if (linkType is 12 or 101 || (pktBytes.Length >= 20 && (pktBytes[0] >> 4) == 4)) // Raw IP (DLT_RAW)
+        {
+            etherType = 0x0800;
+            ipOffset = 0;
+        }
+        else // Fallback
         {
             etherType = 0x0800;
             ipOffset = 0;
@@ -614,6 +916,16 @@ public class PacketSenderService : IDisposable
             payload = pktBytes.AsSpan(ipOffset).ToArray();
         }
 
+        bool isTrdp = false;
+        uint? trdpHeaderCrc = null;
+        uint? trdpExpectedCrc = null;
+        bool hasValidTrdpCrc = true;
+
+        if (protocol == "UDP")
+        {
+            (isTrdp, trdpHeaderCrc, trdpExpectedCrc, hasValidTrdpCrc) = ValidateTrdpCrc(payload, srcPort, dstPort);
+        }
+
         return new ReplayPacket
         {
             Index = frameNumber,
@@ -629,23 +941,28 @@ public class PacketSenderService : IDisposable
             PacketLength = pktBytes.Length,
             Payload = payload,
             RawBytes = pktBytes,
-            Info = BuildPacketDescription(protocol, srcPort, dstPort, payload)
+            IsTrdp = isTrdp,
+            TrdpHeaderCrc = trdpHeaderCrc,
+            TrdpExpectedCrc = trdpExpectedCrc,
+            HasValidTrdpCrc = hasValidTrdpCrc,
+            Info = BuildPacketDescription(protocol, srcPort, dstPort, payload, isTrdp, hasValidTrdpCrc)
         };
     }
 
-    private static string BuildPacketDescription(string protocol, ushort srcPort, ushort dstPort, byte[] payload)
+    private static string BuildPacketDescription(string protocol, ushort srcPort, ushort dstPort, byte[] payload, bool isTrdp = false, bool hasValidCrc = true)
     {
         if (protocol == "UDP")
         {
-            // Detectar TRDP (Puerto 17224 o firma 'P' a offset 6)
-            if (dstPort == 17224 || srcPort == 17224 || (payload.Length >= 32 && payload.Length > 6 && payload[6] == 0x50))
+            // Detectar TRDP (Puerto 17224 o firma 'P'/'M' a offset 6 o validado)
+            if (isTrdp || dstPort == 17224 || srcPort == 17224 || (payload.Length >= 32 && payload.Length > 6 && (payload[6] == 0x50 || payload[6] == 0x4D)))
             {
+                string crcBadge = hasValidCrc ? "" : " [CRC ERR!]";
                 if (payload.Length >= 12)
                 {
                     uint comId = (uint)((payload[8] << 24) | (payload[9] << 16) | (payload[10] << 8) | payload[11]);
-                    return $"TRDP PD ComID:{comId} ({payload.Length} B)";
+                    return $"TRDP PD ComID:{comId} ({payload.Length} B){crcBadge}";
                 }
-                return $"TRDP Trama ({payload.Length} B)";
+                return $"TRDP Trama ({payload.Length} B){crcBadge}";
             }
 
             // Detectar DHCP
@@ -733,7 +1050,8 @@ public class PacketSenderService : IDisposable
 
             try
             {
-                InitializeSocket(config.BindAdapterIp, config.MulticastTtl);
+                int? bindPort = config.PreserveSourcePort ? (config.BindSourcePort ?? 17224) : config.BindSourcePort;
+                InitializeSocket(config.BindAdapterIp, config.MulticastTtl, bindPort);
             }
             catch (Exception ex)
             {
@@ -828,7 +1146,8 @@ public class PacketSenderService : IDisposable
 
             try
             {
-                InitializeSocket(_config.BindAdapterIp, _config.MulticastTtl);
+                int? bindPort = _config.PreserveSourcePort ? (_config.BindSourcePort ?? 17224) : _config.BindSourcePort;
+                InitializeSocket(_config.BindAdapterIp, _config.MulticastTtl, bindPort);
             }
             catch (Exception ex)
             {
@@ -865,7 +1184,8 @@ public class PacketSenderService : IDisposable
         var cfg = overrideConfig ?? _config;
         try
         {
-            InitializeSocket(cfg.BindAdapterIp, cfg.MulticastTtl);
+            int? bindPort = cfg.PreserveSourcePort ? (cfg.BindSourcePort ?? 17224) : cfg.BindSourcePort;
+            InitializeSocket(cfg.BindAdapterIp, cfg.MulticastTtl, bindPort);
             bool ok = TransmitPacket(packet, cfg, out string err);
             if (ok)
             {
@@ -1048,6 +1368,12 @@ public class PacketSenderService : IDisposable
             IPEndPoint targetEp = GetTargetEndPoint(packet, config);
             byte[] bytesToSend = packet.Payload.Length > 0 ? packet.Payload : packet.RawBytes;
 
+            // Si auto-corrección de CRC TRDP está habilitada y es TRDP, corregir FCS antes de transmitir
+            if (config.AutoFixTrdpCrc && IsTrdpPacket(bytesToSend, packet.SourcePort, packet.DestinationPort))
+            {
+                bytesToSend = FixTrdpCrc(bytesToSend);
+            }
+
             if (_udpSocket == null)
             {
                 error = "Socket no inicializado.";
@@ -1092,9 +1418,10 @@ public class PacketSenderService : IDisposable
         return new IPEndPoint(targetIp, targetPort);
     }
 
-    private void InitializeSocket(string bindAdapterIp, int multicastTtl)
+    private void InitializeSocket(string bindAdapterIp, int multicastTtl, int? bindPort = null)
     {
-        if (_udpSocket != null && _boundAdapterIp == bindAdapterIp)
+        int targetPort = (bindPort.HasValue && bindPort.Value > 0) ? bindPort.Value : 0;
+        if (_udpSocket != null && _boundAdapterIp == bindAdapterIp && _boundPort == targetPort)
             return;
 
         CloseSocket();
@@ -1103,23 +1430,41 @@ public class PacketSenderService : IDisposable
         _udpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         _udpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
 
-        if (!string.IsNullOrWhiteSpace(bindAdapterIp) && IPAddress.TryParse(bindAdapterIp, out var localIp) && !IPAddress.Any.Equals(localIp))
+        IPAddress localIp = IPAddress.Any;
+        if (!string.IsNullOrWhiteSpace(bindAdapterIp) && IPAddress.TryParse(bindAdapterIp, out var parsedIp))
         {
-            try
+            localIp = parsedIp;
+        }
+
+        try
+        {
+            _udpSocket.Bind(new IPEndPoint(localIp, targetPort));
+            _boundAdapterIp = bindAdapterIp;
+            _boundPort = targetPort;
+        }
+        catch
+        {
+            if (targetPort != 0)
             {
-                _udpSocket.Bind(new IPEndPoint(localIp, 0));
-                _boundAdapterIp = bindAdapterIp;
+                try
+                {
+                    _udpSocket.Bind(new IPEndPoint(localIp, 0));
+                    _boundAdapterIp = bindAdapterIp;
+                    _boundPort = 0;
+                }
+                catch
+                {
+                    _udpSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+                    _boundAdapterIp = string.Empty;
+                    _boundPort = 0;
+                }
             }
-            catch
+            else
             {
                 _udpSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
                 _boundAdapterIp = string.Empty;
+                _boundPort = 0;
             }
-        }
-        else
-        {
-            _udpSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
-            _boundAdapterIp = string.Empty;
         }
 
         _udpSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, Math.Clamp(multicastTtl, 1, 255));
@@ -1138,6 +1483,7 @@ public class PacketSenderService : IDisposable
         {
             _udpSocket = null;
             _boundAdapterIp = string.Empty;
+            _boundPort = 0;
         }
     }
 
@@ -1222,6 +1568,16 @@ public class PacketSenderService : IDisposable
                 if (!string.IsNullOrWhiteSpace(bindAdapterIp) && IPAddress.TryParse(bindAdapterIp, out var localIp))
                 {
                     try { udp.Bind(new IPEndPoint(localIp, 0)); } catch { }
+                }
+
+                // Si es un paquete TRDP de al menos 40 bytes y el CRC no es válido, auto-corregirlo
+                if ((req.DestinationPort == 17224 || IsTrdpPacket(payload)) && payload.Length >= 40)
+                {
+                    var (_, _, _, isValid) = ValidateTrdpCrc(payload);
+                    if (!isValid)
+                    {
+                        payload = FixTrdpCrc(payload);
+                    }
                 }
 
                 var ep = new IPEndPoint(targetIp, req.DestinationPort);

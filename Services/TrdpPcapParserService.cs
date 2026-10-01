@@ -1,4 +1,5 @@
 using ApsMonitor.Models;
+using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
 
@@ -26,7 +27,7 @@ public class TrdpCapturedFrame
     /// <summary>
     /// Convierte esta trama capturada a un TrdpFrameMessage decodificado listo para la UI.
     /// </summary>
-    public TrdpFrameMessage ToFrameMessage(string datasetName, long defaultComId, TrdpDataset? datasetDef = null)
+    public TrdpFrameMessage ToFrameMessage(string datasetName, long defaultComId, TrdpDataset? datasetDef = null, bool isLittleEndian = false)
     {
         long effectiveComId = ComId > 0 ? ComId : defaultComId;
 
@@ -42,7 +43,7 @@ public class TrdpCapturedFrame
             Snapshot  = false
         };
 
-        message.Parsed = TrdpPcapParserService.DecodeParsedPayload(Payload, datasetDef, enableEndianSwap: false);
+        message.Parsed = TrdpPcapParserService.DecodeParsedPayload(Payload, datasetDef, isLittleEndian);
         return message;
     }
 }
@@ -66,22 +67,93 @@ public class TrdpPcapParserService
 {
     public const int DEFAULT_CHUNK_SIZE = 200;
 
+    public static double ReadNumericValue(byte[] payload, int offset, string type, bool isLittleEndian)
+    {
+        if (payload == null || offset < 0 || offset >= payload.Length) return 0;
+        int available = payload.Length - offset;
+
+        try
+        {
+            return type.ToUpperInvariant() switch
+            {
+                "UINT8" or "BYTE" => payload[offset],
+                "INT8" or "SBYTE" => (sbyte)payload[offset],
+                "BCD_BYTE" => (payload[offset] >> 4) * 10 + (payload[offset] & 0x0F),
+
+                "UINT16" or "UINT" => available >= 2
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(offset, 2))
+                        : BinaryPrimitives.ReadUInt16BigEndian(payload.AsSpan(offset, 2)))
+                    : 0,
+
+                "INT16" or "INT" => available >= 2
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadInt16LittleEndian(payload.AsSpan(offset, 2))
+                        : BinaryPrimitives.ReadInt16BigEndian(payload.AsSpan(offset, 2)))
+                    : 0,
+
+                "UINT32" or "ULONG" => available >= 4
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(offset, 4))
+                        : BinaryPrimitives.ReadUInt32BigEndian(payload.AsSpan(offset, 4)))
+                    : 0,
+
+                "INT32" => available >= 4
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(offset, 4))
+                        : BinaryPrimitives.ReadInt32BigEndian(payload.AsSpan(offset, 4)))
+                    : 0,
+
+                "FLOAT" or "FLOAT32" => available >= 4
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadSingleLittleEndian(payload.AsSpan(offset, 4))
+                        : BinaryPrimitives.ReadSingleBigEndian(payload.AsSpan(offset, 4)))
+                    : 0,
+
+                _ => payload[offset]
+            };
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    public static ulong ReadRawUlong(byte[] payload, int offset, int byteSize, bool isLittleEndian)
+    {
+        if (payload == null || offset < 0 || offset >= payload.Length) return 0;
+        ulong result = 0;
+        if (isLittleEndian)
+        {
+            for (int i = 0; i < byteSize && offset + i < payload.Length; i++)
+                result |= (ulong)payload[offset + i] << (i * 8);
+        }
+        else
+        {
+            for (int i = 0; i < byteSize && offset + i < payload.Length; i++)
+                result = (result << 8) | payload[offset + i];
+        }
+        return result;
+    }
+
     public static Dictionary<string, JsonElement> DecodeParsedPayload(byte[] payload, TrdpDataset? datasetDef, bool enableEndianSwap = false)
     {
         var result = new Dictionary<string, JsonElement>();
         if (payload == null || payload.Length == 0)
             return result;
 
+        bool isLittleEndian = enableEndianSwap;
+
         if (datasetDef == null || datasetDef.Variables == null || datasetDef.Variables.Count == 0)
         {
-            // Decodificación genérica por bytes si no hay definición de dataset
+            // Decodificación genérica por bytes/words si no hay definición de dataset
             for (int i = 0; i < payload.Length; i += 2)
             {
                 if (i + 1 < payload.Length)
                 {
-                    ushort val = enableEndianSwap
-                        ? BitConverter.ToUInt16(new byte[] { payload[i + 1], payload[i] }, 0)
-                        : BitConverter.ToUInt16(payload, i);
+                    ushort val = isLittleEndian
+                        ? BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(i, 2))
+                        : BinaryPrimitives.ReadUInt16BigEndian(payload.AsSpan(i, 2));
                     result[$"word_{i}"] = JsonSerializer.SerializeToElement(val);
                 }
                 else
@@ -98,10 +170,7 @@ public class TrdpPcapParserService
             if (v.Offset < 0 || v.Offset >= payload.Length) continue;
 
             int byteSize = SessionParserService.GetByteSize(v.Type);
-            byte[] slice = GetVariableBytes(payload, v.Offset, byteSize, enableEndianSwap);
-
-            double rawVal = SessionParserService.ReadValue(slice, 0, v.Type);
-            double physVal = rawVal * (v.Scale ?? 1.0) + (v.OffsetVal ?? 0.0);
+            double physVal = ReadNumericValue(payload, v.Offset, v.Type, isLittleEndian);
 
             // Decodificación de tipo entero / flotante
             bool isFloat = v.Type.Equals("float", StringComparison.OrdinalIgnoreCase) || 
@@ -120,15 +189,11 @@ public class TrdpPcapParserService
             int bitCount = byteSize * 8;
             if (bitCount is 8 or 16 or 32)
             {
-                // Para el estado de bits del badge:
-                // Si enableEndianSwap es true, el orden de los bits 0..N-1 se invierte: bit 0 recibe el bit (N-1), bit 1 el (N-2), etc.
-                double unswappedRaw = SessionParserService.ReadValue(payload, v.Offset, v.Type);
-                ulong intVal = (ulong)unswappedRaw;
+                ulong intVal = ReadRawUlong(payload, v.Offset, byteSize, isLittleEndian);
                 var bitDict = new Dictionary<string, int>();
                 for (int b = 0; b < Math.Min(bitCount, 32); b++)
                 {
-                    int srcBitIdx = enableEndianSwap ? (bitCount - 1 - b) : b;
-                    int bitState = (int)((intVal >> srcBitIdx) & 1);
+                    int bitState = (int)((intVal >> b) & 1);
                     bitDict[$"bit_{b}"] = bitState;
                 }
                 result[$"{v.Id}_bits"] = JsonSerializer.SerializeToElement(bitDict);
@@ -514,7 +579,7 @@ public class TrdpPcapParserService
         return frames;
     }
 
-    private static TrdpCapturedFrame? ExtractPayloadFromPktBytes(
+    public static TrdpCapturedFrame? ExtractPayloadFromPktBytes(
         byte[] pktBytes, 
         int matchingIndex, 
         int rawPktIndex,
@@ -534,7 +599,19 @@ public class TrdpPcapParserService
             etherType = (pktBytes[16] << 8) | pktBytes[17];
         }
 
-        if (etherType != 0x0800 || pktBytes.Length < ipOffset + 20) return null; // IPv4
+        // Support standard IPv4 (0x0800) and Linux Cooked capture if packet starts at IP header
+        if (etherType != 0x0800 || pktBytes.Length < ipOffset + 20)
+        {
+            // If raw IP packet (no Ethernet header, e.g. from raw socket)
+            if (pktBytes.Length >= 20 && (pktBytes[0] >> 4) == 4)
+            {
+                ipOffset = 0;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         int ipHeaderLen = (pktBytes[ipOffset] & 0x0F) * 4;
         byte protocol = pktBytes[ipOffset + 9];
@@ -563,8 +640,11 @@ public class TrdpPcapParserService
         if (targetComId > 0 && pktComId.HasValue && pktComId.Value != targetComId)
             return null;
 
-        // Filtrar por IP Multicast si se especifica
-        if (!string.IsNullOrWhiteSpace(targetIp) && !dstIp.Equals(targetIp, StringComparison.OrdinalIgnoreCase))
+        // Filtrar por IP Multicast / destino / origen si se especifica
+        if (!string.IsNullOrWhiteSpace(targetIp) && 
+            !targetIp.Equals("0.0.0.0", StringComparison.OrdinalIgnoreCase) && 
+            !dstIp.Equals(targetIp, StringComparison.OrdinalIgnoreCase) &&
+            !srcIp.Equals(targetIp, StringComparison.OrdinalIgnoreCase))
             return null;
 
         return new TrdpCapturedFrame
@@ -585,24 +665,47 @@ public class TrdpPcapParserService
 
     /// <summary>
     /// Inspecciona la cabecera del PDU TRDP para obtener el ComID y desplazar dinámicamente la lectura del payload.
-    /// Calcula de forma exacta headerLen = totalPayloadLen - datasetLength.
+    /// Soporta cabecera estándar TRDP PD ('P' en byte 6, 40 bytes) en Big-Endian o Little-Endian y cabecera streaming legacy.
     /// </summary>
-    private static (long? comId, byte[] datasetPayload, bool hasHeader) ParseTrdpHeader(byte[] pktPayload)
+    public static (long? comId, byte[] datasetPayload, bool hasHeader) ParseTrdpHeader(byte[] pktPayload)
     {
         if (pktPayload == null || pktPayload.Length < 12)
             return (null, pktPayload ?? Array.Empty<byte>(), false);
 
-        // Verificar si el byte 6 contiene la firma 'P' (0x50) de TRDP
-        bool isTrdpHeader = pktPayload.Length >= 32 && pktPayload[6] == (byte)'P';
-
-        if (isTrdpHeader)
+        // 1. Cabecera streaming UDP legacy (magic "TRDP" 0x54524450 o "TXDP" 0x54584450 en los primeros 4 bytes)
+        if (pktPayload.Length >= 44)
         {
-            long comId = (long)((pktPayload[8] << 24) | (pktPayload[9] << 16) | (pktPayload[10] << 8) | pktPayload[11]);
+            uint magic = BitConverter.ToUInt32(pktPayload, 0);
+            if (magic == 0x54524450 || magic == 0x54584450)
+            {
+                uint comIdLegacy = BitConverter.ToUInt32(pktPayload, 4);
+                uint payloadSize = BitConverter.ToUInt32(pktPayload, 8);
+                int actualLen = (int)Math.Min(payloadSize, (uint)Math.Max(0, pktPayload.Length - 44));
+                byte[] payload = new byte[actualLen];
+                if (actualLen > 0)
+                    Buffer.BlockCopy(pktPayload, 44, payload, 0, actualLen);
+                return (comIdLegacy, payload, true);
+            }
+        }
+
+        // 2. Cabecera estándar TRDP PD: byte 6 contiene 'P' (0x50) o 'M' (0x4D) de TRDP en Big-Endian
+        // o byte 7 si estuviera transmitido en Little-Endian
+        bool isBigEndianTrdp = pktPayload.Length >= 32 && (pktPayload[6] == (byte)'P' || pktPayload[6] == (byte)'M');
+        bool isLittleEndianTrdp = !isBigEndianTrdp && pktPayload.Length >= 32 && (pktPayload[7] == (byte)'P' || pktPayload[7] == (byte)'M');
+
+        if (isBigEndianTrdp || isLittleEndianTrdp)
+        {
+            long comId = isBigEndianTrdp
+                ? (long)(((ulong)pktPayload[8] << 24) | ((ulong)pktPayload[9] << 16) | ((ulong)pktPayload[10] << 8) | (ulong)pktPayload[11])
+                : (long)((ulong)pktPayload[8] | ((ulong)pktPayload[9] << 8) | ((ulong)pktPayload[10] << 16) | ((ulong)pktPayload[11] << 24));
             
             int headerLen = 40; // Tamaño estándar de cabecera TRDP PD (40 bytes)
             if (pktPayload.Length >= 24)
             {
-                uint datasetLen = (uint)((pktPayload[20] << 24) | (pktPayload[21] << 16) | (pktPayload[22] << 8) | pktPayload[23]);
+                uint datasetLen = isBigEndianTrdp
+                    ? (uint)(((ulong)pktPayload[20] << 24) | ((ulong)pktPayload[21] << 16) | ((ulong)pktPayload[22] << 8) | (ulong)pktPayload[23])
+                    : (uint)((ulong)pktPayload[20] | ((ulong)pktPayload[21] << 8) | ((ulong)pktPayload[22] << 16) | ((ulong)pktPayload[23] << 24));
+
                 if (datasetLen > 0 && datasetLen < pktPayload.Length)
                 {
                     int calculatedHeaderLen = pktPayload.Length - (int)datasetLen;
@@ -621,7 +724,7 @@ public class TrdpPcapParserService
         }
         else if (pktPayload.Length >= 12)
         {
-            long comId = (long)((pktPayload[8] << 24) | (pktPayload[9] << 16) | (pktPayload[10] << 8) | pktPayload[11]);
+            long comId = (long)(((ulong)pktPayload[8] << 24) | ((ulong)pktPayload[9] << 16) | ((ulong)pktPayload[10] << 8) | (ulong)pktPayload[11]);
             return (comId, pktPayload, false);
         }
 
