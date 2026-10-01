@@ -150,7 +150,7 @@
                             if (lineColor.ToLower() == "#ffffff" || lineColor.ToLower() == "white" || lineColor.ToLower() == "#ff9800")
                                 lineColor = "#000000";
                         }
-                        <div class="element-content line-content" style="background-color: @lineColor;"></div>
+                        <div class="element-content icon-content">@((MarkupString)SinopticoIconProvider.RenderIcon(SinopticoIconProvider.GetIcon(el.Type), el, lineColor))</div>
                     }
                     else if (el.Type == "Barra")
                     {
@@ -215,6 +215,12 @@
                 <MudItem xs="12">
                     <MudNumericField @bind-Value="_selectedElement.Rotation" Label="Rotación" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
+                @if (SinopticoIconProvider.HasStroke(_selectedElement.Type))
+                {
+                    <MudItem xs="12">
+                        <MudNumericField T="double" @bind-Value="_selectedElement.StrokeWidth" Label="Grosor del trazo (px)" Min="0.5" Max="8" Step="0.5" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                }
                 <MudItem xs="12">
                     <MudColorPicker Label="Color" @bind-Text="_selectedElement.Color" Style="@($"color: {_selectedElement.Color};")" Variant="Variant.Outlined" Margin="Margin.Dense" DisableAlpha="true" />
                 </MudItem>
@@ -943,12 +949,8 @@
                 Text = _draggedType == "Etiqueta" || _draggedType == "Señal" ? _draggedType : ""
             };
             
-            // Default sizes based on type
-            if (_draggedType == "Señal") { newEl.Width = 160; newEl.Height = 60; }
-            else if (_draggedType.Contains("Linea")) { newEl.Width = (_draggedType == "Linea H") ? 100 : 4; newEl.Height = (_draggedType == "Linea V") ? 100 : 4; }
-            else if (_draggedType == "Contactor V") { newEl.Width = 30; newEl.Height = 60; }
-            else if (_draggedType == "Barra") { newEl.Width = 200; newEl.Height = 30; newEl.FontSize = 14; }
-            else { newEl.Width = 60; newEl.Height = 30; }
+            (newEl.Width, newEl.Height) = SinopticoIconProvider.GetDefaultSize(_draggedType);
+            newEl.ProportionalScale = _draggedType is not ("Linea H" or "Linea V" or "Dotline" or "Box");
 
             _elements.Add(newEl);
             _selectedElement = newEl;
@@ -1048,22 +1050,7 @@
                 color = "#000000";
         }
 
-        if (string.IsNullOrEmpty(icon)) return "";
-
-        if (icon.StartsWith("<svg"))
-        {
-            var svg = icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display: block;'");
-            // Reemplazamos tanto currentColor como posibles blancos/negros hardcoded para que usen el color deseado
-            return svg.Replace("currentColor", color).Replace("#000000", color).Replace("#ffffff", color).Replace("white", color);
-        }
-        else if (icon.StartsWith("<path"))
-        {
-            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><g fill='{color}'>{icon}</g></svg>";
-        }
-        else
-        {
-            return $"<svg viewBox='0 0 24 24' width='100%' height='100%' preserveAspectRatio='none' style='display: block;'><path d='{icon}' fill='{color}' /></svg>";
-        }
+        return SinopticoIconProvider.RenderIcon(icon, el, color);
     }
 
     private void DuplicateSelected()
@@ -1078,6 +1065,10 @@
                 Width = _selectedElement.Width,
                 Height = _selectedElement.Height,
                 Rotation = _selectedElement.Rotation,
+                StrokeWidth = _selectedElement.StrokeWidth,
+                ProportionalScale = _selectedElement.ProportionalScale,
+                MinValue = _selectedElement.MinValue,
+                MaxValue = _selectedElement.MaxValue,
                 Text = _selectedElement.Text,
                 FontSize = _selectedElement.FontSize,
                 SignalId = _selectedElement.SignalId,

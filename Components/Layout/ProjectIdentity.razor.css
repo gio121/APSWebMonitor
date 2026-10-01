@@ -1,0 +1,18 @@
+.project-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    text-align: center;
+}
+.project-identity img {
+    width: 100%;
+    max-width: 180px;
+    height: 76px;
+    object-fit: contain;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}

@@ -8,6 +8,7 @@ public class ApsDbContext : DbContext
     public ApsDbContext(DbContextOptions<ApsDbContext> options) : base(options) { }
 
     public DbSet<Signal> Signals { get; set; }
+    public DbSet<ProjectBranding> ProjectBranding { get; set; }
     public DbSet<Window> Windows { get; set; }
     public DbSet<EventMessage> Events { get; set; }
     public DbSet<ScadaCommand> Commands { get; set; }

@@ -11,6 +11,7 @@ public class SinopticoElement
     public double Width { get; set; } = 100;
     public double Height { get; set; } = 60;
     public double Rotation { get; set; } = 0;
+    public double StrokeWidth { get; set; } = 1.5; // Canvas pixels, independent of symbol size
 
     // Properties for specific types
     public string Text { get; set; } = "Texto";

@@ -1,63 +1,91 @@
+﻿using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
+using ApsMonitor.Models;
 using MudBlazor;
 
 namespace ApsMonitor.Services;
 
 public static class SinopticoIconProvider
 {
+    // Keep wire thickness independent of the size of the symbol.
+    private static string Symbol(string geometry, string viewBox = "0 0 60 40") =>
+        $"<svg viewBox='{viewBox}' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'>" +
+        Regex.Replace(geometry, @"<(path|circle|rect|ellipse|line|polyline|polygon)\b", "$0 vector-effect='non-scaling-stroke'") + "</svg>";
+
     private static readonly Dictionary<string, string> _icons = new()
     {
-        { "Etiqueta", Icons.Material.Filled.TextFormat },
-        { "Señal", Icons.Material.Filled.Sensors },
-        { "Comando", Icons.Material.Filled.ToggleOn },
-        { "Linea H", Icons.Material.Filled.Remove },
-        { "Linea V", Icons.Material.Filled.MoreVert },
-        { "Diodo", "<svg viewBox='0 0 129 100'><g transform='translate(0,100) scale(0.1,-0.1)' fill='currentColor'><path d='M160 921 c-6 -12 -10 -93 -10 -195 l0 -176 -75 0 -75 0 0 -45 0 -45 75 0 75 0 0 -190 c0 -177 1 -191 20 -210 11 -11 25 -20 30 -20 6 0 177 83 380 185 204 102 370 184 371 183 0 -2 1 -79 2 -171 2 -154 4 -170 21 -183 25 -18 37 -18 62 0 17 13 19 30 22 210 l4 196 114 0 114 0 0 45 0 44 -116 3 -116 3 -1 176 c-2 188 -7 209 -52 209 -44 0 -50 -22 -51 -192 -1 -87 -4 -161 -7 -164 -2 -3 -167 76 -366 175 -198 100 -372 181 -386 181 -14 0 -29 -8 -35 -19z m420 -270 l315 -158 -313 -157 c-171 -86 -316 -156 -322 -156 -6 0 -10 110 -10 315 0 173 3 315 8 314 4 0 149 -71 322 -158z'/></g></svg>" },
-        { "Dotline", "<svg viewBox='0 0 28 68'><g transform='translate(0,68) scale(0.1,-0.1)' fill='currentColor'><path d='M39 631 c-37 -37 -39 -42 -39 -102 0 -61 1 -63 45 -105 l45 -41 0 -192 0 -191 45 0 45 0 0 194 0 195 31 18 c67 40 90 132 48 200 -27 44 -66 63 -130 63 -46 0 -55 -4 -90 -39z'/></g></svg>" },
-        { "Resistencia", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12 h3 l2 -7 l4 14 l4 -14 l4 14 l2 -7 h3' /></svg>" },
-        { "Transformador", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='12' r='5' /><circle cx='16' cy='12' r='5' /></svg>" },
-        { "Fusible", Icons.Material.Filled.PowerInput },
-        { "Interruptor", Icons.Material.Filled.ToggleOff },
-        { "Borne", Icons.Material.Filled.RadioButtonUnchecked },
-        { "Contactor", "<path d=\"M2,11h6v2h-6z M16,11h6v2h-6z M7.5,12l8.5,-6 1,1.5 -8.5,6z\"/>" },
-        { "Contactor_Closed", "<path d=\"M2,11h20v2h-20z\"/>" },
-        { "Contactor V", "<path d=\"M11,2h2v6h-2z M11,16h2v6h-2z M12,7.5l-6,8.5 1.5,1 6,-8.5z\"/>" },
-        { "Contactor V_Closed", "<path d=\"M11,2h2v20h-2z\"/>" },
-        { 
-            "Rectificador", 
-            "<svg viewBox='0 0 355 426' fill='currentColor'><g transform='translate(0,426) scale(0.1,-0.1)'><path d='M55 4253 c-11 -3 -26 -10 -32 -15 -10 -8 -13 -442 -13 -2109 l0 -2098 22 -15 c20 -14 200 -16 1755 -14 1405 3 1734 5 1745 16 11 11 13 402 13 2107 0 1997 -1 2095 -18 2112 -17 17 -101 18 -1735 19 -944 1 -1726 0 -1737 -3z m3285 -108 c0 -3 -305 -364 -677 -803 -1282 -1509 -1469 -1729 -2002 -2357 -294 -346 -538 -634 -543 -640 -4 -5 -8 849 -8 1898 l0 1907 1615 0 c888 0 1615 -2 1615 -5z m110 -75 c0 -30 28 3 -2620 -3114 -382 -450 -700 -828 -707 -840 -11 -18 -12 -14 -13 36 0 45 4 58 18 63 14 5 1021 1186 2902 3406 223 263 408 478 413 478 4 1 7 -12 7 -29z m0 -2080 c0 -1495 -3 -1882 -12 -1885 -7 -3 -730 -4 -1606 -3 l-1594 3 548 645 c1004 1182 1954 2300 2303 2712 190 224 349 408 354 408 4 0 7 -846 7 -1880z'/><path d='M432 3658 c-18 -18 -15 -53 6 -71 17 -15 57 -17 368 -17 300 0 353 2 372 16 24 17 29 53 10 72 -17 17 -739 17 -756 0z'/><path d='M450 3497 c-34 -17 -39 -60 -8 -81 19 -14 68 -16 368 -16 300 0 349 2 368 16 31 21 26 64 -8 81 -19 9 -111 13 -360 13 -249 0 -341 -4 -360 -13z'/><path d='M2392 788 c-18 -18 -15 -53 6 -71 17 -15 57 -17 368 -17 300 0 353 2 372 16 24 17 29 53 10 72 -17 17 -739 17 -756 0z'/><path d='M2410 627 c-34 -17 -39 -60 -8 -81 19 -14 68 -16 368 -16 300 0 349 2 368 16 31 21 26 64 -8 81 -36 18 -684 18 -720 0z'/></g></svg>" 
-        },
-        { 
-            "Inversor", 
-            "<svg viewBox='0 0 355 426' fill='currentColor'><g transform='translate(0,426) scale(0.1,-0.1)'><path d='M55 4253 c-11 -3 -26 -10 -32 -15 -10 -8 -13 -442 -13 -2109 l0 -2098 22 -15 c20 -14 202 -16 1755 -13 1405 2 1734 4 1745 15 11 11 13 402 13 2107 0 1997 -1 2095 -18 2112 -17 17 -101 18 -1735 19 -944 1 -1726 0 -1737 -3z m3285 -108 c0 -3 -406 -484 -902 -1068 -496 -584 -1219 -1435 -1607 -1892 -387 -456 -708 -834 -712 -840 -5 -5 -9 849 -9 1898 l0 1907 1615 0 c888 0 1615 -2 1615 -5z m110 -75 c0 -30 28 3 -2620 -3114 -382 -450 -700 -828 -707 -840 -11 -18 -12 -14 -13 36 0 45 4 58 18 63 9 3 56 52 103 108 47 56 597 705 1223 1442 626 737 1328 1564 1560 1837 231 273 424 497 429 497 4 1 7 -12 7 -29z m0 -2080 c0 -1495 -3 -1882 -12 -1885 -7 -3 -730 -4 -1607 -3 l-1593 3 234 275 c128 151 463 545 743 875 280 330 741 872 1024 1205 282 333 667 786 855 1007 187 222 344 403 349 403 4 0 7 -846 7 -1880z'/><path d='M432 3658 c-18 -18 -15 -53 6 -71 17 -15 57 -17 368 -17 300 0 353 2 372 16 24 17 29 53 10 72 -17 17 -739 17 -756 0z'/><path d='M450 3497 c-34 -17 -39 -60 -8 -81 19 -14 68 -16 368 -16 300 0 349 2 368 16 31 21 26 64 -8 81 -19 9 -111 13 -360 13 -249 0 -341 -4 -360 -13z'/><path d='M2469 943 c-10 -11 -15 -53 -17 -135 l-4 -118 -42 0 c-23 0 -52 -7 -64 -16 -24 -17 -29 -53 -10 -72 16 -16 190 -16 206 0 8 8 12 53 12 135 l0 123 90 0 90 0 0 -259 c0 -257 0 -260 22 -275 18 -13 53 -16 169 -16 187 0 179 -7 179 158 l0 122 53 0 c57 0 77 12 77 45 0 41 -30 55 -113 55 -112 0 -117 -7 -117 -160 l0 -120 -85 0 -85 0 0 258 c0 238 -1 260 -18 275 -27 25 -323 25 -343 0z'/></g></svg>" 
-        },
-        { 
-            "Convertidor", 
-            "<svg viewBox='0 0 355 426' fill='currentColor'><g transform='translate(0,426) scale(0.1,-0.1)'><path d='M55 4253 c-11 -3 -26 -10 -32 -15 -10 -8 -13 -442 -13 -2109 l0 -2098 22 -15 c20 -14 200 -16 1755 -14 1405 3 1734 5 1745 16 11 11 13 402 13 2107 0 1997 -1 2095 -18 2112 -17 17 -101 18 -1735 19 -944 1 -1726 0 -1737 -3z m3298 -125 c-11 -13 -741 -898 -1623 -1968 -882 -1070 -1607 -1949 -1611 -1955 -5 -5 -9 866 -9 1968 l0 1977 1632 0 1631 0 -20 -22z m97 -2023 c1 -1620 -2 -1996 -12 -2000 -7 -3 -752 -4 -1656 -3 l-1643 3 1647 1998 c906 1098 1651 1997 1655 1997 4 0 8 -898 9 -1995z'/><path d='M432 3658 c-18 -18 -15 -53 6 -71 17 -15 57 -17 368 -17 300 0 353 2 372 16 24 17 29 53 10 72 -17 17 -739 17 -756 0z'/><path d='M450 3497 c-34 -17 -39 -60 -8 -81 19 -14 68 -16 368 -16 300 0 349 2 368 16 31 21 26 64 -8 81 -19 9 -111 13 -360 13 -249 0 -341 -4 -360 -13z'/><path d='M2392 788 c-18 -18 -15 -53 6 -71 17 -15 57 -17 368 -17 300 0 353 2 372 16 24 17 29 53 10 72 -17 17 -739 17 -756 0z'/><path d='M2410 627 c-34 -17 -39 -60 -8 -81 19 -14 68 -16 368 -16 300 0 349 2 368 16 31 21 26 64 -8 81 -36 18 -684 18 -720 0z'/></g></svg>" 
-        },
-        { 
-            "Trifasico", 
-            "<svg viewBox='0 0 276 257' fill='currentColor'><g transform='translate(0,257) scale(0.1,-0.1)'><path d='M21 2536 c-8 -10 -11 -345 -11 -1249 0 -679 2 -1242 6 -1250 3 -8 17 -17 32 -21 53 -11 2680 -2 2692 10 15 15 14 2492 -1 2510 -17 21 -2701 21 -2718 0z m2629 -1251 l0 -1165 -1270 0 -1270 0 0 1165 0 1165 1270 0 1270 0 0 -1165z'/><path d='M1344 2342 c-6 -4 -107 -151 -224 -327 -117 -176 -215 -323 -219 -327 -4 -4 -60 28 -126 72 -66 44 -129 80 -140 80 -47 0 -60 -53 -23 -87 38 -33 522 -360 544 -367 14 -4 29 0 44 12 41 33 22 59 -101 142 -61 41 -112 77 -114 81 -3 5 353 548 375 573 5 4 108 -141 230 -324 166 -249 219 -335 208 -341 -7 -4 -57 -38 -110 -75 -83 -56 -98 -71 -98 -93 0 -32 16 -51 45 -51 12 0 145 85 296 188 242 166 274 191 277 217 4 29 -17 55 -43 55 -7 0 -69 -38 -138 -85 -69 -47 -129 -85 -132 -85 -3 0 -113 163 -245 363 -132 199 -245 368 -251 375 -11 13 -38 16 -55 4z'/><path d='M476 1664 c-36 -36 -19 -56 137 -162 59 -40 107 -76 107 -80 0 -4 -112 -176 -250 -382 -137 -206 -250 -384 -250 -396 0 -12 6 -27 13 -33 14 -11 453 -22 815 -21 l162 0 0 -143 c0 -155 9 -187 54 -187 48 0 49 8 47 362 -1 183 -6 339 -12 349 -12 24 -44 32 -69 19 -19 -10 -20 -20 -20 -155 l0 -144 -417 6 c-230 3 -419 7 -421 8 -2 2 96 152 217 334 l221 331 93 -64 c130 -89 133 -91 163 -71 18 12 24 23 22 43 -3 22 -45 55 -278 214 -151 103 -285 187 -297 188 -12 0 -29 -7 -37 -16z'/><path d='M2263 1597 c-73 -40 -535 -361 -544 -378 -14 -26 12 -69 42 -69 12 0 63 29 115 65 52 36 97 65 101 65 9 -1 386 -565 391 -584 2 -8 -109 -10 -427 -8 l-430 2 -3 142 -3 142 -27 15 c-24 14 -28 14 -49 -4 l-22 -20 6 -338 c6 -357 7 -367 53 -367 48 0 54 19 54 182 l0 150 490 -3 c534 -4 515 -6 507 51 -2 14 -103 175 -225 357 -122 183 -222 336 -222 341 0 4 61 49 135 100 110 76 135 97 135 117 0 25 -24 55 -43 55 -7 0 -22 -6 -34 -13z'/></g></svg>" 
-        },
-        { 
-            "Ventilador", 
-            "<svg viewBox='0 0 128 128' fill='currentColor'><g transform='translate(0,128) scale(0.1,-0.1)'><path d='M480 1254 c-214 -56 -401 -244 -455 -459 -19 -76 -19 -234 0 -310 56 -220 240 -404 460 -460 76 -19 234 -19 310 0 217 55 405 243 460 460 19 76 19 234 0 310 -55 217 -243 405 -460 460 -75 19 -241 19 -315 -1z m300 -69 c195 -52 353 -210 405 -405 19 -70 19 -210 0 -280 -26 -98 -74 -180 -150 -255 -75 -76 -157 -124 -255 -150 -70 -19 -210 -19 -280 0 -196 52 -353 209 -405 405 -19 70 -19 210 0 280 51 192 209 352 401 405 66 18 216 18 284 0z'/><path d='M375 1100 c-27 -11 -67 -34 -89 -52 -38 -31 -38 -32 -33 -88 11 -127 112 -250 231 -282 42 -11 46 -15 46 -43 0 -16 4 -37 9 -44 31 -48 -102 -107 -159 -71 -33 21 -100 -88 -100 -165 0 -80 64 -167 157 -214 66 -33 94 -28 148 24 93 91 131 233 93 351 -4 13 66 74 85 74 48 0 95 -46 107 -104 5 -29 7 -30 60 -29 48 1 51 0 20 -7 l-35 -7 35 -2 c62 -2 113 19 155 63 48 49 67 106 67 193 -1 114 -34 138 -192 138 -94 0 -110 -3 -155 -27 -27 -14 -63 -40 -79 -57 -23 -24 -32 -28 -43 -20 -7 7 -28 15 -45 18 -60 12 -64 104 -7 161 29 28 30 32 19 66 -16 46 -75 113 -117 131 -45 18 -119 15 -178 -7z m600 -465 c150 -38 162 -47 130 -89 -13 -17 -22 -18 -102 -11 -48 4 -100 9 -114 10 -15 1 -39 12 -55 24 -16 12 -41 25 -56 28 -24 5 -28 10 -28 40 l0 35 68 -7 c37 -4 108 -18 157 -30z'/></g></svg>" 
-        },
-        { "Condensador", "<path d=\"M11,2h2v8h-2z M4,10h16v2H4z M4,14h16v2H4z M11,16h2v6h-2z\"/>" },
-        { "Bobina", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 15 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0 a2.5 2.5 0 0 1 5 0' /></svg>" },
-        { "Descargador", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12 h7 l1.5 -7 l3 14 l1.5 -7 h7' /></svg>" },
-        { "Caja", Icons.Material.Filled.CheckBoxOutlineBlank },
-        { "ACpresence", "<svg viewBox='0 0 700 700'><g transform='translate(0,700) scale(0.1,-0.1)' fill='currentColor'><path d='M3374 5999 c-98 -37 -131 -76 -260 -299 -151 -264 -226 -393 -369 -640 -81 -140 -216 -374 -300 -520 -84 -146 -194 -337 -245 -425 -51 -88 -125 -216 -165 -285 -39 -69 -107 -186 -150 -260 -43 -74 -119 -207 -170 -295 -50 -88 -125 -218 -167 -290 -41 -71 -117 -204 -170 -295 -52 -91 -172 -300 -267 -465 -400 -693 -444 -772 -457 -809 -21 -57 -18 -156 7 -221 27 -72 101 -153 176 -190 l58 -30 2600 0 2600 0 58 24 c80 32 158 110 187 188 28 72 30 189 5 247 -19 44 -48 96 -355 626 -123 212 -256 442 -296 513 -102 175 -217 375 -279 482 -81 140 -199 344 -303 525 -185 322 -240 416 -292 505 -29 50 -86 149 -128 220 -160 279 -221 385 -294 510 -42 72 -190 328 -330 570 -303 524 -296 512 -344 554 -90 80 -235 105 -350 60z m210 -124 c67 -28 54 -8 507 -793 30 -53 90 -155 131 -227 222 -383 487 -841 533 -920 28 -49 87 -151 130 -225 43 -74 111 -191 150 -260 213 -369 451 -782 785 -1360 206 -355 382 -662 392 -682 11 -23 18 -59 18 -93 0 -86 -40 -150 -118 -190 -31 -15 -216 -17 -2560 -22 -1390 -3 -2553 -3 -2584 1 -120 15 -202 106 -195 218 3 52 16 78 169 345 261 455 613 1066 693 1203 40 69 143 247 228 395 166 290 207 360 807 1400 463 802 524 908 599 1039 61 107 87 138 141 167 43 22 125 24 174 4z'/><path d='M3131 4573 c-10 -47 -75 -300 -144 -563 -20 -74 -58 -223 -86 -330 -27 -107 -64 -249 -81 -315 -17 -66 -47 -181 -66 -255 -19 -74 -55 -213 -80 -309 -25 -95 -43 -175 -42 -177 2 -1 120 37 263 85 699 236 869 291 876 289 5 -2 -44 -82 -109 -178 -65 -96 -226 -335 -357 -530 -131 -195 -245 -365 -254 -377 -15 -22 -22 -22 -194 -23 -98 0 -177 -3 -175 -7 13 -30 291 -579 294 -582 4 -4 195 139 694 519 l84 65 -180 5 -181 5 139 215 c170 263 201 310 570 875 161 248 304 468 318 489 l24 39 -30 -6 c-16 -4 -63 -16 -104 -27 -41 -12 -127 -34 -190 -51 -63 -17 -137 -37 -165 -44 -242 -66 -330 -89 -520 -140 -93 -24 -219 -58 -280 -75 -60 -16 -111 -30 -113 -30 -4 0 37 77 275 525 85 160 176 331 203 380 26 50 104 197 174 327 69 130 126 240 126 243 0 3 -153 5 -339 5 l-339 0 -11 -47z'/></g></svg>" },
-        { "Box", "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='0.1' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='1' ry='1' /></svg>" },
-        { "Barra", "<svg viewBox='0 0 24 24' fill='currentColor'><rect x='2' y='10' width='20' height='4' rx='1' /><rect x='2' y='10' width='10' height='4' rx='1' opacity='0.5' /></svg>" }
+        ["Etiqueta"] = Icons.Material.Filled.TextFormat,
+        ["Señal"] = Icons.Material.Filled.Sensors,
+        ["Comando"] = Icons.Material.Filled.ToggleOn,
+        ["Caja"] = Icons.Material.Filled.CheckBoxOutlineBlank,
+        ["Barra"] = Icons.Material.Filled.LinearScale,
+        ["Linea H"] = Symbol("<path d='M0 20 H60'/>"),
+        ["Linea V"] = Symbol("<path d='M30 0 V40'/>"),
+        ["Dotline"] = Symbol("<path d='M6 5 V100'/><circle cx='6' cy='5' r='4' fill='currentColor' stroke='none'/>", "0 0 12 100"),
+        ["Diodo"] = Symbol("<path d='M0 20 H16 M16 6 L40 20 L16 34 Z M40 6 V34 M40 20 H60'/>"),
+        ["Resistencia"] = Symbol("<path d='M0 20 H12 M48 20 H60'/><rect x='12' y='12' width='36' height='16'/>"),
+        ["Bobina"] = Symbol("<path d='M0 26 H10 A5 12 0 0 1 20 26 A5 12 0 0 1 30 26 A5 12 0 0 1 40 26 A5 12 0 0 1 50 26 H60'/>"),
+        ["Descargador"] = Symbol("<path d='M0 20 H18 L24 8 L36 32 L42 20 H60'/>"),
+        ["Transformador"] = Symbol("<path d='M0 20 H10 M50 20 H60'/><circle cx='24' cy='20' r='14'/><circle cx='36' cy='20' r='14'/>"),
+        ["Fusible"] = Symbol("<path d='M0 20 H60'/><rect x='18' y='12' width='24' height='16'/>"),
+        ["Interruptor"] = Symbol("<path d='M0 20 H18 L40 6 M42 20 H60 M38 16 L46 24 M38 24 L46 16'/>"),
+        ["Seccionador"] = Symbol("<path d='M0 20 H18 L40 6 M42 20 H60'/><circle cx='18' cy='20' r='2'/><circle cx='42' cy='20' r='2'/>"),
+        ["Contactor"] = Symbol("<path d='M0 20 H18 L40 6 M42 20 H60'/>"),
+        ["Contactor_Closed"] = Symbol("<path d='M0 20 H60'/>"),
+        ["Contactor V"] = Symbol("<path d='M20 0 V18 L6 40 M20 42 V60'/>", "0 0 40 60"),
+        ["Contactor V_Closed"] = Symbol("<path d='M20 0 V60'/>", "0 0 40 60"),
+        ["Borne"] = Symbol("<circle cx='12' cy='12' r='5'/>", "0 0 24 24"),
+        ["Rectificador"] = Converter("<path d='M10 15 Q14 7 18 15 T26 15 M36 42 H50 M36 46 H50'/>"),
+        ["Inversor"] = Converter("<path d='M10 13 H24 M10 17 H24 M34 44 Q38 36 42 44 T50 44'/>"),
+        ["Convertidor"] = Converter("<path d='M10 13 H24 M10 17 H24 M36 42 H50 M36 46 H50'/>"),
+        ["Trifasico"] = Symbol("<rect x='2' y='2' width='56' height='56'/><path d='M30 10 L10 46 H50 Z M20 24 L26 28 M34 28 L40 24 M30 42 V50'/>", "0 0 60 60"),
+        ["Ventilador"] = Symbol("<circle cx='30' cy='30' r='27'/><circle cx='30' cy='30' r='3'/><path d='M28 27 C8 20 17 5 28 9 C34 12 35 20 32 27 M33 30 C49 16 57 32 48 40 C41 43 36 38 32 33 M28 32 C33 52 14 54 12 42 C13 34 21 32 28 32'/>", "0 0 60 60"),
+        ["Condensador"] = Symbol("<path d='M20 0 V25 M5 25 H35 M5 35 H35 M20 35 V60'/>", "0 0 40 60"),
+        ["ACpresence"] = Symbol("<path d='M30 3 L58 56 H2 Z M33 16 L22 33 H33 L26 46 L41 27 H29 Z'/>", "0 0 60 60"),
+        ["Box"] = Symbol("<rect x='1' y='1' width='58' height='38'/>")
     };
 
-    public static string GetIcon(string type)
+    private static string Converter(string markings) => Symbol(
+        "<rect x='2' y='2' width='56' height='56'/><path d='M2 58 L58 2'/>" + markings, "0 0 60 60");
+
+    public static string GetIcon(string type) =>
+        type != null && _icons.TryGetValue(type, out var icon) ? icon : Icons.Material.Filled.Help;
+
+    public static bool HasStroke(string type) => GetIcon(type).StartsWith("<svg");
+
+    public static (double Width, double Height) GetDefaultSize(string type) => type switch
     {
-        if (type == null) return Icons.Material.Filled.Help;
-        
-        if (_icons.TryGetValue(type, out var icon))
-            return icon;
-            
-        return Icons.Material.Filled.SettingsInputComponent;
+        "Etiqueta" => (100, 20),
+        "Señal" => (160, 60),
+        "Comando" or "Caja" => (100, 30),
+        "Linea H" => (100, 10),
+        "Linea V" or "Dotline" => (12, 100),
+        "Contactor V" or "Condensador" => (40, 60),
+        "Borne" => (20, 20),
+        "Rectificador" or "Inversor" or "Convertidor" or "Trifasico" or "Ventilador" or "ACpresence" => (60, 60),
+        "Barra" => (200, 30),
+        _ => (60, 40)
+    };
+
+    public static string RenderIcon(string icon, SinopticoElement element, string color)
+    {
+        string F(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+        var stroke = double.IsFinite(element.StrokeWidth) ? Math.Clamp(element.StrokeWidth, 0.5, 8) : 1.5;
+        if (element.Type == "Dotline")
+        {
+            // Canvas units keep the terminal dot round when resizing either axis.
+            var width = double.IsFinite(element.Width) ? Math.Max(1, element.Width) : 12;
+            var height = double.IsFinite(element.Height) ? Math.Max(1, element.Height) : 100;
+            var radius = Math.Min(5, Math.Min(width, height) / 2);
+            var x = F(width / 2);
+            icon = Symbol($"<path d='M{x} {F(radius)} V{F(height)}'/><circle cx='{x}' cy='{F(radius)}' r='{F(radius)}' fill='currentColor' stroke='none'/>", $"0 0 {F(width)} {F(height)}");
+        }
+        color = HtmlEncoder.Default.Encode(color);
+        if (icon.StartsWith("<svg"))
+            return icon.Replace("<svg", "<svg width='100%' height='100%' preserveAspectRatio='none' style='display:block;overflow:visible' aria-hidden='true'")
+                .Replace("stroke-width='1.5'", $"stroke-width='{F(stroke)}'").Replace("currentColor", color);
+        var content = icon.StartsWith("<path") ? icon : $"<path d='{icon}'/>";
+        return $"<svg viewBox='0 0 24 24' width='100%' height='100%' aria-hidden='true' fill='{color}'>{content}</svg>";
     }
 }

@@ -31,6 +31,7 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=aps.db"));
 
 builder.Services.AddScoped<ApsDataService>();
+builder.Services.AddSingleton<ProjectBrandingService>();
 builder.Services.AddScoped<SessionStateService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
 builder.Services.AddScoped<TrdpConfigService>();
@@ -70,6 +71,8 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated(); // Crea tablas si la BD no existe aún
 
     SignalSchema.EnsurePersistentBindings(context);
+    CommandSchema.EnsureControlCommands(context);
+    ProjectBrandingService.EnsureSchema(context);
 
     // Migración manual de columnas
     try

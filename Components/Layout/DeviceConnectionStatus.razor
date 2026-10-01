@@ -1,0 +1,55 @@
+@implements IAsyncDisposable
+@inject MonitorStateService Monitor
+
+<footer class="device-connection-status" aria-label="Conexión en tiempo real con los equipos" role="status" aria-live="polite">
+    <span class="device-status-item" title="@Description(_state.Communications)">
+        <span class="device-status-dot @(_state.Communications ? "online" : "offline")" aria-hidden="true"></span>
+        <span>Comunicaciones</span>
+        <span class="device-status-accessible">: @(_state.Communications ? "con conexión" : "sin conexión")</span>
+    </span>
+    <span class="device-status-item" title="@Description(_state.Control)">
+        <span class="device-status-dot @(_state.Control ? "online" : "offline")" aria-hidden="true"></span>
+        <span>Control</span>
+        <span class="device-status-accessible">: @(_state.Control ? "con conexión" : "sin conexión")</span>
+    </span>
+</footer>
+
+@code {
+    private readonly CancellationTokenSource _stop = new();
+    private Task? _refresh;
+    private (bool Communications, bool Control) _state;
+
+    protected override void OnInitialized()
+    {
+        _state = Monitor.DeviceConnections;
+        _refresh = RefreshAsync();
+    }
+
+    private static string Description(bool connected) => connected
+        ? "Con conexión: respuesta SEPSA recibida en los últimos 3 segundos."
+        : "Sin conexión confirmada: no se han recibido respuestas SEPSA recientes.";
+
+    private async Task RefreshAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_stop.Token))
+                await InvokeAsync(() =>
+                {
+                    var next = Monitor.DeviceConnections;
+                    if (next == _state) return;
+                    _state = next;
+                    StateHasChanged();
+                });
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _stop.CancelAsync();
+        if (_refresh is not null) await _refresh;
+        _stop.Dispose();
+    }
+}
