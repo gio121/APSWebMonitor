@@ -32,7 +32,10 @@ builder.Services.AddDbContextFactory<ApsDbContext>(options =>
 
 builder.Services.AddScoped<ApsDataService>();
 builder.Services.AddSingleton<ProjectBrandingService>();
+builder.Services.AddSingleton<PageAccessService>();
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PageAccessHandler>();
 builder.Services.AddScoped<SessionStateService>();
+builder.Services.AddScoped<MonitorThemeService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
 builder.Services.AddScoped<TrdpConfigService>();
 builder.Services.AddHttpClient<SepsaProtocolClient>();
@@ -59,7 +62,11 @@ builder.Services.AddAuthentication();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthenticationStateProvider>());
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var page in PageAccessService.Pages)
+        options.AddPolicy("Page:" + page.Key, policy => policy.RequireAuthenticatedUser().AddRequirements(new PageAccessRequirement(page.Key)));
+});
 
 var app = builder.Build();
 
@@ -73,6 +80,7 @@ using (var scope = app.Services.CreateScope())
     SignalSchema.EnsurePersistentBindings(context);
     CommandSchema.EnsureControlCommands(context);
     ProjectBrandingService.EnsureSchema(context);
+    PageAccessService.EnsureSchema(context);
 
     // Migración manual de columnas
     try

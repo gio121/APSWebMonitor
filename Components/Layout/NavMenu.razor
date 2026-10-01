@@ -1,36 +1,30 @@
 <MudNavMenu Class="mt-2">
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.House">Inicio</MudNavLink>
-    <MudNavLink Href="/ventanas" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Window">Ventanas</MudNavLink>
-
-    <AuthorizeView Roles="Administrador,Mantenimiento">
-        <MudNavLink Href="/sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.PlayCircle">Sesiones</MudNavLink>
+    <AuthorizeView Policy="Page:inicio"><MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.House">Inicio</MudNavLink></AuthorizeView>
+    <AuthorizeView Policy="Page:ventanas"><MudNavLink Href="/ventanas" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Window">Ventanas</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:sesiones"><MudNavLink Href="/sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.PlayCircle">Sesiones</MudNavLink></AuthorizeView>
         
-        <MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Senales</MudNavLink>
-    </AuthorizeView>
-
-    <AuthorizeView Roles="Administrador">
-        <MudNavLink Href="/monitor" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MonitorHeart">Monitor</MudNavLink>
-        <MudNavLink Href="/reprogramacion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.SystemUpdateAlt">Reprogramación</MudNavLink>
-        <MudNavLink Href="/logs" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ReceiptLong">Logs</MudNavLink>
-        <MudNavLink Href="/analizador-sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.QueryStats">Analizador</MudNavLink>
-        <MudNavLink Href="/comandos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Terminal">Comandos</MudNavLink>
-        <MudNavLink Href="/trdp" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Router">TRDP Config</MudNavLink>
-        <MudNavLink Href="/trdp-live" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Stream">TRDP Live</MudNavLink>
-        <MudNavLink Href="/configuracion-red" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.SettingsEthernet">Red y DHCP</MudNavLink>
-        <MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administracion</MudNavLink>
-    </AuthorizeView>
+        <AuthorizeView Policy="Page:senales"><MudNavLink Href="/senales" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Sensors">Senales</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:monitor"><MudNavLink Href="/monitor" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.MonitorHeart">Monitor</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:reprogramacion"><MudNavLink Href="/reprogramacion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.SystemUpdateAlt">Reprogramación</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:logs"><MudNavLink Href="/logs" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ReceiptLong">Logs</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:analizador-sesiones"><MudNavLink Href="/analizador-sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.QueryStats">Analizador</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:comandos"><MudNavLink Href="/comandos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Terminal">Comandos</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:trdp"><MudNavLink Href="/trdp" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Router">TRDP Config</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:trdp-live"><MudNavLink Href="/trdp-live" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Stream">TRDP Live</MudNavLink></AuthorizeView>
+        <AuthorizeView Policy="Page:configuracion-red"><MudNavLink Href="/configuracion-red" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.SettingsEthernet">Red y DHCP</MudNavLink></AuthorizeView>
+        <AuthorizeView Roles="Administrador"><MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">Administracion</MudNavLink></AuthorizeView>
 </MudNavMenu>
 
 <style>
     /* Add slight transparency to unselected nav links per screenshot */
     .mud-nav-link {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
         padding-left: 24px !important;
         min-height: 48px !important;
     }
     .mud-nav-link:hover {
         background-color: rgba(255,255,255,0.05) !important;
-        color: #e2e8f0 !important;
+        color: var(--mud-palette-text-primary) !important;
     }
     .mud-nav-link.active {
         color: #3b82f6 !important;

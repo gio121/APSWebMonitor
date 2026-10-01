@@ -113,7 +113,7 @@
                     <!-- ── Persistencia y Fórmulas ───────────────────────────── -->
                     <MudItem xs="12"><MudDivider /></MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Persistent" Color="Color.Warning" />
                                 <div>
@@ -126,7 +126,7 @@
                         </MudPaper>
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Cumulative" Color="Color.Tertiary" />
                                 <div>
@@ -139,7 +139,7 @@
                         </MudPaper>
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                        <MudPaper Elevation="0" Class="pa-3 h-100" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.SumToCurrent" Color="Color.Primary" />
                                 <div>
@@ -158,7 +158,7 @@
                                       HelperText="Si se define, se evaluará la expresión matemática al generar la variable." />
 
                         <!-- Asistente de Fórmula -->
-                        <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:#0f172a; border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
+                        <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:var(--mud-palette-background); border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
                             <div class="d-flex align-center justify-space-between mb-2">
                                 <div class="d-flex align-center gap-1">
                                     <MudIcon Icon="@Icons.Material.Filled.Functions" Size="Size.Small" Style="color:#38bdf8;" />
@@ -206,7 +206,7 @@
 
                             <!-- Operadores y funciones matemáticas -->
                             <div class="mb-2">
-                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:#94a3b8;">
+                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:var(--mud-palette-text-secondary);">
                                     Operadores y Funciones:
                                 </MudText>
                                 <div class="d-flex flex-wrap gap-1">
@@ -266,7 +266,7 @@
                 @if (_links.Count == 0)
                 {
                     <MudPaper Elevation="0" Class="pa-6 text-center"
-                              Style="background:#111827; border:1px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                              Style="background:var(--mud-palette-background); border:1px dashed var(--mud-palette-lines-default); border-radius:8px;">
                         <MudIcon Icon="@Icons.Material.Filled.LinkOff" Style="font-size:2.5rem; opacity:.2;" />
                         <MudText Typo="Typo.body2" Class="trdp-muted mt-2">Sin mappings. Esta variable no se rellenará automáticamente.</MudText>
                     </MudPaper>
@@ -308,12 +308,12 @@
 </MudDialog>
 
 <style>
-    .trdp-muted           { color: #94a3b8 !important; }
+    .trdp-muted           { color: var(--mud-palette-text-secondary) !important; }
     .trdp-var-dialog .mud-dialog-content { max-height: 82vh; overflow-y: auto; }
     .var-dialog-tabs .mud-tabs-toolbar   { background: transparent !important; }
     .mapping-row {
-        background: #111827;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
         transition: border-color .15s;
     }

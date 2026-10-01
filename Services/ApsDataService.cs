@@ -33,7 +33,7 @@ public class ApsDataService
         context.Windows.Update(window);
         await context.SaveChangesAsync();
     }
-    
+
     public async Task DeleteWindowAsync(int id)
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();

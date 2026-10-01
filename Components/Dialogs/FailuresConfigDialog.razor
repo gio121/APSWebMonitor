@@ -46,7 +46,7 @@
                     
                     @if (category.SignalIds.Any())
                     {
-                        <div class="d-flex flex-wrap gap-1 my-2 pa-2 rounded" style="background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="d-flex flex-wrap gap-1 my-2 pa-2 rounded" style="background: rgba(0,0,0,0.1); border: 1px solid var(--mud-palette-lines-default);">
                             @foreach (var sigId in category.SignalIds.ToList())
                             {
                                 var sig = AvailableSignals.FirstOrDefault(s => s.Id == sigId);
@@ -59,7 +59,7 @@
 
                     <div class="mt-4">
                         <MudExpansionPanels Elevation="0">
-                            <MudExpansionPanel Text="Gestionar señales de detalle..." Style="background: transparent; border: 1px solid rgba(255,255,255,0.05);">
+                            <MudExpansionPanel Text="Gestionar señales de detalle..." Style="background: transparent; border: 1px solid var(--mud-palette-lines-default);">
                                 <TitleContent>
                                     <div class="d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2" />
@@ -115,7 +115,7 @@
                     @* ── Subcomandos Start/Stop/Reset ── *@
                     <div class="mt-4">
                         <MudExpansionPanels Elevation="0">
-                            <MudExpansionPanel Style="background: transparent; border: 1px solid rgba(255,255,255,0.05);">
+                            <MudExpansionPanel Style="background: transparent; border: 1px solid var(--mud-palette-lines-default);">
                                 <TitleContent>
                                     <div class="d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Class="mr-2" />

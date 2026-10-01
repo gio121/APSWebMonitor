@@ -1,8 +1,31 @@
+@implements IDisposable
+@inject PageAccessService PageAccess
+@inject AuthenticationStateProvider Authentication
+@inject IJSRuntime JS
+
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+        @if (!_authenticationReady)
+        {
+            <div class="app-startup" role="status">Comprobando sesión…</div>
+        }
+        else if (routeData.PageType == typeof(Pages.Login))
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.LoginLayout)" />
+        }
+        else if (!_authenticated)
+        {
+            <div class="app-startup" role="status">Abriendo acceso…</div>
+            <RedirectToLogin />
+        }
+        else
+        {
+        <AuthorizeRouteView @key="_permissionVersion" RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <NotAuthorized>
-                <RedirectToLogin />
+                <AuthorizeView Context="pageUser">
+                    <Authorized><MudAlert Severity="Severity.Warning">No tienes permiso para acceder a esta página. Contacta con el administrador.</MudAlert></Authorized>
+                    <NotAuthorized><RedirectToLogin /></NotAuthorized>
+                </AuthorizeView>
             </NotAuthorized>
             <Authorizing>
                 <div class="d-flex justify-center align-center pa-12">
@@ -12,5 +35,49 @@
             </Authorizing>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        }
     </Found>
 </Router>
+
+@code {
+    private int _permissionVersion;
+    private bool _disposed;
+    private bool _authenticationReady;
+    private bool _authenticated;
+    protected override async Task OnInitializedAsync()
+    {
+        PageAccess.Changed += RefreshPermissions;
+        Authentication.AuthenticationStateChanged += AuthenticationChanged;
+        await UpdateAuthenticationAsync(Authentication.GetAuthenticationStateAsync());
+    }
+    private async Task UpdateAuthenticationAsync(Task<AuthenticationState> task)
+    {
+        var state = await task;
+        if (_disposed) return;
+        _authenticated = state.User.Identity?.IsAuthenticated == true;
+        _authenticationReady = true;
+    }
+    private void AuthenticationChanged(Task<AuthenticationState> task) => _ = InvokeAsync(async () =>
+    {
+        await UpdateAuthenticationAsync(task);
+        if (!_disposed) StateHasChanged();
+    });
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("apsStartup.complete");
+    }
+    private void RefreshPermissions() => _ = InvokeAsync(async () =>
+    {
+        if (_disposed) return;
+        var state = await Authentication.GetAuthenticationStateAsync();
+        if (_disposed || state.User.IsInRole("Administrador")) return;
+        _permissionVersion++;
+        StateHasChanged();
+    });
+    public void Dispose()
+    {
+        _disposed = true;
+        PageAccess.Changed -= RefreshPermissions;
+        Authentication.AuthenticationStateChanged -= AuthenticationChanged;
+    }
+}

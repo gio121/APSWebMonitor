@@ -1,5 +1,5 @@
 @page "/"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "Page:inicio")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -150,25 +150,25 @@ else
 
 <style>
     .dashboard-card {
-        border: 1px solid rgba(255,255,255,0.05);
-        background-color: #1a222c;
+        border: 1px solid var(--mud-palette-lines-default);
+        background-color: var(--mud-palette-surface);
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .text-error {
         color: #ef4444 !important;
     }
     .list-item-card {
-        background-color: #212a36;
-        border: 1px solid rgba(255,255,255,0.02);
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
     }
     .list-item-card.inactive-window {
         opacity: 0.55;
         border-left: 3px solid #64748b;
     }
     .signals-table .mud-table-cell {
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        border-bottom: 1px solid var(--mud-palette-lines-default) !important;
     }
     .signals-table tr:last-child .mud-table-cell {
         border-bottom: none !important;

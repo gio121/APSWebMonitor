@@ -2,6 +2,7 @@
 @using ApsMonitor.Services
 @using System.Security.Claims
 @inject ApsDataService DataService
+@inject PageAccessService PageAccess
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject AuthenticationStateProvider AuthStateProvider
@@ -17,8 +18,10 @@
                 <MudTextField @bind-Value="_editUser.Username" Label="Nombre de Usuario" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" Disabled="@(_editUser.Id > 0)" />
                 
                 <MudSelect T="string" @bind-Value="_editUser.Role" Label="Rol" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3">
-                    <MudSelectItem Value="@("Administrador")">Administrador</MudSelectItem>
-                    <MudSelectItem Value="@("Mantenimiento")">Mantenimiento</MudSelectItem>
+                    @foreach (var role in _roles)
+                    {
+                        <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                    }
                 </MudSelect>
 
                 <MudTextField @bind-Value="_password" 
@@ -78,23 +81,23 @@
 
 <style>
     .user-mgmt-dialog {
-        background-color: #1a222c !important;
-        border: 1px solid rgba(255,255,255,0.08);
+        background-color: var(--mud-palette-surface) !important;
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 12px;
         min-width: 500px;
     }
     .users-table {
         background: transparent !important;
-        border: 1px solid rgba(255,255,255,0.05);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
     }
     .users-table th {
         font-weight: bold;
-        color: #94a3b8 !important;
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        color: var(--mud-palette-text-secondary) !important;
+        border-bottom: 1px solid var(--mud-palette-lines-default) !important;
     }
     .users-table td {
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        border-bottom: 1px solid var(--mud-palette-lines-default) !important;
     }
 </style>
 
@@ -102,6 +105,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
     private List<User> _users = new();
+    private List<string> _roles = new();
     private bool _isEditing = false;
     private User _editUser = new();
     private string _password = "";
@@ -118,6 +122,7 @@
     private async Task LoadUsers()
     {
         _users = await DataService.GetUsersAsync();
+        _roles = await PageAccess.GetRolesAsync();
     }
 
     private bool IsCurrentUser(string username)
@@ -155,6 +160,11 @@
 
     private async Task SaveUser()
     {
+        if (!_roles.Contains(_editUser.Role))
+        {
+            Snackbar.Add("Selecciona un rol válido.", Severity.Warning);
+            return;
+        }
         if (string.IsNullOrWhiteSpace(_editUser.Nombre) || string.IsNullOrWhiteSpace(_editUser.Username))
         {
             Snackbar.Add("El nombre y nombre de usuario son obligatorios", Severity.Warning);

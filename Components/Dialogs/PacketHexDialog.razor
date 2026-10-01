@@ -3,7 +3,7 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 
-<MudDialog Class="packet-hex-dialog" Style="min-width: 600px; max-width: 850px; background: #19212d;">
+<MudDialog Class="packet-hex-dialog" Style="min-width: 600px; max-width: 850px; background: var(--mud-palette-surface);">
     <TitleContent>
         <div class="d-flex align-center justify-space-between">
             <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
@@ -21,10 +21,10 @@
         </div>
     </TitleContent>
     <DialogContent>
-        <div class="mb-3 d-flex flex-wrap gap-3 pa-2 rounded" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+        <div class="mb-3 d-flex flex-wrap gap-3 pa-2 rounded" style="background: rgba(0,0,0,0.2); border: 1px solid var(--mud-palette-lines-default);">
             <div>
                 <span class="text-caption text-muted">Origen: </span>
-                <span class="text-caption fw-bold" style="color:#e2e8f0;">@Packet.SourceIp:@Packet.SourcePort</span>
+                <span class="text-caption fw-bold" style="color:var(--mud-palette-text-primary);">@Packet.SourceIp:@Packet.SourcePort</span>
             </div>
             <div>
                 <span class="text-caption text-muted">Destino: </span>
@@ -41,7 +41,7 @@
         </div>
 
         <div class="d-flex justify-space-between align-center mb-2">
-            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#94a3b8;">
+            <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:var(--mud-palette-text-secondary);">
                 Volcado Hexadecimal & ASCII (Payload)
             </MudText>
             <div class="d-flex gap-2">
@@ -56,8 +56,8 @@
             </div>
         </div>
 
-        <div class="pa-3 rounded overflow-auto" style="background:#0f172a; max-height: 420px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.1);">
-            <pre style="margin: 0; color: #cbd5e1; white-space: pre;">@BuildHexDump(Packet.Payload)</pre>
+        <div class="pa-3 rounded overflow-auto" style="background:var(--mud-palette-background); max-height: 420px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.85rem; border: 1px solid var(--mud-palette-lines-default);">
+            <pre style="margin: 0; color: var(--mud-palette-text-primary); white-space: pre;">@BuildHexDump(Packet.Payload)</pre>
         </div>
     </DialogContent>
     <DialogActions>
@@ -67,11 +67,11 @@
 
 <style>
     .packet-hex-dialog .mud-dialog-title {
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
         padding: 16px 24px;
     }
     .packet-hex-dialog .mud-dialog-actions {
-        border-top: 1px solid rgba(255,255,255,0.06);
+        border-top: 1px solid var(--mud-palette-lines-default);
         padding: 12px 24px;
     }
 </style>

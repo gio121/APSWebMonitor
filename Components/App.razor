@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    <style>
+        html, body { background: var(--mud-palette-background, #0d1117); }
+        .app-startup { position: fixed; inset: 0; z-index: 9999; display: grid; place-content: center; gap: 16px; text-align: center; background: #0d1117; color: #cbd5e1; font: 14px system-ui, sans-serif; }
+        .app-startup img { width: 160px; margin: auto; border-radius: 4px; }
+    </style>
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
@@ -17,21 +22,17 @@
 </head>
 
 <body>
+    <div id="app-startup" class="app-startup" role="status">
+        <img src="SepsaMedha.jpg" alt="APS Monitor" />
+        <span>Cargando monitor…</span>
+    </div>
     <script>
-        (() => {
-            const path = window.location.pathname.toLowerCase();
-            const isLogin = path === "/login";
-            const hasSession = sessionStorage.getItem("auth_username") !== null;
-
-            if (!isLogin && !hasSession) {
-                window.location.replace("/login");
-            }
-        })();
+        window.apsStartup = { complete: () => document.getElementById('app-startup')?.remove() };
     </script>
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
     <script src="js/session-analyzer.js"></script>
     <script src="js/download.js"></script>
     <script src="js/dragbar.js"></script>

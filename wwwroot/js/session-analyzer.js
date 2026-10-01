@@ -1,4 +1,19 @@
 window.sessionAnalyzer = {
+  theme: (chart) => {
+    const css = getComputedStyle(chart);
+    const surface = css.getPropertyValue('--mud-palette-surface').trim() || '#ffffff';
+    const text = css.getPropertyValue('--mud-palette-text-primary').trim() || '#1e293b';
+    const lines = css.getPropertyValue('--mud-palette-lines-default').trim() || '#dce2e9';
+    return { paper_bgcolor: surface, plot_bgcolor: surface, 'font.color': text,
+      'xaxis.gridcolor': lines, 'yaxis.gridcolor': lines, 'xaxis.zerolinecolor': lines,
+      'yaxis.zerolinecolor': lines, 'legend.bgcolor': surface, 'legend.bordercolor': lines };
+  },
+  refreshTheme: () => {
+    if (!window.Plotly) return;
+    document.querySelectorAll('.js-plotly-plot').forEach(chart => {
+      if (chart.data) Plotly.relayout(chart, window.sessionAnalyzer.theme(chart));
+    });
+  },
   draw: (id, sessions) => {
     const chart = document.getElementById(id);
     if (!chart) return;
@@ -17,7 +32,8 @@ window.sessionAnalyzer = {
       yaxis:{title:{text:'Valor', standoff:12}, gridcolor:'rgba(255,255,255,.1)', zerolinecolor:'rgba(255,255,255,.1)'},
       legend:{orientation:'v', x:1, xanchor:'left', y:1, yanchor:'top', bgcolor:'rgba(26,34,44,.9)', bordercolor:'rgba(255,255,255,.12)', borderwidth:1, font:{size:11}},
       hovermode:'x unified'
-    }, {responsive:false, displayModeBar:true, scrollZoom:true, displaylogo:false});
+    }, {responsive:false, displayModeBar:true, scrollZoom:true, displaylogo:false})
+      .then(() => Plotly.relayout(chart, window.sessionAnalyzer.theme(chart)));
   },
   resize: (id) => { const chart = document.getElementById(id); if (chart && chart.data) Plotly.relayout(chart, {width:chart.clientWidth, height:chart.clientHeight}); },
   download: (name, content) => { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }

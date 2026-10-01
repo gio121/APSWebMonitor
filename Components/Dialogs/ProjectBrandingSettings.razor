@@ -1,8 +1,14 @@
 @inject ProjectBrandingService Branding
 @inject ISnackbar Snackbar
 
-<MudPaper Class="pa-6 settings-card" Elevation="0">
-    <MudText Typo="Typo.h6" Class="fw-bold mb-4">Imagen y nombre del proyecto</MudText>
+<MudPaper Class="admin-card" Elevation="0">
+    <div class="branding-heading">
+        <div class="branding-icon"><MudIcon Icon="@Icons.Material.Outlined.Palette" /></div>
+        <div>
+            <MudText Typo="Typo.h6" Class="fw-bold">Imagen y nombre del proyecto</MudText>
+            <MudText Typo="Typo.body2" Class="branding-muted">La identidad que aparece en la cabecera del monitor.</MudText>
+        </div>
+    </div>
     @if (!_loaded)
     {
         <MudProgressLinear Indeterminate="true" />
@@ -12,24 +18,26 @@
         <fieldset disabled="@_busy" style="border:0;padding:0;margin:0;min-width:0">
             <MudGrid>
                 <MudItem xs="12" sm="4">
-                    <div style="text-align:center;padding:16px;border:1px solid #334155;border-radius:8px">
+                    <div class="branding-preview">
+                        <span class="preview-label">Vista previa</span>
                         <img src="@(_logo ?? "SepsaMedha.jpg")" alt="Vista previa de la imagen del proyecto" style="width:100%;max-width:180px;height:90px;object-fit:contain" />
                         <MudText Class="mt-2" Style="overflow-wrap:anywhere">@_name</MudText>
                     </div>
                 </MudItem>
                 <MudItem xs="12" sm="8">
                     <MudTextField @bind-Value="_name" Label="Nombre del proyecto" MaxLength="80" Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-4" />
-                    <label for="project-logo">Imagen del proyecto (PNG, JPG o WebP, hasta 2 MiB)</label>
-                    <InputFile @key="_fileKey" id="project-logo" OnChange="SelectImage" accept="image/png,image/jpeg,image/webp" class="d-block mt-2 mb-3" />
+                    <label for="project-logo" class="image-label">Imagen del proyecto</label>
+                    <div class="image-upload"><InputFile @key="_fileKey" id="project-logo" OnChange="SelectImage" accept="image/png,image/jpeg,image/webp" /></div>
+                    <MudText Typo="Typo.caption" Class="branding-muted d-block mb-2">PNG, JPG o WebP · Hasta 2 MiB</MudText>
                     <MudButton OnClick="UseDefaultImage" Size="Size.Small" Disabled="@(_logo is null)">Usar imagen predeterminada</MudButton>
                 </MudItem>
             </MudGrid>
         </fieldset>
         @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert> }
-        <MudStack Row="true" Class="mt-4" Spacing="2">
-            <MudButton OnClick="Save" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(_busy || string.IsNullOrWhiteSpace(_name))">Guardar personalización</MudButton>
+        <div class="branding-actions">
+            <MudButton OnClick="Save" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" Disabled="@(_busy || string.IsNullOrWhiteSpace(_name))">Guardar personalización</MudButton>
             <MudButton OnClick="Discard" Disabled="_busy">Descartar cambios</MudButton>
-        </MudStack>
+        </div>
     }
 </MudPaper>
 

@@ -1,5 +1,5 @@
 @page "/trdp"
-@attribute [Authorize(Roles = "Administrador")]
+@attribute [Authorize(Policy = "Page:trdp")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -641,7 +641,7 @@ else
         align-items: center;
         margin-bottom: 1.5rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-icon-header {
         font-size: 2.2rem !important;
@@ -649,10 +649,10 @@ else
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-muted { color: var(--mud-palette-text-secondary) !important; }
     .trdp-config-card {
-        background: #1a222c;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
         transition: border-color .2s, transform .15s;
     }
@@ -666,13 +666,13 @@ else
         font-size: 2rem !important;
     }
     .trdp-empty-card {
-        background: #1a222c;
-        border: 1px dashed rgba(255,255,255,0.08);
+        background: var(--mud-palette-surface);
+        border: 1px dashed var(--mud-palette-lines-default);
         border-radius: 12px;
     }
     .trdp-net-card {
-        background: #1a222c;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
         transition: border-color .2s;
     }
@@ -682,10 +682,10 @@ else
         align-items: flex-start;
         gap: 8px;
         padding: 4px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-endpoint-row:last-child { border-bottom: none; }
-    .trdp-ep-name   { display: block; font-size: .8rem; font-weight: 600; color: #e2e8f0; }
+    .trdp-ep-name   { display: block; font-size: .8rem; font-weight: 600; color: var(--mud-palette-text-primary); }
     .trdp-ep-detail { display: block; font-size: .72rem; color: #64748b; }
     .trdp-grid { background: transparent !important; }
     .trdp-grid .mud-table-head .mud-table-cell {
@@ -695,7 +695,7 @@ else
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .04em;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-grid .mud-table-body .mud-table-row:hover td { background: rgba(56,189,248,.04) !important; }
     .trdp-editor-tabs .mud-tabs-toolbar { background: transparent !important; }

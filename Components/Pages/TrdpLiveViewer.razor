@@ -1,5 +1,5 @@
 @page "/trdp-live"
-@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@attribute [Authorize(Policy = "Page:trdp-live")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -457,7 +457,7 @@ else
                                 <tr class="@(isSpare ? "trdp-spare-row" : "")">
                                     <td><span class="trdp-offset-badge">@v.Offset</span></td>
                                     <td>
-                                        <div class="fw-bold" style="color:#e2e8f0; font-size:0.83rem;">@v.Id</div>
+                                        <div class="fw-bold" style="color:var(--mud-palette-text-primary); font-size:0.83rem;">@v.Id</div>
                                         @if (!string.IsNullOrWhiteSpace(v.Description))
                                         {
                                             <div class="trdp-muted" style="font-size:0.72rem;">@v.Description</div>
@@ -484,7 +484,7 @@ else
 
                                 <tr>
                                     <td><span class="trdp-offset-badge">--</span></td>
-                                    <td class="fw-bold" style="color:#e2e8f0;">@varName</td>
+                                    <td class="fw-bold" style="color:var(--mud-palette-text-primary);">@varName</td>
                                     <td><span class="trdp-type-badge type-scalar">AUTO</span></td>
                                     <td>
                                         <span class="trdp-val-badge">@FormatValue(valObj)</span>
@@ -564,7 +564,7 @@ else
                                     <td><span class="trdp-offset-badge">@v.Offset</span></td>
                                     <!-- Name + description -->
                                     <td>
-                                        <div class="fw-bold" style="color:#e2e8f0; font-size:0.82rem;">@v.Id</div>
+                                        <div class="fw-bold" style="color:var(--mud-palette-text-primary); font-size:0.82rem;">@v.Id</div>
                                         @if (!string.IsNullOrWhiteSpace(v.Description))
                                         {
                                             <div class="trdp-muted" style="font-size:0.72rem;">@v.Description</div>
@@ -644,15 +644,15 @@ else
         align-items: center;
         margin-bottom: 1rem;
         padding-bottom: 0.75rem;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-live-icon {
         font-size: 2.2rem !important;
         color: #38bdf8 !important;
     }
     .trdp-stat-box {
-        background: #1a222c;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
         padding: 6px 14px;
         display: flex;
@@ -662,18 +662,18 @@ else
     .stat-label { font-size: 0.65rem; color: #64748b; font-weight: 700; letter-spacing: 0.05em; }
     .stat-value { font-size: 1.1rem; color: #38bdf8; font-weight: 700; font-family: monospace; }
     .trdp-control-bar {
-        background: #1a222c;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
     }
     .trdp-upload-progress {
-        background: #121820;
+        background: var(--mud-palette-background);
         border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 8px;
     }
     .trdp-player-panel {
-        background: #121820;
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
     }
     .player-time-label {
@@ -689,17 +689,17 @@ else
     .trdp-speed-select {
         width: 110px;
     }
-    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-muted { color: var(--mud-palette-text-secondary) !important; }
     .trdp-empty-card {
-        background: #1a222c;
-        border: 1px dashed rgba(255,255,255,0.08);
+        background: var(--mud-palette-surface);
+        border: 1px dashed var(--mud-palette-lines-default);
         border-radius: 12px;
     }
 
     /* LED Badges */
     .trdp-led-panel {
-        background: #151c24;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
     }
     .trdp-led-chip {
@@ -724,7 +724,7 @@ else
     }
     .trdp-led-chip.led-off {
         background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--mud-palette-lines-default);
         color: #64748b;
     }
     .trdp-led-chip.led-off .led-dot {
@@ -735,8 +735,8 @@ else
 
     /* Tables & Hex */
     .trdp-vars-table {
-        background: #151c24;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
     }
     .trdp-table {
@@ -749,12 +749,12 @@ else
         font-size: 0.72rem;
         color: #64748b;
         font-weight: 700;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-table td {
         padding: 8px 12px;
         font-size: 0.85rem;
-        border-bottom: 1px solid rgba(255,255,255,0.03);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .trdp-val-badge {
         font-family: Consolas, monospace;
@@ -777,8 +777,8 @@ else
 
     /* Hex Dump */
     .trdp-hex-box {
-        background: #0f172a;
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
         overflow-x: auto;
     }
@@ -792,8 +792,8 @@ else
 
     /* ── Frame Structure Tab ────────────────────────────────── */
     .trdp-frame-struct {
-        background: #151c24;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 10px;
         overflow-x: auto;
     }
@@ -801,14 +801,14 @@ else
     .trdp-struct-table th {
         text-align: left; padding: 8px 10px;
         font-size: 0.7rem; color: #64748b; font-weight: 700; letter-spacing: 0.06em;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-        background: #111820;
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+        background: var(--mud-palette-background);
         position: sticky; top: 0; z-index: 1;
     }
     .trdp-struct-table td {
         padding: 7px 10px;
         font-size: 0.82rem;
-        border-bottom: 1px solid rgba(255,255,255,0.025);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
         vertical-align: middle;
     }
     .trdp-struct-table tr:hover td { background: rgba(56,189,248,0.03); }
@@ -838,7 +838,7 @@ else
     .trdp-rawbytes {
         font-family: Consolas, monospace;
         font-size: 0.78rem;
-        color: #94a3b8;
+        color: var(--mud-palette-text-secondary);
         background: rgba(255,255,255,0.04);
         padding: 1px 6px;
         border-radius: 4px;
@@ -863,11 +863,11 @@ else
         transition: background 0.12s ease;
     }
     .trdp-bit.bit-on  { background: rgba(34,197,94,0.15);  border-color: rgba(34,197,94,0.45); }
-    .trdp-bit.bit-off { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.07); }
+    .trdp-bit.bit-off { background: rgba(255,255,255,0.03); border-color: var(--mud-palette-lines-default); }
     .bit-pos  { font-size: 0.58rem; color: #475569; font-family: monospace; line-height: 1; }
     .bit-tick { font-size: 1rem; line-height: 1.1; font-weight: 700; }
     .bit-on  .bit-tick { color: #22c55e; text-shadow: 0 0 6px rgba(34,197,94,0.6); }
-    .bit-off .bit-tick { color: #1e293b; }
+    .bit-off .bit-tick { color: var(--mud-palette-surface); }
     .bit-label {
         font-size: 0.57rem;
         max-width: 38px;

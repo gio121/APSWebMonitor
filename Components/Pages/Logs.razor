@@ -1,5 +1,5 @@
 @page "/logs"
-@attribute [Authorize(Roles = "Administrador")]
+@attribute [Authorize(Policy = "Page:logs")]
 @rendermode InteractiveServer
 @using System.Text
 @inject IJSRuntime JS
@@ -62,16 +62,16 @@
 </MudPaper>
 <style>
     .event-heading-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #60a5fa; background: rgba(59,130,246,.13); border: 1px solid rgba(96,165,250,.2); border-radius: 10px; }
-    .text-muted { color: #94a3b8 !important; }
-    .filter-panel, .event-log-panel { background: #1a222c; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; }
-    .filter-heading { color: #94a3b8; font-size: .7rem; font-weight: 700; letter-spacing: 1.2px; }
-    .event-log-header { border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(0,0,0,.12); border-radius: 10px 10px 0 0; }
+    .text-muted { color: var(--mud-palette-text-secondary) !important; }
+    .filter-panel, .event-log-panel { background: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default); border-radius: 10px; }
+    .filter-heading { color: var(--mud-palette-text-secondary); font-size: .7rem; font-weight: 700; letter-spacing: 1.2px; }
+    .event-log-header { border-bottom: 1px solid var(--mud-palette-lines-default); background: rgba(0,0,0,.12); border-radius: 10px 10px 0 0; }
     .event-table { background: transparent; }
-    .event-table .mud-table-head .mud-table-cell { background: #151c26; color: #94a3b8; font-size: .68rem; font-weight: 700; letter-spacing: .8px; border-color: rgba(255,255,255,.06); }
-    .event-table .mud-table-cell { border-color: rgba(255,255,255,.06); padding-top: 13px; padding-bottom: 13px; }
-    .event-date, .event-time { color: #cbd5e1; font-family: Consolas, 'Courier New', monospace; font-size: .78rem; white-space: nowrap; }
+    .event-table .mud-table-head .mud-table-cell { background: var(--mud-palette-background); color: var(--mud-palette-text-secondary); font-size: .68rem; font-weight: 700; letter-spacing: .8px; border-color: var(--mud-palette-lines-default); }
+    .event-table .mud-table-cell { border-color: var(--mud-palette-lines-default); padding-top: 13px; padding-bottom: 13px; }
+    .event-date, .event-time { color: var(--mud-palette-text-primary); font-family: Consolas, 'Courier New', monospace; font-size: .78rem; white-space: nowrap; }
     .event-time { color: #64748b; }
-    .event-description { color: #e2e8f0; }
+    .event-description { color: var(--mud-palette-text-primary); }
     .process-tag { color: #93c5fd; background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.14); border-radius: 4px; padding: 3px 7px; font-family: Consolas, 'Courier New', monospace; font-size: .7rem; white-space: nowrap; }
     .event-empty { min-height: 310px; color: #475569; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 </style>

@@ -54,7 +54,7 @@
             @if (Link.Type == "max_value")
             {
                 <MudItem xs="12">
-                    <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2" Style="color:#38bdf8;">
                             Variables a comparar (calcula el mayor valor)
                         </MudText>
@@ -106,7 +106,7 @@
             @if (Link.Type == "formula")
             {
                 <MudItem xs="12">
-                    <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold mb-1" Style="color:#38bdf8;">
                             Fórmula de cálculo
                         </MudText>
@@ -117,7 +117,7 @@
                                       HelperText="Operadores: +, -, *, /, (, ). Funciones: max(a,b), min(a,b), abs(x)." />
 
                         <!-- Asistente de Fórmula -->
-                        <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:#0f172a; border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
+                        <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:var(--mud-palette-background); border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
                             <div class="d-flex align-center justify-space-between mb-2">
                                 <div class="d-flex align-center gap-1">
                                     <MudIcon Icon="@Icons.Material.Filled.Functions" Size="Size.Small" Style="color:#38bdf8;" />
@@ -165,7 +165,7 @@
 
                             <!-- Operadores y funciones matemáticas -->
                             <div class="mb-2">
-                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:#94a3b8;">
+                                <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:var(--mud-palette-text-secondary);">
                                     Operadores y Funciones:
                                 </MudText>
                                 <div class="d-flex flex-wrap gap-1">
@@ -277,7 +277,7 @@
             @if (Link.Type is "analog" or "max_value" or "formula" or "constant" or "direct_copy")
             {
                 <MudItem xs="12">
-                    <MudPaper Elevation="0" Class="pa-3" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <div class="d-flex align-center gap-2">
                             <MudCheckBox @bind-Value="Link.SumToCurrent" Color="Color.Primary" />
                             <div>
@@ -369,7 +369,7 @@
                     {
                         @foreach (var (inp, idx) in Link.Inputs.Select((x, i) => (x, i)))
                         {
-                            <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#111827; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                            <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                                 <MudGrid Spacing="2">
                                     <!-- Modo: bit o condición -->
                                     <MudItem xs="12" sm="2">
@@ -466,7 +466,7 @@
 </MudDialog>
 
 <style>
-    .trdp-muted { color: #94a3b8 !important; }
+    .trdp-muted { color: var(--mud-palette-text-secondary) !important; }
     .trdp-dialog .mud-dialog-content { max-height: 80vh; overflow-y: auto; }
 </style>
 

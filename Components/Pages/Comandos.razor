@@ -1,5 +1,5 @@
 @page "/comandos"
-@attribute [Authorize(Roles = "Administrador")]
+@attribute [Authorize(Policy = "Page:comandos")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -97,46 +97,46 @@ else
 
 <style>
     .command-card {
-        background-color: #1a222c;
-        border: 1px solid rgba(255,255,255,0.05);
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
     }
     .command-card:hover {
-        border-color: rgba(255,255,255,0.1);
+        border-color: var(--mud-palette-lines-default);
     }
     .command-value-chip {
-        border-color: rgba(255,255,255,0.1) !important;
-        color: #e2e8f0 !important;
-        background-color: #111827 !important;
+        border-color: var(--mud-palette-lines-default) !important;
+        color: var(--mud-palette-text-primary) !important;
+        background-color: var(--mud-palette-background) !important;
         font-family: monospace;
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .exec-btn {
         text-transform: none;
-        color: #e2e8f0;
-        border-color: rgba(255,255,255,0.1);
+        color: var(--mud-palette-text-primary);
+        border-color: var(--mud-palette-lines-default);
         border-radius: 4px;
     }
     .icon-btn {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .icon-btn:hover {
-        color: #e2e8f0 !important;
+        color: var(--mud-palette-text-primary) !important;
     }
     .icon-btn-error:hover {
         background-color: rgba(244, 67, 54, 0.1) !important;
     }
     
     .log-panel {
-        background-color: #1a222c;
-        border: 1px solid rgba(255,255,255,0.05);
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 8px;
         min-height: 200px;
     }
     .border-dark {
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        border-bottom: 1px solid var(--mud-palette-lines-default) !important;
     }
     .log-content {
         font-family: monospace;
@@ -145,7 +145,7 @@ else
         overflow-y: auto;
     }
     .log-msg {
-        color: #e2e8f0;
+        color: var(--mud-palette-text-primary);
     }
 </style>
 

@@ -38,7 +38,7 @@
 
                 @foreach (var (pub, idx) in Network.Publishers.Select((p, i) => (p, i)))
                 {
-                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#1a222c; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
                                 <MudTextField @bind-Value="pub.Name" Label="Nombre" Variant="Variant.Outlined"
@@ -83,7 +83,7 @@
 
                 @foreach (var (sub, idx) in Network.Subscribers.Select((s, i) => (s, i)))
                 {
-                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:#1a222c; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+                    <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
                                 <MudTextField @bind-Value="sub.Name" Label="Nombre" Variant="Variant.Outlined"

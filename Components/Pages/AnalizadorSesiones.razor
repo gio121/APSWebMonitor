@@ -1,5 +1,5 @@
 @page "/analizador-sesiones"
-@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@attribute [Authorize(Policy = "Page:analizador-sesiones")]
 @rendermode InteractiveServer
 @using System.Text
 @inject SessionAnalyzerService Analyzer
@@ -74,7 +74,7 @@
 </MudGrid>
 
 <style>
- .analyzer-panel { background:#1a222c; border:1px solid rgba(255,255,255,.06); border-radius:12px; } .text-muted { color:#94a3b8 !important; } .analyzer-dropzone { border:1px dashed rgba(59,130,246,.45); border-radius:10px; } .session-row { border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:11px 13px; } .variables-grid { max-height:440px; overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:8px; } .variable-row { padding:3px 8px; border-bottom:1px solid rgba(255,255,255,.05); } .chart-placeholder { width:100%; min-height:440px; height:440px; position:relative; } .chart-placeholder.chart-expanded { height:min(70vh, 760px); min-height:560px; } .chart-placeholder .modebar-container { position:absolute !important; top:8px !important; right:12px !important; left:auto !important; } .chart-placeholder .modebar { position:static !important; } .chart-empty { height:100%; display:flex; align-items:center; justify-content:center; } 
+ .analyzer-panel { background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default); border-radius:12px; } .text-muted { color:var(--mud-palette-text-secondary) !important; } .analyzer-dropzone { border:1px dashed rgba(59,130,246,.45); border-radius:10px; } .session-row { border:1px solid var(--mud-palette-lines-default); border-radius:9px; padding:11px 13px; } .variables-grid { max-height:440px; overflow:auto; border:1px solid var(--mud-palette-lines-default); border-radius:8px; padding:8px; } .variable-row { padding:3px 8px; border-bottom:1px solid var(--mud-palette-lines-default); } .chart-placeholder { width:100%; min-height:440px; height:440px; position:relative; } .chart-placeholder.chart-expanded { height:min(70vh, 760px); min-height:560px; } .chart-placeholder .modebar-container { position:absolute !important; top:8px !important; right:12px !important; left:auto !important; } .chart-placeholder .modebar { position:static !important; } .chart-empty { height:100%; display:flex; align-items:center; justify-content:center; }
 </style>
 
 @code {

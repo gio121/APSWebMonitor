@@ -1,5 +1,5 @@
 @page "/monitor"
-@attribute [Authorize(Roles = "Administrador")]
+@attribute [Authorize(Policy = "Page:monitor")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -188,7 +188,7 @@
         <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar señal..." 
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
                       IconSize="Size.Small" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                      Style="max-width:300px; background-color:#1a222c;" />
+                      Style="max-width:300px; background-color:var(--mud-palette-surface);" />
         <MudText Typo="Typo.caption" Class="text-muted d-none d-md-flex">Despliega un nodo para ver sus valores en tiempo real</MudText>
     </div>
 </div>
@@ -233,7 +233,7 @@ else
                     </div>
                 </TitleContent>
                 <ChildContent>
-                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #1a222c;">
+                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: var(--mud-palette-surface);">
                         <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
                                 <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
@@ -265,18 +265,18 @@ else
 <style>
     /* ── Configuration Panel ── */
     .configuration-panel {
-        background-color: #1a222c;
-        border: 1px solid rgba(255,255,255,0.05);
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 12px;
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .custom-input .mud-input {
         background-color: rgba(0,0,0,0.2) !important;
     }
     .custom-divider {
-        border-color: rgba(255,255,255,0.05) !important;
+        border-color: var(--mud-palette-lines-default) !important;
     }
 
     /* ── Console Panel Wrapper ── */
@@ -298,8 +298,8 @@ else
         border-radius: 12px 12px 0 0;
     }
     .console-panel {
-        background-color: #111827 !important;
-        border: 1px solid rgba(255,255,255,0.06);
+        background-color: var(--mud-palette-background) !important;
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 12px;
         min-height: 400px;
     }
@@ -311,7 +311,7 @@ else
         justify-content: space-between;
         padding: 12px 16px;
         background: rgba(0,0,0,0.25);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .console-header-left {
         display: flex;
@@ -332,7 +332,7 @@ else
         font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 1.5px;
-        color: #94a3b8;
+        color: var(--mud-palette-text-secondary);
     }
     .console-live-dot {
         width: 6px;
@@ -372,7 +372,7 @@ else
         font-size: 0.75rem;
         font-weight: 600;
         font-family: 'Consolas', monospace;
-        color: #cbd5e1;
+        color: var(--mud-palette-text-primary);
     }
     .stat-tx .stat-badge {
         background: rgba(59,130,246,0.15);
@@ -396,13 +396,13 @@ else
         transition: color 0.2s;
     }
     .console-clear-btn:hover {
-        color: #e2e8f0 !important;
+        color: var(--mud-palette-text-primary) !important;
     }
 
     /* ── Console Output Body ── */
     .console-output {
         position: relative;
-        background-color: #0a0f1a;
+        background-color: var(--mud-palette-background);
         font-family: 'Consolas', 'Courier New', monospace;
         font-size: 0.8rem;
         overflow-y: auto;
@@ -470,7 +470,7 @@ else
         background-color: rgba(255,255,255,0.03);
     }
     .log-line-marker {
-        color: #334155;
+        color: var(--mud-palette-lines-default);
         font-size: 0.7rem;
         min-width: 8px;
     }
@@ -548,7 +548,7 @@ else
         padding: 6px 16px;
         font-size: 0.65rem;
         color: #475569;
-        border-top: 1px solid rgba(255,255,255,0.04);
+        border-top: 1px solid var(--mud-palette-lines-default);
         background: rgba(0,0,0,0.15);
         font-family: 'Consolas', monospace;
         letter-spacing: 0.3px;
@@ -569,9 +569,9 @@ else
         background: transparent !important;
     }
     .node-panel {
-        background-color: #1a222c !important;
-        border: 1px solid rgba(255,255,255,0.05);
-        color: #e2e8f0 !important;
+        background-color: var(--mud-palette-surface) !important;
+        border: 1px solid var(--mud-palette-lines-default);
+        color: var(--mud-palette-text-primary) !important;
     }
     .node-panel:hover {
         border-color: rgba(59, 130, 246, 0.3);
@@ -581,14 +581,14 @@ else
         text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
     }
     .mud-table-root .mud-table-head .mud-table-cell {
-        background-color: #1a222c !important;
-        color: #94a3b8;
+        background-color: var(--mud-palette-surface) !important;
+        color: var(--mud-palette-text-secondary);
         font-weight: 500;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
     .session-empty {
-        border: 2px dashed rgba(255,255,255,0.1);
-        background-color: #1a222c;
+        border: 2px dashed var(--mud-palette-lines-default);
+        background-color: var(--mud-palette-surface);
         border-radius: 12px;
         min-height: 200px;
     }

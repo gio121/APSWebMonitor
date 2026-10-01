@@ -1,5 +1,5 @@
 @page "/ventanas"
-@attribute [Authorize]
+@attribute [Authorize(Policy = "Page:ventanas")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -19,7 +19,7 @@
 
 <MudTextField @bind-Value="searchString" Immediate="true" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
-              Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: #1a222c;" />
+              Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: var(--mud-palette-surface);" />
 
 @if (_isLoading)
 {
@@ -118,17 +118,17 @@ else
 
 <style>
     .window-card {
-        border: 1px solid rgba(255,255,255,0.08);
-        background-color: #1a222c;
+        border: 1px solid var(--mud-palette-lines-default);
+        background-color: var(--mud-palette-surface);
         border-radius: 8px;
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .action-buttons .mud-button {
         text-transform: none;
-        color: #e2e8f0;
-        border-color: rgba(255,255,255,0.1);
+        color: var(--mud-palette-text-primary);
+        border-color: var(--mud-palette-lines-default);
         border-radius: 4px;
         background-color: transparent;
     }
@@ -145,7 +145,7 @@ else
         opacity: 1;
     }
     .access-panel {
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 6px;
         background-color: rgba(0,0,0,0.16);
         padding: 8px 12px;

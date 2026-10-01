@@ -7,9 +7,9 @@
     align-items: center;
     gap: 22px;
     padding: 0 20px;
-    background: #19212d;
-    border-top: 1px solid #334155;
-    color: #e2e8f0;
+    background: var(--mud-palette-surface);
+    border-top: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-primary);
     font-size: 12px;
     z-index: 1200;
 }

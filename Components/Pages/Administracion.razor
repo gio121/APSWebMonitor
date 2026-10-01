@@ -6,98 +6,47 @@
 @inject ApsDataService DataService
 @inject IDialogService DialogService
 
-<MudText Typo="Typo.h5" Class="fw-bold mb-6 mt-n2">Administración del Sistema</MudText>
+<div class="administration-page">
+    <header class="administration-heading">
+        <div class="heading-icon"><MudIcon Icon="@Icons.Material.Outlined.Settings" Size="Size.Large" /></div>
+        <div>
+            <MudText Typo="Typo.h5" Class="fw-bold">Administración</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Personaliza tu proyecto y gestiona el acceso al monitor.</MudText>
+        </div>
+    </header>
 
-<MudGrid>
-    <MudItem xs="12">
-        <ApsMonitor.Components.Dialogs.ProjectBrandingSettings />
-    </MudItem>
-    <!-- Server Status Card -->
-    <MudItem xs="12" md="6" lg="4">
-        <MudPaper Class="pa-6 d-flex flex-column settings-card" Elevation="0">
-            <div class="d-flex align-center mb-4">
-                <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
-                    <MudIcon Icon="@Icons.Material.Filled.Storage" />
-                </MudAvatar>
-                <MudText Typo="Typo.h6" Class="fw-bold">Estado del Servidor</MudText>
-            </div>
-            <MudList T="string" Dense="true" Class="pa-0 mb-4">
-                <MudListItem T="string" Class="px-0">
-                    <div class="d-flex justify-space-between w-100">
-                        <MudText Typo="Typo.body2" Class="text-muted">Conexión a Base de Datos</MudText>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Conectado</MudChip>
+    <MudGrid Spacing="4">
+        <MudItem xs="12" lg="8">
+            <ApsMonitor.Components.Dialogs.ProjectBrandingSettings />
+        </MudItem>
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="admin-card users-card" Elevation="0">
+                <div class="section-heading">
+                    <div class="section-icon"><MudIcon Icon="@Icons.Material.Outlined.People" /></div>
+                    <div>
+                        <MudText Typo="Typo.h6" Class="fw-bold">Gestión de usuarios</MudText>
+                        <MudText Typo="Typo.body2" Class="admin-muted">Roles y permisos de acceso</MudText>
                     </div>
-                </MudListItem>
-                <MudListItem T="string" Class="px-0">
-                    <div class="d-flex justify-space-between w-100">
-                        <MudText Typo="Typo.body2" Class="text-muted">Latencia SCADA</MudText>
-                        <MudText Typo="Typo.body2" Class="fw-bold">12 ms</MudText>
-                    </div>
-                </MudListItem>
-                <MudListItem T="string" Class="px-0">
-                    <div class="d-flex justify-space-between w-100">
-                        <MudText Typo="Typo.body2" Class="text-muted">Uptime</MudText>
-                        <MudText Typo="Typo.body2" Class="fw-bold">14 días, 2 horas</MudText>
-                    </div>
-                </MudListItem>
-            </MudList>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mt-auto">Reiniciar Servicios</MudButton>
-        </MudPaper>
-    </MudItem>
-
-    <!-- Usuarios Card -->
-    <MudItem xs="12" md="6" lg="4">
-        <MudPaper Class="pa-6 d-flex flex-column settings-card" Elevation="0">
-            <div class="d-flex align-center mb-4">
-                <MudAvatar Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
-                    <MudIcon Icon="@Icons.Material.Filled.People" />
-                </MudAvatar>
-                <MudText Typo="Typo.h6" Class="fw-bold">Gestión de Usuarios</MudText>
-            </div>
-            <MudText Typo="Typo.body2" Class="text-muted mb-4">
-                Administra los de roles, permisos y credenciales de acceso para los operadores del sistema SCADA.
-            </MudText>
-            <MudList T="string" Dense="true" Class="pa-0 mb-4">
-                <MudListItem T="string">
-                    <div class="d-flex align-center">
-                        <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="mr-2 text-warning" />
-                        <MudText Typo="Typo.body2">@_adminCount Administradores</MudText>
-                    </div>
-                </MudListItem>
-                <MudListItem T="string">
-                    <div class="d-flex align-center">
-                        <MudIcon Icon="@Icons.Material.Filled.Engineering" Size="Size.Small" Class="mr-2 text-info" />
-                        <MudText Typo="Typo.body2">@_operatorCount Operadores (Mantenimiento)</MudText>
-                    </div>
-                </MudListItem>
-            </MudList>
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="mt-auto" OnClick="OpenUserManagement">Gestionar Usuarios</MudButton>
-        </MudPaper>
-    </MudItem>
-
-    <!-- General Settings Card -->
-    <MudItem xs="12" md="12" lg="4">
-        <MudPaper Class="pa-6 d-flex flex-column settings-card" Elevation="0">
-            <div class="d-flex align-center mb-4">
-                <MudAvatar Color="Color.Info" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3">
-                    <MudIcon Icon="@Icons.Material.Filled.SettingsApplications" />
-                </MudAvatar>
-                <MudText Typo="Typo.h6" Class="fw-bold">Configuración de Red</MudText>
-            </div>
-
-            <div class="mb-4">
-                <MudTextField T="string" Label="Dirección IP Servidor SCADA" Value="@("192.168.1.100")" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-                <MudTextField T="string" Label="Puerto de Comunicación" Value="@("502")" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3" />
-
-                <MudSwitch T="bool" Value="true" Color="Color.Info" Label="Habilitar registro de tramas (Debug)" Class="mb-2" />
-                <MudSwitch T="bool" Value="true" Color="Color.Success" Label="Guardar eventos en Base de Datos" />
-            </div>
-
-            <MudButton Variant="Variant.Filled" Color="Color.Info" Class="mt-auto">Guardar Cambios</MudButton>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
-
+                </div>
+                <p class="admin-description">Administra las cuentas y las credenciales de los usuarios del monitor.</p>
+                <div class="user-stat">
+                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.AdminPanelSettings" Color="Color.Primary" /><span>Administradores</span></div>
+                    <strong>@_adminCount</strong>
+                </div>
+                <div class="user-stat">
+                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.Engineering" Color="Color.Primary" /><span>Usuarios de otros roles</span></div>
+                    <strong>@_operatorCount</strong>
+                </div>
+                <div class="users-action">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" StartIcon="@Icons.Material.Outlined.ManageAccounts" OnClick="OpenUserManagement">Gestionar usuarios</MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12">
+            <ApsMonitor.Components.Dialogs.RolePageAccess />
+        </MudItem>
+    </MudGrid>
+</div>
 @code {
     private int _adminCount = 0;
     private int _operatorCount = 0;
@@ -111,7 +60,7 @@
     {
         var users = await DataService.GetUsersAsync();
         _adminCount = users.Count(u => u.Role == "Administrador");
-        _operatorCount = users.Count(u => u.Role == "Mantenimiento");
+        _operatorCount = users.Count(u => u.Role != "Administrador");
     }
 
     private async Task OpenUserManagement()
@@ -127,21 +76,3 @@
         }
     }
 }
-
-<style>
-    .settings-card {
-        border: 1px solid rgba(255,255,255,0.05);
-        background-color: #1a222c;
-        height: 100%;
-        min-height: 380px;
-    }
-    .text-muted {
-        color: #94a3b8 !important;
-    }
-    .text-warning {
-        color: #f59e0b !important;
-    }
-    .text-info {
-        color: #3b82f6 !important;
-    }
-</style>

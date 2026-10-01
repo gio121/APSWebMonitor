@@ -1,5 +1,5 @@
 @page "/senales"
-@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@attribute [Authorize(Policy = "Page:senales")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -41,7 +41,7 @@
 
 <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar..." Adornment="Adornment.Start" 
               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
-              Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: #1a222c;" />
+              Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: var(--mud-palette-surface);" />
 
 @if (_isLoading)
 {
@@ -66,7 +66,7 @@ else
                     </div>
                 </TitleContent>
                 <ChildContent>
-                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #1a222c;">
+                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: var(--mud-palette-surface);">
                         <MudDataGrid T="Signal" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
                                 <PropertyColumn Property="x => x.Nombre" Title="Nombre" />
@@ -113,24 +113,24 @@ else
         background: transparent !important;
     }
     .node-panel {
-        background-color: #1a222c !important;
-        border: 1px solid rgba(255,255,255,0.05);
-        color: #e2e8f0 !important;
+        background-color: var(--mud-palette-surface) !important;
+        border: 1px solid var(--mud-palette-lines-default);
+        color: var(--mud-palette-text-primary) !important;
     }
     .node-panel:hover {
         border-color: rgba(59, 130, 246, 0.3);
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .mud-expand-panel-header {
         padding: 16px 24px !important;
     }
     .mud-table-root .mud-table-head .mud-table-cell {
-        background-color: #1a222c !important;
-        color: #94a3b8;
+        background-color: var(--mud-palette-surface) !important;
+        color: var(--mud-palette-text-secondary);
         font-weight: 500;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
 </style>
 

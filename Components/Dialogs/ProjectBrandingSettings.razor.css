@@ -1,0 +1,11 @@
+.branding-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.branding-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; color: var(--mud-palette-primary); background: var(--mud-palette-primary-hover); }
+.branding-heading ::deep .branding-muted, fieldset ::deep .branding-muted { color: var(--mud-palette-text-secondary); }
+.branding-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px 16px; min-height: 220px; height: 100%; border: 1px dashed var(--mud-palette-lines-default); border-radius: 12px; background: var(--mud-palette-background); }
+.preview-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--mud-palette-text-secondary); }
+.image-label { display: block; font-size: .875rem; font-weight: 500; }
+.image-upload { margin: 10px 0 6px; }
+.image-upload ::deep input { width: 100%; min-width: 0; font: inherit; font-size: .8rem; color: var(--mud-palette-text-secondary); }
+.image-upload ::deep input::file-selector-button { padding: 10px 14px; margin-right: 12px; border: 1px solid var(--mud-palette-lines-default); border-radius: 8px; color: var(--mud-palette-primary); background: var(--mud-palette-primary-hover); font: inherit; cursor: pointer; }
+.image-upload ::deep input:focus-visible { outline: 2px solid var(--mud-palette-primary); outline-offset: 4px; border-radius: 4px; }
+.branding-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--mud-palette-lines-default); }

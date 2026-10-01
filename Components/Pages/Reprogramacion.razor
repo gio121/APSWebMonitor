@@ -1,5 +1,5 @@
 @page "/reprogramacion"
-@attribute [Authorize(Roles = "Administrador")]
+@attribute [Authorize(Policy = "Page:reprogramacion")]
 @rendermode InteractiveServer
 @implements IDisposable
 @using ApsMonitor.Models

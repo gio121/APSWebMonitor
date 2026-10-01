@@ -1,0 +1,38 @@
+@implements IDisposable
+@inject MonitorThemeService Theme
+@inject IJSRuntime JS
+
+<MudThemeProvider IsDarkMode="@Theme.IsDark" Theme="Palette" />
+
+@code {
+    private bool? _lastChartTheme;
+    protected override void OnInitialized() => Theme.Changed += Refresh;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Theme.LoadAsync(); return; }
+        if (_lastChartTheme == Theme.IsDark) return;
+        _lastChartTheme = Theme.IsDark;
+        try { await JS.InvokeVoidAsync("sessionAnalyzer.refreshTheme"); }
+        catch (JSException) { }
+    }
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Theme.Changed -= Refresh;
+    private static readonly MudTheme Palette = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#2563eb", Secondary = "#dc2626", Background = "#c9d1db",
+            AppbarBackground = "#d3dae3", DrawerBackground = "#19212d", DrawerText = "#e2e8f0",
+            DrawerIcon = "#94a3b8", Surface = "#dbe1e8", TextPrimary = "#1e293b",
+            TextSecondary = "#4b5b70", Success = "#15803d", Error = "#dc2626",
+            LinesDefault = "#aeb9c6", TableLines = "#b8c2ce", ActionDefault = "#475569"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#3b82f6", Secondary = "#ef4444", Background = "#151921",
+            AppbarBackground = "#151921", DrawerBackground = "#19212d", Surface = "#1f2937",
+            TextPrimary = "#e2e8f0", TextSecondary = "#94a3b8", Success = "#22c55e",
+            Error = "#ef4444", LinesDefault = "rgba(255,255,255,0.08)", TableLines = "rgba(255,255,255,0.08)"
+        }
+    };
+}

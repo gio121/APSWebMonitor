@@ -1,0 +1,18 @@
+.administration-page { max-width: 1440px; margin: 0 auto; padding: 8px 0 24px; }
+.administration-heading { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+.heading-icon, .section-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--mud-palette-primary); background: var(--mud-palette-primary-hover); border-radius: 12px; }
+.heading-icon { width: 56px; height: 56px; }
+.section-icon { width: 44px; height: 44px; }
+.section-heading { display: flex; align-items: center; gap: 12px; }
+.administration-page ::deep .admin-card { padding: 28px; height: 100%; border: 1px solid var(--mud-palette-lines-default); border-radius: 16px; background: var(--mud-palette-surface); }
+.administration-page ::deep .users-card { display: flex; flex-direction: column; }
+.admin-description, .administration-page ::deep .admin-muted { color: var(--mud-palette-text-secondary); }
+.admin-description { margin: 24px 0; font-size: .875rem; line-height: 1.7; }
+.user-stat { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--mud-palette-lines-default); }
+.user-stat-label { display: flex; align-items: center; gap: 12px; font-size: .875rem; }
+.user-stat strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.users-action { margin-top: auto; padding-top: 28px; }
+@media (max-width: 600px) {
+    .administration-page ::deep .admin-card { padding: 20px; }
+    .administration-heading { align-items: flex-start; gap: 12px; }
+}

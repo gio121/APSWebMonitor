@@ -8,7 +8,7 @@
 @inject IDialogService DialogService
 @implements IDisposable
 
-<MudCard Elevation="2" Class="pa-4 rounded-lg packet-sender-card" Style="background:#19212d; border:1px solid rgba(255,255,255,0.06);">
+<MudCard Elevation="2" Class="pa-4 rounded-lg packet-sender-card" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default);">
     <!-- ══════════════════════════════════════════════════════════
          ENCABEZADO DEL PANEL
     ══════════════════════════════════════════════════════════ -->
@@ -51,7 +51,7 @@
             <MudTabPanel Text="Reproductor Wireshark PCAP" Icon="@Icons.Material.Filled.PlayCircle">
                 
                 <!-- SECCIÓN 1: CARGA DE ARCHIVO -->
-                <div class="pa-3 mb-3 rounded-lg" style="background:#131b26; border:1px solid rgba(255,255,255,0.05);">
+                <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <div class="d-flex align-center justify-space-between flex-wrap gap-2">
                         <div class="d-flex align-center gap-2 flex-wrap">
                             <InputFile id="pcapSenderFileInput" OnChange="OnFileSelected" accept=".pcap,.pcapng,.json,.cap,.txt,.hex" style="display:none;" />
@@ -101,7 +101,7 @@
                     <!-- Resumen del fichero cargado -->
                     @if (ReplayService.FileInfo != null && !_isLoadingFile)
                     {
-                        <div class="mt-3 pt-2 d-flex flex-wrap gap-3 align-center" style="border-top:1px solid rgba(255,255,255,0.05);">
+                        <div class="mt-3 pt-2 d-flex flex-wrap gap-3 align-center" style="border-top:1px solid var(--mud-palette-lines-default);">
                             <div class="d-flex align-center gap-1">
                                 <MudIcon Icon="@Icons.Material.Filled.Layers" Size="Size.Small" Color="Color.Info" />
                                 <span class="text-caption text-muted">Total Tramas:</span>
@@ -128,14 +128,14 @@
                             </div>
                             <div class="d-flex align-center gap-1">
                                 <span class="text-caption text-muted">Rango:</span>
-                                <span class="text-caption" style="color:#cbd5e1;">@ReplayService.FileInfo.FirstPacketTime.ToString("HH:mm:ss.fff") &rarr; @ReplayService.FileInfo.LastPacketTime.ToString("HH:mm:ss.fff")</span>
+                                <span class="text-caption" style="color:var(--mud-palette-text-primary);">@ReplayService.FileInfo.FirstPacketTime.ToString("HH:mm:ss.fff") &rarr; @ReplayService.FileInfo.LastPacketTime.ToString("HH:mm:ss.fff")</span>
                             </div>
                         </div>
                     }
                 </div>
 
                 <!-- SECCIÓN 2: PARÁMETROS DE RED Y DESTINO -->
-                <div class="pa-3 mb-3 rounded-lg" style="background:#131b26; border:1px solid rgba(255,255,255,0.05);">
+                <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2 d-flex align-center gap-2" Style="color:#38bdf8;">
                         <MudIcon Icon="@Icons.Material.Filled.SettingsEthernet" Size="Size.Small" />
                         Destino de Transmisión y Tarjeta de Salida
@@ -183,7 +183,7 @@
 
                         <!-- Opción de corrección automática de CRC TRDP -->
                         <MudItem xs="12">
-                            <div class="d-flex align-center gap-2 flex-wrap pt-1" style="border-top:1px dashed rgba(255,255,255,0.06);">
+                            <div class="d-flex align-center gap-2 flex-wrap pt-1" style="border-top:1px dashed var(--mud-palette-lines-default);">
                                 <MudCheckBox @bind-Value="_config.AutoFixTrdpCrc"
                                              Label="Auto-corregir CRC TRDP IEEE 802.3 (Header FCS y Data FCS)"
                                              Color="Color.Success" Dense="true"
@@ -235,7 +235,7 @@
                 </div>
 
                 <!-- SECCIÓN 3: CONTROL DE VELOCIDAD & TIEMPO REAL -->
-                <div class="pa-3 mb-3 rounded-lg" style="background:#131b26; border:1px solid rgba(255,255,255,0.05);">
+                <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold d-flex align-center gap-2" Style="color:#4ade80;">
                             <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Small" />
@@ -289,7 +289,7 @@
                 </div>
 
                 <!-- SECCIÓN 4: BARRA DE CONTROL DEL REPRODUCTOR & MÉTRICAS EN VIVO -->
-                <div class="pa-3 mb-3 rounded-lg" style="background:#131b26; border:1px solid rgba(56, 189, 248, 0.2);">
+                <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid rgba(56, 189, 248, 0.2);">
                     <div class="d-flex align-center justify-space-between flex-wrap gap-3 mb-2">
                         <!-- Botones de Control -->
                         <div class="d-flex align-center gap-2">
@@ -343,7 +343,7 @@
                     <!-- Slider interactivo de progreso -->
                     <div class="mb-2">
                         <div class="d-flex justify-space-between text-caption mb-1">
-                            <span style="color:#cbd5e1;">
+                            <span style="color:var(--mud-palette-text-primary);">
                                 Trama <b>@(_currentStats.CurrentIndex)</b> de <b>@(_currentStats.TotalPackets)</b> (@_currentStats.ProgressPercent.ToString("F1")%)
                             </span>
                             <span class="text-muted text-truncate" style="max-width: 400px;">
@@ -354,7 +354,7 @@
                     </div>
 
                     <!-- Cuadros de métricas en tiempo real -->
-                    <div class="d-flex gap-2 flex-wrap pt-2" style="border-top:1px solid rgba(255,255,255,0.05);">
+                    <div class="d-flex gap-2 flex-wrap pt-2" style="border-top:1px solid var(--mud-palette-lines-default);">
                         <div class="stat-card">
                             <span class="stat-title">ENVIADAS</span>
                             <span class="stat-num text-success">@_currentStats.PacketsSent</span>
@@ -390,10 +390,10 @@
                             <MudTextField @bind-Value="_filterText" Placeholder="Buscar por IP o contenido..."
                                           Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                                          Style="width:240px; background:#131b26;" />
+                                          Style="width:240px; background:var(--mud-palette-background);" />
 
                             <MudSelect T="string" Value="_filterProtocol" ValueChanged="OnFilterProtocolChanged"
-                                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:130px; background:#131b26;">
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:130px; background:var(--mud-palette-background);">
                                 <MudSelectItem Value="@("ALL")">Todos</MudSelectItem>
                                 <MudSelectItem Value="@("UDP")">Solo UDP</MudSelectItem>
                                 <MudSelectItem Value="@("TCP")">Solo TCP</MudSelectItem>
@@ -403,7 +403,7 @@
 
                     @if (_playlistCount == 0)
                     {
-                        <div class="pa-8 text-center text-muted rounded-lg" style="background:#131b26;">
+                        <div class="pa-8 text-center text-muted rounded-lg" style="background:var(--mud-palette-background);">
                             <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Class="mb-2" Style="opacity:0.3;" />
                             <div>No hay tramas cargadas. Pulse <b>Cargar Captura Wireshark</b> para comenzar.</div>
                         </div>
@@ -411,7 +411,7 @@
                     else
                     {
                         <MudTable Items="_filteredPackets" Dense="true" Hover="true" Elevation="0"
-                                  RowsPerPage="15" Style="background:#131b26; border-radius:8px;">
+                                  RowsPerPage="15" Style="background:var(--mud-palette-background); border-radius:8px;">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>Hora Captura</MudTh>
@@ -437,7 +437,7 @@
                                         @context.Protocol
                                     </MudChip>
                                 </MudTd>
-                                <MudTd><span style="font-family:monospace; font-size:0.8rem; color:#cbd5e1;">@context.SourceIp:@context.SourcePort</span></MudTd>
+                                <MudTd><span style="font-family:monospace; font-size:0.8rem; color:var(--mud-palette-text-primary);">@context.SourceIp:@context.SourcePort</span></MudTd>
                                 <MudTd><span style="font-family:monospace; font-size:0.8rem; color:#38bdf8;">@context.DestinationIp:@context.DestinationPort</span></MudTd>
                                 <MudTd>@context.Payload.Length B</MudTd>
                                 <MudTd>
@@ -472,7 +472,7 @@
                  TAB 2: PACKET SENDER MANUAL
             ══════════════════════════════════════════════════════════ -->
             <MudTabPanel Text="Packet Sender Manual" Icon="@Icons.Material.Filled.Send">
-                <div class="pa-4 rounded-lg" style="background:#131b26; border:1px solid rgba(255,255,255,0.05);">
+                <div class="pa-4 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <MudText Typo="Typo.subtitle1" Class="fw-bold mb-3 d-flex align-center gap-2" Style="color:#38bdf8;">
                         <MudIcon Icon="@Icons.Material.Filled.ForwardToInbox" />
                         Generador de Paquetes Manual (Packet Sender)
@@ -551,7 +551,7 @@
                     <!-- Historial de envíos manuales -->
                     @if (ReplayService.ManualHistory.Count > 0)
                     {
-                        <div class="mt-4 pt-3" style="border-top:1px solid rgba(255,255,255,0.05);">
+                        <div class="mt-4 pt-3" style="border-top:1px solid var(--mud-palette-lines-default);">
                             <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2 text-muted">Historial de Envíos Manuales</MudText>
                             <MudTable Items="ReplayService.ManualHistory" Dense="true" Hover="true" Elevation="0">
                                 <HeaderContent>
@@ -586,14 +586,14 @@
                  TAB 3: REGISTRO DE EVENTOS
             ══════════════════════════════════════════════════════════ -->
             <MudTabPanel Text="Registro de Red" Icon="@Icons.Material.Filled.ReceiptLong">
-                <div class="pa-3 rounded-lg" style="background:#131b26; border:1px solid rgba(255,255,255,0.05);">
+                <div class="pa-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <div class="d-flex justify-space-between align-center mb-2">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold text-muted">Registro de Eventos y Envíos</MudText>
                         <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearLogs">
                             Limpiar Consola
                         </MudButton>
                     </div>
-                    <div class="pa-3 rounded overflow-auto" style="background:#0b0f15; max-height:300px; font-family:monospace; font-size:0.8rem; border:1px solid rgba(255,255,255,0.05);">
+                    <div class="pa-3 rounded overflow-auto" style="background:var(--mud-palette-background); max-height:300px; font-family:monospace; font-size:0.8rem; border:1px solid var(--mud-palette-lines-default);">
                         @if (_logMessages.Count == 0)
                         {
                             <span class="text-muted">No hay eventos registrados aún.</span>
@@ -602,7 +602,7 @@
                         {
                             @foreach (var log in _logMessages)
                             {
-                                <div style="color: #cbd5e1; margin-bottom: 2px;">@log</div>
+                                <div style="color: var(--mud-palette-text-primary); margin-bottom: 2px;">@log</div>
                             }
                         }
                     </div>
@@ -614,8 +614,8 @@
 
 <style>
     .stat-card {
-        background: #182230;
-        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
         border-radius: 6px;
         padding: 6px 12px;
         display: flex;
@@ -636,7 +636,7 @@
     .text-success { color: #4ade80; }
     .text-error { color: #ef4444; }
     .packet-tabs .mud-tabs-tabbar {
-        background-color: #131b26 !important;
+        background-color: var(--mud-palette-background) !important;
         border-radius: 8px;
     }
 </style>

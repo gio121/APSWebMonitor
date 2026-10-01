@@ -9,6 +9,9 @@ public class ApsDbContext : DbContext
 
     public DbSet<Signal> Signals { get; set; }
     public DbSet<ProjectBranding> ProjectBranding { get; set; }
+    public DbSet<MaintenancePagePermission> MaintenancePagePermissions { get; set; }
+    public DbSet<RoleDefinition> Roles { get; set; }
+    public DbSet<RolePagePermission> RolePagePermissions { get; set; }
     public DbSet<Window> Windows { get; set; }
     public DbSet<EventMessage> Events { get; set; }
     public DbSet<ScadaCommand> Commands { get; set; }
@@ -18,6 +21,8 @@ public class ApsDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<RolePagePermission>().HasKey(x => new { x.RoleName, x.PageKey });
+        modelBuilder.Entity<RoleDefinition>().Property(x => x.Name).UseCollation("NOCASE");
         modelBuilder.Entity<Signal>().HasQueryFilter(s => !s.IsDeleted);
 
         // Configure primitive collections for SQLite using JSON serialization

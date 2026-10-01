@@ -1,0 +1,102 @@
+@inject PageAccessService Access
+@inject ISnackbar Snackbar
+
+<MudPaper Class="admin-card" Elevation="0">
+    <MudText Typo="Typo.h6" Class="fw-bold">Roles y acceso a pestañas</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">Selecciona un rol y activa las secciones que podrán usar sus usuarios. Los permisos se guardan automáticamente.</MudText>
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="6">
+            <MudSelect T="string" Value="@_selectedRole" ValueChanged="SelectRoleAsync" Label="Configurar permisos del rol" Variant="Variant.Outlined" Disabled="_saving">
+                @foreach (var role in _roles)
+                {
+                    <MudSelectItem T="string" Value="@role">@role</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <div class="create-role">
+                <MudTextField @bind-Value="_newRole" Label="Nombre del nuevo rol" MaxLength="40" Immediate="true" Variant="Variant.Outlined" Disabled="_saving" />
+                <MudButton OnClick="CreateRoleAsync" Variant="Variant.Outlined" Color="Color.Primary" Disabled="@(_saving || string.IsNullOrWhiteSpace(_newRole))" StartIcon="@Icons.Material.Outlined.Add">Crear rol</MudButton>
+            </div>
+        </MudItem>
+    </MudGrid>
+    @if (_selectedRole == "Administrador")
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">El administrador mantiene acceso completo. Administración y la edición de sinópticos son exclusivas de este rol.</MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.body2" Class="mb-4">@(_permissions?.Count(x => x.Value) ?? 0) de @PageAccessService.Pages.Length pestañas habilitadas. Asigna este rol desde Gestionar usuarios.</MudText>
+    }
+    @if (_permissions is null)
+    {
+        <MudProgressLinear Indeterminate="true" />
+    }
+    else
+    {
+        <MudGrid Spacing="2">
+            @foreach (var item in PageAccessService.Pages)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <div class="page-permission">
+                    <MudSwitch T="bool" Color="Color.Primary" Label="@item.Name" Value="@_permissions[item.Key]" ValueChanged="@(value => SaveAsync(item.Key, value))" Disabled="@(_saving || _selectedRole == "Administrador")" />
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudPaper>
+
+@code {
+    private Dictionary<string, bool>? _permissions;
+    private bool _saving;
+    private List<string> _roles = new();
+    private string _selectedRole = "Mantenimiento";
+    private string _newRole = "";
+    protected override async Task OnInitializedAsync()
+    {
+        _roles = await Access.GetRolesAsync();
+        _permissions = await Access.GetAsync(_selectedRole);
+    }
+    private async Task SelectRoleAsync(string role)
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            var permissions = await Access.GetAsync(role);
+            _selectedRole = role;
+            _permissions = permissions;
+        }
+        catch (Exception) { Snackbar.Add("No se pudieron cargar los permisos del rol.", Severity.Error); }
+        finally { _saving = false; }
+    }
+    private async Task CreateRoleAsync()
+    {
+        if (_saving) return;
+        _saving = true;
+        try
+        {
+            _selectedRole = await Access.CreateRoleAsync(_newRole);
+            _roles = await Access.GetRolesAsync();
+            _permissions = await Access.GetAsync(_selectedRole);
+            _newRole = "";
+            Snackbar.Add("Rol creado. Activa las pestañas que podrá utilizar.", Severity.Success);
+        }
+        catch (ArgumentException ex) { Snackbar.Add(ex.Message, Severity.Warning); }
+        catch (Exception) { Snackbar.Add("No se pudo crear el rol. Comprueba que el nombre no exista.", Severity.Error); }
+        finally { _saving = false; }
+    }
+    private async Task SaveAsync(string key, bool allowed)
+    {
+        _saving = true;
+        try
+        {
+            await Access.SetAsync(_selectedRole, key, allowed);
+            _permissions = await Access.GetAsync(_selectedRole);
+            Snackbar.Add("Permiso actualizado.", Severity.Success);
+        }
+        catch (Exception) { Snackbar.Add("No se pudo guardar el permiso. Vuelve a intentarlo.", Severity.Error); }
+        finally { _saving = false; }
+    }
+}

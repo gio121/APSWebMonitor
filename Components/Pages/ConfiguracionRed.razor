@@ -1,4 +1,5 @@
 @page "/configuracion-red"
+@attribute [Authorize(Policy = "Page:configuracion-red")]
 @using ApsMonitor.Services
 @using ApsMonitor.Components.Dialogs
 @using System.Net.NetworkInformation
@@ -39,7 +40,7 @@
 <MudGrid Spacing="3">
     <!-- Panel 1: Interfaz de Red del PC -->
     <MudItem xs="12" md="6">
-        <MudCard Elevation="2" Class="pa-4 rounded-lg h-100" Style="background:#19212d; border:1px solid rgba(255,255,255,0.05);">
+        <MudCard Elevation="2" Class="pa-4 rounded-lg h-100" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default);">
             <MudCardHeader>
                 <CardHeaderContent>
                     <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
@@ -117,7 +118,7 @@
 
     <!-- Panel 2: Servidor DHCP -->
     <MudItem xs="12" md="6">
-        <MudCard Elevation="2" Class="pa-4 rounded-lg h-100" Style="background:#19212d; border:1px solid rgba(255,255,255,0.05);">
+        <MudCard Elevation="2" Class="pa-4 rounded-lg h-100" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default);">
             <MudCardHeader>
                 <CardHeaderContent>
                     <div class="d-flex justify-space-between align-center flex-wrap gap-2">
@@ -190,7 +191,7 @@
 
     <!-- Tabla de Concesiones DHCP Activas -->
     <MudItem xs="12">
-        <MudCard Elevation="2" Class="pa-4 rounded-lg" Style="background:#19212d; border:1px solid rgba(255,255,255,0.05);">
+        <MudCard Elevation="2" Class="pa-4 rounded-lg" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default);">
             <MudCardHeader>
                 <CardHeaderContent>
                     <div class="d-flex justify-space-between align-center flex-wrap gap-2">

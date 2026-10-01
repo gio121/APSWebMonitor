@@ -1,5 +1,5 @@
 @page "/sesiones"
-@attribute [Authorize(Roles = "Administrador,Mantenimiento")]
+@attribute [Authorize(Policy = "Page:sesiones")]
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
@@ -37,7 +37,7 @@ else
 {
     <MudGrid Class="mb-4">
         <MudItem xs="12" md="4">
-            <MudPaper Class="pa-4 h-100" Elevation="0" Style="background-color: #1a222c; border: 1px solid rgba(255,255,255,0.05);">
+            <MudPaper Class="pa-4 h-100" Elevation="0" Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default);">
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">DETALLES DEL ARCHIVO</MudText>
                 <div class="d-flex flex-column gap-2">
                     <div class="d-flex justify-space-between">
@@ -56,7 +56,7 @@ else
             </MudPaper>
         </MudItem>
         <MudItem xs="12" md="8">
-            <MudPaper Class="pa-4 h-100 d-flex flex-column justify-center" Elevation="0" Style="background-color: #1a222c; border: 1px solid rgba(255,255,255,0.05);">
+            <MudPaper Class="pa-4 h-100 d-flex flex-column justify-center" Elevation="0" Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default);">
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">POSICIÓN ACTUAL</MudText>
                 <div class="d-flex align-center gap-4">
                     <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.CurrentFrame)</MudText>
@@ -71,7 +71,7 @@ else
         <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar señal..." 
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
                       IconSize="Size.Small" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                      Style="max-width:300px; background-color:#1a222c;" />
+                      Style="max-width:300px; background-color:var(--mud-palette-surface);" />
         <MudSpacer />
         <MudText Typo="Typo.caption" Class="text-muted">Despliega un nodo para ver sus valores en tiempo real</MudText>
     </div>
@@ -100,7 +100,7 @@ else
                     </div>
                 </TitleContent>
                 <ChildContent>
-                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #1a222c;">
+                    <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: var(--mud-palette-surface);">
                         <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
                                 <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
@@ -133,8 +133,8 @@ else
 
 <style>
     .session-empty {
-        border: 2px dashed rgba(255,255,255,0.1);
-        background-color: #1a222c;
+        border: 2px dashed var(--mud-palette-lines-default);
+        background-color: var(--mud-palette-surface);
         border-radius: 12px;
         min-height: 400px;
     }
@@ -142,25 +142,25 @@ else
         background: transparent !important;
     }
     .node-panel {
-        background-color: #1a222c !important;
-        border: 1px solid rgba(255,255,255,0.05);
-        color: #e2e8f0 !important;
+        background-color: var(--mud-palette-surface) !important;
+        border: 1px solid var(--mud-palette-lines-default);
+        color: var(--mud-palette-text-primary) !important;
     }
     .node-panel:hover {
         border-color: rgba(59, 130, 246, 0.3);
     }
     .text-muted {
-        color: #94a3b8 !important;
+        color: var(--mud-palette-text-secondary) !important;
     }
     .value-changed {
         color: #3b82f6 !important;
         text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
     }
     .mud-table-root .mud-table-head .mud-table-cell {
-        background-color: #1a222c !important;
-        color: #94a3b8;
+        background-color: var(--mud-palette-surface) !important;
+        color: var(--mud-palette-text-secondary);
         font-weight: 500;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
     }
 </style>
 
