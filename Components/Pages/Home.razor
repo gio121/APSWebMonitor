@@ -7,6 +7,7 @@
 @inject SessionStateService SessionState
 @inject MonitorStateService MonitorState
 @inject AuthenticationStateProvider AuthStateProvider
+@inject ILogger<Home> Logger
 @implements IDisposable
 
 <MudText Typo="Typo.h5" Class="fw-bold mb-4 mt-n2">Panel de Control</MudText>
@@ -43,7 +44,7 @@ else
                     <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
                     <MudText Typo="Typo.body2" Class="text-muted">Comandos</MudText>
                 </div>
-                <MudText Typo="Typo.h4" Class="fw-bold">4</MudText>
+                <MudText Typo="Typo.h4" Class="fw-bold">@_commandCount</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
@@ -134,7 +135,7 @@ else
                         <div class="pa-3 mb-2 d-flex align-center justify-space-between list-item-card rounded">
                             <MudText Typo="Typo.body2">@ev.Mensaje</MudText>
                             <div class="d-flex align-center">
-                                <MudText Typo="Typo.caption" Class="text-muted mr-3">@DateTime.Now.ToString("d/M/yyyy, HH:mm:ss")</MudText>
+                                <MudText Typo="Typo.caption" Class="text-muted mr-3">@ev.Fecha.ToString("d/M/yyyy, HH:mm:ss")</MudText>
                                 <MudChip T="string" Size="Size.Small" Color="@(ev.Estado == "OK" ? Color.Success : Color.Error)" Variant="Variant.Filled">
                                     @ev.Estado
                                 </MudChip>
@@ -182,6 +183,12 @@ else
     private bool _isLoading = true;
     private bool _isAdmin = false;
     private string _currentRole = "";
+    private int _commandCount;
+    private Dictionary<int, double> _values = new();
+    private bool _hasValueSource;
+    private bool _isLive;
+    private readonly CancellationTokenSource _refreshCancellation = new();
+    private bool _disposed;
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,31 +196,80 @@ else
         _isAdmin = authState.User.IsInRole("Administrador");
         _currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
 
-        _windows = await DataService.GetWindowsAsync();
-        _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
-        _signals = await DataService.GetSignalsAsync();
-        _events = await DataService.GetEventsAsync();
+        await ReloadDataAsync();
+        if (_disposed) return;
         _isLoading = false;
 
         // Use a stored delegate so we can unsubscribe the exact same handler on dispose.
-        _onStateChangedHandler = () => InvokeAsync(StateHasChanged);
+        _onStateChangedHandler = () => _ = InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            CaptureValues();
+            StateHasChanged();
+        });
         SessionState.OnStateChanged += _onStateChangedHandler;
         MonitorState.OnStateChanged += _onStateChangedHandler;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !_disposed) _ = RefreshDataAsync(_refreshCancellation.Token);
+    }
+
+    private async Task RefreshDataAsync(CancellationToken token)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(token))
+            {
+                await InvokeAsync(async () =>
+                {
+                    if (_disposed) return;
+                    try
+                    {
+                        await ReloadDataAsync();
+                        if (!_disposed) StateHasChanged();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogWarning(ex, "No se pudo actualizar el panel de inicio; se reintentará.");
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+    }
+
+    private async Task ReloadDataAsync()
+    {
+        // Publish a complete snapshot. Never overlap database refreshes or query per signal.
+        var windows = await DataService.GetWindowsAsync();
+        var signals = await DataService.GetSignalsAsync();
+        var events = await DataService.GetEventsAsync();
+        var commands = await DataService.GetCommandsAsync();
+        if (_disposed) return;
+        _windows = windows;
+        _filteredWindows = _isAdmin ? windows : windows.Where(CanCurrentRoleSeeWindow).ToList();
+        _signals = signals;
+        _events = events;
+        _commandCount = commands.Count;
+        CaptureValues();
+    }
+
+    private void CaptureValues()
+    {
+        _isLive = MonitorState.IsMonitoring;
+        _hasValueSource = _isLive || SessionState.IsLoaded;
+        _values = _isLive ? MonitorState.GetCurrentValues()
+            : SessionState.IsLoaded ? SessionState.GetCurrentValues() : new();
     }
 
     private double GetCurrentValue(Signal signal)
     {
         // Prioridad: monitorización en vivo > sesión grabada > valor por defecto de DB
-        if (MonitorState.IsMonitoring)
-        {
-            var liveValues = MonitorState.GetCurrentValues();
-            return liveValues.TryGetValue(signal.Id, out var liveVal) ? liveVal : signal.ValorActual;
-        }
-        if (SessionState.IsLoaded)
-        {
-            var values = SessionState.GetCurrentValues();
-            return values.TryGetValue(signal.Id, out var val) ? val : 0;
-        }
+        if (_hasValueSource)
+            return _values.TryGetValue(signal.Id, out var value) ? value : _isLive ? signal.ValorActual : 0;
         return signal.ValorActual;
     }
 
@@ -262,6 +318,9 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
+        _refreshCancellation.Cancel();
+        _refreshCancellation.Dispose();
         if (_onStateChangedHandler != null)
         {
             SessionState.OnStateChanged -= _onStateChangedHandler;
