@@ -337,7 +337,7 @@
     private List<TrdpVariableLink> _links = new();
 
     private static readonly string[] _types =
-        { "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "bytes" };
+        { "uint8", "int8", "uint16", "int16", "uint32", "int32", "float32", "bytes", "bitset8", "bitset16", "bitset32" };
 
     // Nullable bridges for Variable properties
     private double _scale     { get => Variable.Scale     ?? 1.0;  set => Variable.Scale     = value == 1.0   ? null : value; }

@@ -228,7 +228,24 @@ Assert(service.Packets[0].SourcePort == 17224, $"Puerto origen loopback debe ser
 Assert(service.Packets[0].DestinationPort == 17224, $"Puerto destino loopback debe ser 17224, obtenido: {service.Packets[0].DestinationPort}");
 Assert(service.Packets[0].Payload.Length == 48, $"Longitud payload loopback debe ser 48, obtenida: {service.Packets[0].Payload.Length}");
 Assert(service.Packets[0].HasValidTrdpCrc, "El paquete TRDP en captura loopback debe tener CRC válido");
-Console.WriteLine($"   Captura Loopback DLT_NULL OK: {service.Packets[0].Info}");
+// 13. Probar soporte de BITSET16 y tipos bitset en SessionParserService y TrdpPcapParserService
+Console.WriteLine("-> Probando decodificación de tipos BITSET (8, 16, 32 bits)...");
+Assert(SessionParserService.GetByteSize("BITSET16") == 2, "BITSET16 debe tener tamaño de 2 bytes");
+Assert(SessionParserService.GetByteSize("bitset16") == 2, "bitset16 minúscula debe tener tamaño de 2 bytes");
+Assert(SessionParserService.GetByteSize("BITSET8") == 1, "BITSET8 debe tener tamaño de 1 byte");
+Assert(SessionParserService.GetByteSize("BITSET32") == 4, "BITSET32 debe tener tamaño de 4 bytes");
+
+byte[] sampleBytes = new byte[] { 0xAB, 0xCD, 0x12, 0x34 };
+double valBig = TrdpPcapParserService.ReadNumericValue(sampleBytes, 0, "BITSET16", false);
+Assert((int)valBig == 0xABCD, $"ReadNumericValue BITSET16 BigEndian debe ser 0xABCD, obtenido: {(int)valBig:X4}");
+
+var testDs = new TrdpDataset();
+testDs.Variables.Add(new TrdpDatasetVariable { Id = "status_word", Type = "BITSET16", Offset = 0 });
+var parsedPayload = TrdpPcapParserService.DecodeParsedPayload(sampleBytes, testDs, false);
+Assert(parsedPayload.ContainsKey("status_word_bits"), "Debe generar diccionario de bits para status_word");
+var bitsEl = parsedPayload["status_word_bits"];
+Assert(bitsEl.EnumerateObject().Count() == 16, $"BITSET16 debe producir exactamente 16 bits, obtenidos {bitsEl.EnumerateObject().Count()}");
+Console.WriteLine("   Decodificación BITSET16 OK: 16 bits detectados correctamente.");
 
 Console.WriteLine("\n TODOS LOS TESTS PASARON CON ÉXITO.");
 

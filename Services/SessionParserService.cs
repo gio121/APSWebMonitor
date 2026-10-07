@@ -219,18 +219,22 @@ public class SessionParserService
         try
         {
             if (offset >= data.Length) return 0;
+            var t = (tipoVariable ?? "").ToUpperInvariant().Trim();
 
-            return tipoVariable.ToUpper() switch
+            return t switch
             {
-                "UINT8" or "BYTE" => data[offset],
+                "UINT8" or "BYTE" or "BITSET8" or "BIT8" or "BOOL" or "BOOLEAN" => data[offset],
                 "INT8" or "SBYTE" => (sbyte)data[offset],
                 "BCD_BYTE" => (data[offset] >> 4) * 10 + (data[offset] & 0x0F),
-                "UINT16" or "UINT" => offset + 1 < data.Length ? BitConverter.ToUInt16(data, offset) : 0,
+                "UINT16" or "UINT" or "BITSET16" or "BIT16" or "WORD" or "WORD16" or "SHORT" or "USHORT" => offset + 1 < data.Length ? BitConverter.ToUInt16(data, offset) : 0,
                 "INT16" or "INT" => offset + 1 < data.Length ? BitConverter.ToInt16(data, offset) : 0,
-                "UINT32" or "ULONG" => offset + 3 < data.Length ? BitConverter.ToUInt32(data, offset) : 0,
+                "UINT32" or "ULONG" or "BITSET32" or "BIT32" or "DWORD" => offset + 3 < data.Length ? BitConverter.ToUInt32(data, offset) : 0,
                 "INT32" => offset + 3 < data.Length ? BitConverter.ToInt32(data, offset) : 0,
-                "FLOAT" or "FLOAT32" => offset + 3 < data.Length ? BitConverter.ToSingle(data, offset) : 0,
-                _ => data[offset]
+                "FLOAT" or "FLOAT32" or "REAL32" => offset + 3 < data.Length ? BitConverter.ToSingle(data, offset) : 0,
+                "DOUBLE" or "FLOAT64" or "REAL64" => offset + 7 < data.Length ? BitConverter.ToDouble(data, offset) : 0,
+                _ => t.Contains("16") && offset + 1 < data.Length ? BitConverter.ToUInt16(data, offset)
+                   : t.Contains("32") && offset + 3 < data.Length ? BitConverter.ToUInt32(data, offset)
+                   : data[offset]
             };
         }
         catch { return 0; }
@@ -238,12 +242,15 @@ public class SessionParserService
 
     public static int GetByteSize(string tipoVariable)
     {
-        return tipoVariable.ToUpper() switch
+        if (string.IsNullOrWhiteSpace(tipoVariable)) return 1;
+        var t = tipoVariable.ToUpperInvariant().Trim();
+        return t switch
         {
-            "UINT8" or "INT8" or "BYTE" or "SBYTE" or "BCD_BYTE" => 1,
-            "UINT16" or "INT16" or "UINT" or "INT" => 2,
-            "UINT32" or "INT32" or "FLOAT32" or "FLOAT" or "ULONG" => 4,
-            _ => 1
+            "UINT8" or "INT8" or "BYTE" or "SBYTE" or "BCD_BYTE" or "BITSET8" or "BIT8" or "BOOL" or "BOOLEAN" or "CHAR" or "CHAR8" => 1,
+            "UINT16" or "INT16" or "UINT" or "INT" or "BITSET16" or "BIT16" or "WORD" or "WORD16" or "SHORT" or "USHORT" => 2,
+            "UINT32" or "INT32" or "FLOAT32" or "FLOAT" or "ULONG" or "BITSET32" or "BIT32" or "DWORD" or "REAL32" => 4,
+            "UINT64" or "INT64" or "DOUBLE" or "FLOAT64" or "REAL64" or "BITSET64" or "BIT64" => 8,
+            _ => t.Contains("16") ? 2 : (t.Contains("32") ? 4 : (t.Contains("64") ? 8 : 1))
         };
     }
 }

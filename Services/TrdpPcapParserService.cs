@@ -74,13 +74,14 @@ public class TrdpPcapParserService
 
         try
         {
-            return type.ToUpperInvariant() switch
+            var t = (type ?? "").ToUpperInvariant().Trim();
+            return t switch
             {
-                "UINT8" or "BYTE" => payload[offset],
+                "UINT8" or "BYTE" or "BITSET8" or "BIT8" or "BOOL" or "BOOLEAN" => payload[offset],
                 "INT8" or "SBYTE" => (sbyte)payload[offset],
                 "BCD_BYTE" => (payload[offset] >> 4) * 10 + (payload[offset] & 0x0F),
 
-                "UINT16" or "UINT" => available >= 2
+                "UINT16" or "UINT" or "BITSET16" or "BIT16" or "WORD" or "WORD16" or "SHORT" or "USHORT" => available >= 2
                     ? (isLittleEndian 
                         ? BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(offset, 2))
                         : BinaryPrimitives.ReadUInt16BigEndian(payload.AsSpan(offset, 2)))
@@ -92,7 +93,7 @@ public class TrdpPcapParserService
                         : BinaryPrimitives.ReadInt16BigEndian(payload.AsSpan(offset, 2)))
                     : 0,
 
-                "UINT32" or "ULONG" => available >= 4
+                "UINT32" or "ULONG" or "BITSET32" or "BIT32" or "DWORD" => available >= 4
                     ? (isLittleEndian 
                         ? BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(offset, 4))
                         : BinaryPrimitives.ReadUInt32BigEndian(payload.AsSpan(offset, 4)))
@@ -104,13 +105,21 @@ public class TrdpPcapParserService
                         : BinaryPrimitives.ReadInt32BigEndian(payload.AsSpan(offset, 4)))
                     : 0,
 
-                "FLOAT" or "FLOAT32" => available >= 4
+                "FLOAT" or "FLOAT32" or "REAL32" => available >= 4
                     ? (isLittleEndian 
                         ? BinaryPrimitives.ReadSingleLittleEndian(payload.AsSpan(offset, 4))
                         : BinaryPrimitives.ReadSingleBigEndian(payload.AsSpan(offset, 4)))
                     : 0,
 
-                _ => payload[offset]
+                _ => t.Contains("16") && available >= 2
+                    ? (isLittleEndian 
+                        ? BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(offset, 2))
+                        : BinaryPrimitives.ReadUInt16BigEndian(payload.AsSpan(offset, 2)))
+                    : (t.Contains("32") && available >= 4
+                        ? (isLittleEndian 
+                            ? BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(offset, 4))
+                            : BinaryPrimitives.ReadUInt32BigEndian(payload.AsSpan(offset, 4)))
+                        : payload[offset])
             };
         }
         catch

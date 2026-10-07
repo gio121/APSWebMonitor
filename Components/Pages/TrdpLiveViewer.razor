@@ -431,10 +431,11 @@ else
                     <thead>
                         <tr>
                             <th style="width:65px;">BYTE</th>
-                            <th style="width:230px;">VARIABLE</th>
+                            <th style="width:220px;">VARIABLE</th>
                             <th style="width:95px;">TIPO</th>
-                            <th style="width:220px;">VALOR</th>
-                            <th style="width:140px;">RAW (HEX)</th>
+                            <th style="width:190px;">VALOR</th>
+                            <th style="width:125px;">RAW (HEX)</th>
+                            <th>BITS (0/1)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -453,6 +454,7 @@ else
 
                                 string decVal = GetDecodedPhysicalString(v, rawPayload);
                                 string rawHex = GetRawHexString(v, rawPayload);
+                                string rawBitsMarkup = GetRawBitsMarkup(v, rawPayload);
 
                                 <tr class="@(isSpare ? "trdp-spare-row" : "")">
                                     <td><span class="trdp-offset-badge">@v.Offset</span></td>
@@ -464,13 +466,16 @@ else
                                         }
                                     </td>
                                     <td>
-                                        <span class="trdp-type-badge @GetTypeBadgeClass(v.Type)">@v.Type</span>
+                                        <span class="trdp-type-badge @GetTypeBadgeClass(v)">@v.Type</span>
                                     </td>
                                     <td>
                                         <span class="trdp-val-badge">@decVal</span>
                                     </td>
                                     <td>
                                         <code class="trdp-rawbytes">@rawHex</code>
+                                    </td>
+                                    <td>
+                                        <code class="trdp-rawbits">@((MarkupString)rawBitsMarkup)</code>
                                     </td>
                                 </tr>
                             }
@@ -482,21 +487,37 @@ else
                                 if (!string.IsNullOrWhiteSpace(_filterText) && !varName.Contains(_filterText, StringComparison.OrdinalIgnoreCase))
                                     continue;
 
+                                int autoOffset = -1;
+                                int autoBytes = 1;
+                                if (varName.StartsWith("word_") && int.TryParse(varName.Substring(5), out int wOff))
+                                {
+                                    autoOffset = wOff;
+                                    autoBytes = 2;
+                                }
+                                else if (varName.StartsWith("byte_") && int.TryParse(varName.Substring(5), out int bOff))
+                                {
+                                    autoOffset = bOff;
+                                    autoBytes = 1;
+                                }
+                                string autoHex = autoOffset >= 0 ? BuildRawHex(rawPayload, autoOffset, autoBytes) : "--";
+                                string autoBits = autoOffset >= 0 ? GetRawBitsMarkup(rawPayload, autoOffset, autoBytes) : "--";
+
                                 <tr>
-                                    <td><span class="trdp-offset-badge">--</span></td>
+                                    <td><span class="trdp-offset-badge">@(autoOffset >= 0 ? autoOffset.ToString() : "--")</span></td>
                                     <td class="fw-bold" style="color:var(--mud-palette-text-primary);">@varName</td>
                                     <td><span class="trdp-type-badge type-scalar">AUTO</span></td>
                                     <td>
                                         <span class="trdp-val-badge">@FormatValue(valObj)</span>
                                     </td>
-                                    <td><code class="trdp-rawbytes">--</code></td>
+                                    <td><code class="trdp-rawbytes">@autoHex</code></td>
+                                    <td><code class="trdp-rawbits">@((MarkupString)autoBits)</code></td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center trdp-muted py-3">No se detectaron variables para mostrar.</td>
+                                <td colspan="6" class="text-center trdp-muted py-3">No se detectaron variables para mostrar.</td>
                             </tr>
                         }
                     </tbody>
@@ -572,28 +593,33 @@ else
                                     </td>
                                     <!-- Type badge -->
                                     <td>
-                                        <span class="trdp-type-badge @GetTypeBadgeClass(v.Type)">@v.Type</span>
+                                        <span class="trdp-type-badge @GetTypeBadgeClass(v)">@v.Type</span>
                                     </td>
                                     <!-- Value / Bits visualization -->
                                     <td>
                                         @if (isBitType)
                                         {
-                                            <div class="trdp-bitrow">
-                                                @for (int b = bitWidth - 1; b >= 0; b--)
-                                                {
-                                                    int bitIdx = b;
-                                                    bool bitOn = ((rawInt >> bitIdx) & 1) == 1;
-                                                    string bitLabel = GetBitLabel(v, bitIdx);
-                                                    string bitTitle = string.IsNullOrEmpty(bitLabel) ? $"bit {bitIdx}" : $"bit {bitIdx}: {bitLabel}";
-                                                    <div class="trdp-bit @(bitOn ? "bit-on" : "bit-off")" title="@bitTitle">
-                                                        <span class="bit-pos">@bitIdx</span>
-                                                        <span class="bit-tick">@(bitOn ? "✓" : "·")</span>
-                                                        @if (!string.IsNullOrWhiteSpace(bitLabel))
-                                                        {
-                                                            <span class="bit-label">@bitLabel</span>
-                                                        }
-                                                    </div>
-                                                }
+                                            <div class="d-flex flex-column gap-1">
+                                                <div class="d-flex align-center gap-2 mb-1">
+                                                    <code class="trdp-rawbits" style="font-size:0.75rem;">@((MarkupString)GetRawBitsMarkup(v, rawPayload))</code>
+                                                </div>
+                                                <div class="trdp-bitrow">
+                                                    @for (int b = bitWidth - 1; b >= 0; b--)
+                                                    {
+                                                        int bitIdx = b;
+                                                        bool bitOn = ((rawInt >> bitIdx) & 1) == 1;
+                                                        string bitLabel = GetBitLabel(v, bitIdx);
+                                                        string bitTitle = string.IsNullOrEmpty(bitLabel) ? $"bit {bitIdx}" : $"bit {bitIdx}: {bitLabel}";
+                                                        <div class="trdp-bit @(bitOn ? "bit-on" : "bit-off")" title="@bitTitle">
+                                                            <span class="bit-pos">@bitIdx</span>
+                                                            <span class="bit-tick">@(bitOn ? "✓" : "·")</span>
+                                                            @if (!string.IsNullOrWhiteSpace(bitLabel))
+                                                            {
+                                                                <span class="bit-label">@bitLabel</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
                                             </div>
                                         }
                                         else
@@ -843,6 +869,29 @@ else
         padding: 1px 6px;
         border-radius: 4px;
         letter-spacing: 0.06em;
+    }
+    .trdp-rawbits {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.78rem;
+        background: rgba(255,255,255,0.04);
+        padding: 1px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        display: inline-block;
+    }
+    .trdp-rawbits .bit-1 {
+        color: #22c55e;
+        font-weight: 700;
+        text-shadow: 0 0 4px rgba(34,197,94,0.35);
+    }
+    .trdp-rawbits .bit-0 {
+        color: #64748b;
+        opacity: 0.75;
+    }
+    .trdp-rawbits .trdp-bit-sep {
+        display: inline-block;
+        width: 7px;
     }
     /* Bit grid */
     .trdp-bitrow {
@@ -1752,12 +1801,21 @@ else
     }
 
     /// <summary>Returns the CSS badge class for variable data types.</summary>
+    private static string GetTypeBadgeClass(TrdpDatasetVariable v)
+    {
+        if (v == null || string.IsNullOrWhiteSpace(v.Type)) return "type-scalar";
+        var t = v.Type.ToUpperInvariant().Trim();
+        if (t.Contains("SPARE") || v.Id.StartsWith("spare", StringComparison.OrdinalIgnoreCase)) return "type-spare";
+        if (IsBitsetType(v)) return "type-bit";
+        return "type-scalar";
+    }
+
     private static string GetTypeBadgeClass(string? type)
     {
         if (string.IsNullOrWhiteSpace(type)) return "type-scalar";
-        var t = type.ToUpperInvariant();
+        var t = type.ToUpperInvariant().Trim();
         if (t.Contains("SPARE")) return "type-spare";
-        if (t.Contains("BIT") || t.Contains("BOOL")) return "type-bit";
+        if (t.Contains("BIT") || t.Contains("BOOL") || t.Contains("FLAG")) return "type-bit";
         return "type-scalar";
     }
 
@@ -1765,27 +1823,52 @@ else
     private static bool IsBitsetType(TrdpDatasetVariable v)
     {
         if (v == null) return false;
-        var t = (v.Type ?? "").ToUpperInvariant();
+        var t = (v.Type ?? "").ToUpperInvariant().Trim();
 
-        // Variables with unit are scalar measurements (voltages, currents, temperatures, etc.)
-        if (!string.IsNullOrWhiteSpace(v.Unit)) return false;
-
+        // 1. If type contains BIT, BOOL, FLAG, or BITSET -> ALWAYS a bitset regardless of other attributes
         if (t.Contains("BIT") || t.Contains("BOOL") || t.Contains("FLAG")) return true;
 
+        // 2. Explicit bit offset (single bit variable)
+        if (v.BitOffset.HasValue) return true;
+
+        // 3. Variables with unit: check if unit indicates bits, otherwise it's an analog measurement (V, A, °C, etc.)
+        if (!string.IsNullOrWhiteSpace(v.Unit))
+        {
+            var u = v.Unit.Trim().ToLowerInvariant();
+            if (u is "bit" or "bits" or "b" or "bin" or "binary" or "hex" or "-" or "--")
+                return true;
+
+            return false;
+        }
+
+        // 4. Description bit references (e.g. "bit0=RUN, bit1=FAULT")
         if (!string.IsNullOrWhiteSpace(v.Description) &&
             (v.Description.Contains("bit0=", StringComparison.OrdinalIgnoreCase) ||
              v.Description.Contains("bit 0", StringComparison.OrdinalIgnoreCase) ||
+             v.Description.Contains("b0=", StringComparison.OrdinalIgnoreCase) ||
              v.Description.Contains("bits", StringComparison.OrdinalIgnoreCase)))
             return true;
 
+        // 5. Status / bitset / command keywords in ID
         var id = v.Id.ToLowerInvariant();
         if (id.Contains("state") || id.Contains("status") || id.Contains("flag") ||
-            id.Contains("cmd") || id.Contains("mask") || id.Contains("diag") || id.Contains("mode"))
+            id.Contains("cmd") || id.Contains("mask") || id.Contains("diag") || id.Contains("mode") ||
+            id.Contains("bit") || id.Contains("ctrl") || id.Contains("word") || id.Contains("alarm") ||
+            id.Contains("fault") || id.Contains("signal") || id.Contains("enable") || id.Contains("interlock") ||
+            id.Contains("in_") || id.Contains("out_") || id.Contains("di_") || id.Contains("do_") ||
+            id.Contains("err") || id.Contains("sw_") || id.Contains("io"))
         {
-            return t is "UINT8" or "INT8" or "BYTE" or "UINT16" or "INT16";
+            return t is "UINT8" or "INT8" or "BYTE" or "UINT16" or "INT16" or "WORD" or "WORD16" or "UINT32" or "INT32";
         }
 
-        if (t is "UINT8" or "BYTE")
+        // 6. 8-bit unsigned types without unit are treated as bitsets/status bytes
+        if (t is "UINT8" or "BYTE" or "INT8" or "SBYTE")
+        {
+            return true;
+        }
+
+        // 7. 16-bit status words without unit or scaling (standard TRDP practice)
+        if (t is "UINT16" or "WORD" or "WORD16" or "INT16" && (!v.Scale.HasValue || v.Scale.Value == 1.0) && (!v.OffsetVal.HasValue || v.OffsetVal.Value == 0.0))
         {
             return true;
         }
@@ -1795,16 +1878,67 @@ else
 
     private static bool IsBitsetType(string type)
     {
-        var t = (type ?? "").ToUpperInvariant();
-        return t is "UINT8" or "INT8" or "BYTE" or "SBYTE" or "BCD_BYTE";
+        var t = (type ?? "").ToUpperInvariant().Trim();
+        return t.Contains("BIT") || t.Contains("BOOL") || t.Contains("FLAG")
+            || t is "UINT8" or "INT8" or "BYTE" or "SBYTE" or "BCD_BYTE" or "WORD" or "WORD16";
     }
 
-    /// <summary>Returns the byte width of the variable (clamped to 4).</summary>
+    /// <summary>Returns the byte width of the variable (clamped to 8).</summary>
     private static int GetVarByteCount(TrdpDatasetVariable v)
     {
         if (v.Size.HasValue && v.Size.Value > 0)
-            return Math.Min(v.Size.Value, 4);
-        return Math.Min(SessionParserService.GetByteSize(v.Type), 4);
+            return Math.Min(v.Size.Value, 8);
+        return Math.Min(SessionParserService.GetByteSize(v.Type), 8);
+    }
+
+    /// <summary>Returns formatted binary bits (0 and 1) separated by bytes with a space.</summary>
+    private static string GetRawBitsString(TrdpDatasetVariable v, byte[] payload)
+    {
+        if (v == null || payload == null || payload.Length == 0) return "--";
+        return GetRawBitsString(payload, v.Offset, GetVarByteCount(v));
+    }
+
+    private static string GetRawBitsString(byte[] payload, int offset, int byteCount)
+    {
+        if (payload == null || payload.Length == 0 || offset < 0 || offset >= payload.Length) return "--";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < byteCount && offset + i < payload.Length; i++)
+        {
+            if (i > 0) sb.Append(' ');
+            byte b = payload[offset + i];
+            for (int bit = 7; bit >= 0; bit--)
+            {
+                sb.Append(((b >> bit) & 1) == 1 ? '1' : '0');
+            }
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Returns binary bits with styling (highlighted 1s and muted 0s) separated by spaces between bytes.</summary>
+    private static string GetRawBitsMarkup(TrdpDatasetVariable v, byte[] payload)
+    {
+        if (v == null || payload == null || payload.Length == 0) return "--";
+        return GetRawBitsMarkup(payload, v.Offset, GetVarByteCount(v));
+    }
+
+    private static string GetRawBitsMarkup(byte[] payload, int offset, int byteCount)
+    {
+        if (payload == null || payload.Length == 0 || offset < 0 || offset >= payload.Length) return "--";
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < byteCount && offset + i < payload.Length; i++)
+        {
+            if (i > 0) sb.Append("<span class=\"trdp-bit-sep\"> </span>");
+            byte b = payload[offset + i];
+            for (int bit = 7; bit >= 0; bit--)
+            {
+                int val = (b >> bit) & 1;
+                if (val == 1)
+                    sb.Append("<span class=\"bit-1\">1</span>");
+                else
+                    sb.Append("<span class=\"bit-0\">0</span>");
+            }
+        }
+        return sb.ToString();
     }
 
     /// <summary>Reads raw integer value considering current endianness mode.</summary>
