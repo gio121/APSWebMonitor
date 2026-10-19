@@ -1,0 +1,265 @@
+@page "/eventos-control"
+@attribute [Authorize(Policy = "Page:eventos-control")]
+@rendermode InteractiveServer
+@using ApsMonitor.Models
+@using System.Text
+@using System.Globalization
+@inject MonitorStateService MonitorState
+@inject ApsDataService DataService
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@implements IAsyncDisposable
+
+<PageTitle>Eventos de control</PageTitle>
+<div class="d-flex justify-space-between align-center flex-wrap gap-3 mb-5">
+    <div>
+        <MudText Typo="Typo.h5" Class="fw-bold">Eventos de control</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Registros de averías y trazas del equipo</MudText>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <MudButton OnClick="RefreshSignalsAsync" Disabled="@_busy" StartIcon="@Icons.Material.Filled.Refresh">Actualizar señales</MudButton>
+        <label class="control-file-button @(_configs.Count == 0 ? "unavailable" : "")">Abrir DAT<InputFile OnChange="OpenDatAsync" accept=".dat" disabled="@(_busy || _configs.Count == 0)" aria-label="Abrir DAT de eventos de control" /></label>
+        <MudButton OnClick="DownloadOriginalAsync" Disabled="@(_dat is null || _busy)" StartIcon="@Icons.Material.Filled.Download">Guardar DAT</MudButton>
+    </div>
+</div>
+
+<MudPaper Outlined="true" Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" md="5">
+            <MudSelect T="string" Label="Nodo de las señales" Value="@_signature" ValueChanged="SelectNode" Disabled="@(_busy || _configs.Count == 0)" Variant="Variant.Outlined" Margin="Margin.Dense">
+                @foreach (var config in _configs) { <MudSelectItem T="string" Value="@config.Signature">@config.Name · @config.Signature</MudSelectItem> }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudText Typo="Typo.body2" Class="mt-2">Equipo: @MonitorState.IpAddress · UDP @MonitorState.Port</MudText>
+            <MudText Typo="Typo.caption">Señales añadidas: @(CurrentConfig?.Values.Count ?? 0) en el nodo seleccionado</MudText>
+        </MudItem>
+        <MudItem xs="12" md="3" Class="d-flex align-center gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RetrieveAsync" Disabled="@(_busy || CurrentConfig is null || MonitorState.IsReprogramming || MonitorState.IsDownloadingControlEvents)">Descargar del APS</MudButton>
+            @if (_busy) { <MudButton Color="Color.Warning" OnClick="Cancel">Cancelar</MudButton> }
+        </MudItem>
+    </MudGrid>
+    @if (_busy) { <MudProgressLinear Value="@_progress" Indeterminate="@(!_retrieving)" Class="mt-3" /><MudText Typo="Typo.caption">@(_retrieving ? $"Descargando eventos: {_progress:F0}%" : "Leyendo fichero…")</MudText> }
+    @if (!_busy && _configs.Count == 0) { <MudText Typo="Typo.body2" Class="mt-3">No hay nodos de eventos disponibles entre las señales añadidas.</MudText> }
+    @if (CurrentConfig is { } activeConfig && activeConfig.FpgaReferences.Any(r => !activeConfig.Values.ContainsKey(r.Key)))
+    {
+        <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-3">Estas señales FPGA no están añadidas: @string.Join(", ", activeConfig.FpgaReferences.Where(r => !activeConfig.Values.ContainsKey(r.Key)).Select(r => r.Key).Distinct()). Sus muestras no se pueden representar.</MudAlert>
+    }
+</MudPaper>
+
+@if (_dat is not null)
+{
+    <MudPaper Outlined="true" Class="pa-4 mb-4">
+        <div class="d-flex justify-space-between flex-wrap gap-2 mb-3">
+            <MudText Typo="Typo.subtitle1">@_fileName · @_events.Count(e => e.IsValid) eventos válidos de @_events.Count posiciones</MudText>
+            <MudButton OnClick="ExportEventsAsync" Disabled="@(_filtered.Count == 0)">Exportar eventos CSV</MudButton>
+        </div>
+        <MudGrid>
+            <MudItem xs="12" md="4"><MudTextField T="string" Label="Buscar número o fallo" @bind-Value="_search" @bind-Value:after="ApplyFilters" Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+            <MudItem xs="12" md="2"><MudDatePicker Label="Desde" @bind-Date="_from" @bind-Date:after="ApplyFilters" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+            <MudItem xs="12" md="2"><MudDatePicker Label="Hasta" @bind-Date="_to" @bind-Date:after="ApplyFilters" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" /></MudItem>
+            <MudItem xs="12" md="2"><MudSelect T="string" Label="Zona horaria" @bind-Value="_zoneId" @bind-Value:after="ChangeZone" Variant="Variant.Outlined" Margin="Margin.Dense"><MudSelectItem T="string" Value="@("Europe/Madrid")">Europe/Madrid</MudSelectItem><MudSelectItem T="string" Value="@("UTC")">UTC</MudSelectItem></MudSelect></MudItem>
+            <MudItem xs="12" md="2"><MudSwitch T="bool" @bind-Value="_showEmpty" @bind-Value:after="ApplyFilters" Label="Posiciones vacías" Color="Color.Primary" /></MudItem>
+        </MudGrid>
+        @if (_from > _to) { <MudAlert Severity="Severity.Warning" Dense="true">La fecha inicial debe ser anterior a la final.</MudAlert> }
+        <MudTable T="ControlEventEntry" @ref="_eventTable" Items="_filtered" Dense="true" Hover="true" RowsPerPage="10" OnRowClick="SelectEventAsync" RowClassFunc="EventRowClass" Class="mt-3">
+            <HeaderContent><MudTh>Posición</MudTh><MudTh>N.º de evento</MudTh><MudTh>Fecha y hora (@_zoneId)</MudTh><MudTh>Fallos</MudTh></HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Posición">@(context.Slot + 1)</MudTd>
+                <MudTd DataLabel="N.º de evento">@(context.Number?.ToString("D4") ?? "—")</MudTd>
+                <MudTd DataLabel="Fecha y hora">@ControlEventsParser.FormatTime(context.UtcTime, Zone)</MudTd>
+                <MudTd DataLabel="Fallos">@(context.IsValid ? (context.Failures.Length == 0 ? "Sin fallos descritos" : context.Failures) : "Posición vacía o registro inválido")</MudTd>
+            </RowTemplate>
+            <NoRecordsContent><MudText Class="pa-4">No hay eventos que coincidan con los filtros.</MudText></NoRecordsContent>
+            <PagerContent><MudTablePager /></PagerContent>
+        </MudTable>
+    </MudPaper>
+}
+
+@if (_selected is not null)
+{
+    <MudPaper Outlined="true" Class="pa-4 mb-4">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <div><MudText Typo="Typo.h6">Evento @_selected.Number?.ToString("D4")</MudText><MudText Typo="Typo.caption">Valores de avería y última muestra de cada traza</MudText></div>
+            <MudButton OnClick="ExportDetailsAsync">Exportar detalle CSV</MudButton>
+        </div>
+        <MudTextField T="string" @bind-Value="_signalSearch" Immediate="true" Label="Buscar señal" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+        <MudSwitch T="bool" @bind-Value="_showBits" Label="Desglosar bits" Color="Color.Primary" />
+        <MudTable T="ControlEventDetail" Items="@FilteredDetails" Dense="true" Hover="true" RowsPerPage="15">
+            <HeaderContent><MudTh>Bloque</MudTh><MudTh>Señal</MudTh><MudTh>Valor</MudTh><MudTh>Unidad</MudTh></HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Bloque">@context.Block @if (context.IsTrace) { <MudIcon Icon="@Icons.Material.Filled.ShowChart" Size="Size.Small" /> }</MudTd>
+                <MudTd DataLabel="Señal"><div>@context.Name</div><MudText Typo="Typo.caption">@context.Key</MudText></MudTd>
+                <MudTd DataLabel="Valor">@context.Value
+                    @if (_showBits && context.Bits.Count > 0) { <div class="control-bits">@foreach (var bit in context.Bits) { <div class="@(bit.Active ? "active-bit" : "")">@bit.Index · @bit.Name = @(bit.Active ? 1 : 0)</div> }</div> }
+                </MudTd>
+                <MudTd DataLabel="Unidad">@context.Units</MudTd>
+            </RowTemplate>
+            <PagerContent><MudTablePager /></PagerContent>
+        </MudTable>
+    </MudPaper>
+    <MudPaper Outlined="true" Class="pa-4">
+        <MudText Typo="Typo.h6">Trazas del evento</MudText>
+        <MudGrid Class="mt-1">
+            <MudItem xs="12" md="4"><MudSelect T="int" Label="Bloque de traza" Value="_traceBlock" ValueChanged="SelectTraceBlock" Variant="Variant.Outlined" Margin="Margin.Dense">@foreach (var i in TraceBlockIndexes) { <MudSelectItem T="int" Value="@i">@CurrentConfig!.Blocks[i].Name</MudSelectItem> }</MudSelect></MudItem>
+            <MudItem xs="12" md="5"><MudSelect T="string" Label="Señales de la gráfica" MultiSelection="true" SelectedValues="_chartKeys" SelectedValuesChanged="SelectChartKeys" Variant="Variant.Outlined" Margin="Margin.Dense">@foreach (var series in _traces) { <MudSelectItem T="string" Value="@series.Key">@series.Name (@series.Key)</MudSelectItem> }</MudSelect></MudItem>
+            <MudItem xs="12" md="3" Class="d-flex align-center"><MudButton OnClick="ExportTracesAsync" Disabled="@(!SelectedTraces.Any())">Exportar trazas CSV</MudButton></MudItem>
+        </MudGrid>
+        @if (_traceError is not null) { <MudAlert Severity="Severity.Warning" Class="mt-3">@_traceError</MudAlert> }
+        @if (_traces.Count == 0 && _traceError is null) { <MudText Class="mt-3">No hay muestras de traza disponibles para este bloque.</MudText> }
+        <MudText Typo="Typo.caption" Class="mt-3">Selecciona señales para representarlas. Rueda para ampliar; pulsa la leyenda para ocultar una señal.</MudText>
+        <div id="controlEventsChart" class="control-events-chart"></div>
+    </MudPaper>
+}
+
+<style>
+    .control-file-button { position:relative; display:inline-flex; align-items:center; padding:8px 16px; border:1px solid var(--mud-palette-lines-default); border-radius:4px; cursor:pointer; font-size:.875rem; }
+    .control-file-button input { position:absolute; inset:0; opacity:0; width:100%; cursor:pointer; }
+    .control-file-button.unavailable { opacity:.5; }
+    .control-event-selected td { background:var(--mud-palette-action-default-hover) !important; }
+    .control-events-chart { width:100%; min-height:350px; }
+    .control-bits { font-size:.8rem; margin-top:8px; color:var(--mud-palette-text-secondary); }
+    .active-bit { color:var(--mud-palette-primary); font-weight:600; }
+</style>
+
+@code {
+    private List<ControlEventConfig> _configs = [];
+    private string _signature = "", _fileName = "", _search = "", _signalSearch = "", _zoneId = "Europe/Madrid";
+    private string? _traceError;
+    private byte[]? _dat;
+    private List<ControlEventEntry> _events = [], _filtered = [];
+    private List<ControlEventDetail> _details = [];
+    private List<ControlEventSeries> _traces = [];
+    private HashSet<string> _chartKeys = [];
+    private ControlEventEntry? _selected;
+    private MudTable<ControlEventEntry>? _eventTable;
+    private DateTime? _from, _to;
+    private bool _busy, _retrieving, _showEmpty, _showBits, _chartDirty, _disposed, _chartDrawn;
+    private int _traceBlock = -1;
+    private double _progress;
+    private CancellationTokenSource? _operation;
+    private ControlEventConfig? CurrentConfig => _configs.FirstOrDefault(c => c.Signature == _signature);
+    private TimeZoneInfo Zone => TimeZoneInfo.FindSystemTimeZoneById(_zoneId);
+    private IEnumerable<int> TraceBlockIndexes => CurrentConfig?.Blocks.Select((b, i) => (b, i)).Where(x => x.b.IsTrace).Select(x => x.i) ?? [];
+    private IEnumerable<ControlEventSeries> SelectedTraces => _traces.Where(t => _chartKeys.Contains(t.Key));
+    private IEnumerable<ControlEventDetail> FilteredDetails => _details.Where(d => string.IsNullOrWhiteSpace(_signalSearch) || $"{d.Key} {d.Name} {d.Block} {d.Value}".Contains(_signalSearch, StringComparison.OrdinalIgnoreCase));
+
+    private void BeginOperation(bool retrieving = false) { _operation = new(); _busy = true; _retrieving = retrieving; _progress = 0; }
+    private void EndOperation() { _busy = false; _retrieving = false; _operation?.Dispose(); _operation = null; }
+    private void Cancel() => _operation?.Cancel();
+    private async Task<byte[]> ReadFileAsync(IBrowserFile file, int limit)
+    {
+        await using var stream = file.OpenReadStream(limit, _operation!.Token);
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, _operation.Token);
+        return buffer.ToArray();
+    }
+    protected override async Task OnInitializedAsync() => await RefreshSignalsAsync();
+
+    private async Task RefreshSignalsAsync()
+    {
+        BeginOperation();
+        try
+        {
+            var configs = await DataService.GetControlEventConfigurationsAsync();
+            _configs = configs;
+            if (!configs.Any(c => c.Signature == _signature)) _signature = configs.FirstOrDefault()?.Signature ?? "";
+            ClearDat();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Snackbar.Add($"No se pudieron cargar las señales de eventos: {ex.Message}", Severity.Error); }
+        finally { EndOperation(); }
+    }
+    private async Task OpenDatAsync(InputFileChangeEventArgs args)
+    {
+        BeginOperation();
+        try { LoadDat(await ReadFileAsync(args.File, ControlEventsParser.MaxFileBytes), args.File.Name); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { Snackbar.Add($"No se pudo abrir el DAT: {ex.Message}", Severity.Error); }
+        finally { EndOperation(); }
+    }
+    private async Task RetrieveAsync()
+    {
+        if (_busy || CurrentConfig is not { } config) return;
+        BeginOperation(true);
+        try
+        {
+            var bytes = await MonitorState.DownloadControlEventsAsync(config, percent =>
+            {
+                _ = InvokeAsync(() => { if (!_disposed) { _progress = percent; StateHasChanged(); } });
+            }, _operation!.Token);
+            if (!_disposed) LoadDat(bytes, $"EVENTS_{config.Signature}_{DateTime.Now:yyyyMMdd_HHmmss}.DAT");
+        }
+        catch (OperationCanceledException) { if (!_disposed) Snackbar.Add("Descarga interrumpida o tiempo de espera agotado.", Severity.Info); }
+        catch (Exception ex) { if (!_disposed) Snackbar.Add($"No se pudo descargar: {ex.Message}", Severity.Error); }
+        finally { EndOperation(); }
+    }
+    private void LoadDat(byte[] bytes, string name)
+    {
+        var config = ControlEventsParser.MatchConfig(bytes, _configs);
+        var entries = ControlEventsParser.ReadEvents(bytes, config);
+        _signature = config.Signature; _dat = bytes; _fileName = name; _events = entries;
+        _search = ""; _from = _to = null; _signalSearch = ""; _showEmpty = false;
+        ApplyFilters();
+        SetSelected(entries.FirstOrDefault(e => e.IsValid));
+        Snackbar.Add($"DAT cargado: {entries.Count(e => e.IsValid)} eventos válidos.", Severity.Success);
+    }
+    private void SelectNode(string signature) { if (_signature == signature) return; _signature = signature; ClearDat(); }
+    private void ClearDat() { _dat = null; _events = []; _filtered = []; _fileName = ""; SetSelected(null); }
+    private void ApplyFilters()
+    {
+        _filtered = _events.Where(e => (_showEmpty || e.IsValid) && (string.IsNullOrWhiteSpace(_search) || $"{e.Number:D4} {e.Failures}".Contains(_search, StringComparison.OrdinalIgnoreCase)))
+            .Where(e => (!_from.HasValue && !_to.HasValue) || (e.UtcTime.HasValue && (!_from.HasValue || TimeZoneInfo.ConvertTimeFromUtc(e.UtcTime.Value, Zone).Date >= _from.Value.Date) && (!_to.HasValue || TimeZoneInfo.ConvertTimeFromUtc(e.UtcTime.Value, Zone).Date <= _to.Value.Date))).ToList();
+        _eventTable?.NavigateTo(0);
+        if (_selected is not null && !_filtered.Contains(_selected)) SetSelected(_filtered.FirstOrDefault(e => e.IsValid));
+    }
+    private void ChangeZone() { ApplyFilters(); RefreshDetails(); }
+    private string EventRowClass(ControlEventEntry entry, int index) => entry == _selected ? "control-event-selected" : "";
+    private Task SelectEventAsync(TableRowClickEventArgs<ControlEventEntry> args) { if (args.Item?.IsValid == true) SetSelected(args.Item); return Task.CompletedTask; }
+    private void SetSelected(ControlEventEntry? entry)
+    {
+        _selected = entry; _signalSearch = ""; RefreshDetails();
+        SelectTraceBlock(TraceBlockIndexes.FirstOrDefault(-1));
+    }
+    private void RefreshDetails() => _details = _selected is not null && _dat is not null && CurrentConfig is not null ? ControlEventsParser.ReadDetails(_dat, CurrentConfig, _selected, Zone) : [];
+    private void SelectTraceBlock(int index)
+    {
+        _traceBlock = index; _traceError = null; _traces = []; _chartKeys = [];
+        try
+        {
+            if (_dat is not null && _selected is not null && CurrentConfig is not null && index >= 0)
+                _traces = ControlEventsParser.ReadTraces(_dat, CurrentConfig, _selected, index);
+        }
+        catch (Exception ex) { _traceError = ex.Message; }
+        _chartDirty = true;
+    }
+    private void SelectChartKeys(IEnumerable<string>? keys) { _chartKeys = keys?.ToHashSet() ?? []; _chartDirty = true; }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_selected is null && _chartDrawn)
+        {
+            _chartDrawn = false;
+            await JS.InvokeVoidAsync("controlEvents.dispose", "controlEventsChart");
+        }
+        if (!_chartDirty || _selected is null) return;
+        _chartDirty = false;
+        _chartDrawn = true;
+        try { await JS.InvokeVoidAsync("controlEvents.draw", "controlEventsChart", SelectedTraces, _traceBlock >= 0 && ControlEventsParser.IsFpga(CurrentConfig!.Blocks[_traceBlock]) ? "Tiempo FPGA (µs)" : "Muestra"); }
+        catch (JSException) { _traceError = "No se pudo cargar la gráfica. Comprueba la conexión y vuelve a seleccionar las señales."; StateHasChanged(); }
+    }
+    private static string Csv(string text) => "\"" + text.Replace("\"", "\"\"") + "\"";
+    private Task SaveCsvAsync(string suffix, IEnumerable<string[]> rows)
+    {
+        string csv = "\uFEFF" + string.Join("\r\n", rows.Select(r => string.Join(";", r.Select(Csv))));
+        return JS.InvokeVoidAsync("apsMonitor.downloadBase64File", Path.GetFileNameWithoutExtension(_fileName) + suffix + ".csv", "text/csv;charset=utf-8", Convert.ToBase64String(Encoding.UTF8.GetBytes(csv))).AsTask();
+    }
+    private Task ExportEventsAsync() => SaveCsvAsync("_eventos", new[] { new[] { "Posición", "Evento", $"Fecha y hora ({_zoneId})", "Fallos" } }.Concat(_filtered.Select(e => new[] { (e.Slot + 1).ToString(), e.Number?.ToString() ?? "", ControlEventsParser.FormatTime(e.UtcTime, Zone), e.Failures })));
+    private Task ExportDetailsAsync() => SaveCsvAsync($"_evento_{_selected!.Number}_detalle", new[] { new[] { "Bloque", "Clave", "Señal", "Valor", "Unidad" } }.Concat(FilteredDetails.Select(d => new[] { d.Block, d.Key, d.Name, d.Value, d.Units })));
+    private Task ExportTracesAsync() => SaveCsvAsync($"_evento_{_selected!.Number}_trazas", new[] { new[] { "Punto / tiempo (µs en FPGA)", "Clave", "Señal", "Valor", "Unidad" } }.Concat(SelectedTraces.SelectMany(s => s.X.Select((x, i) => new[] { x.ToString(CultureInfo.InvariantCulture), s.Key, s.Name, s.Y[i].ToString(CultureInfo.InvariantCulture), s.Units }))));
+    private async Task DownloadOriginalAsync() { if (_dat is not null) await JS.InvokeVoidAsync("apsMonitor.downloadBase64File", _fileName, "application/octet-stream", Convert.ToBase64String(_dat)); }
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true; _operation?.Cancel();
+        if (_chartDrawn) try { await JS.InvokeVoidAsync("controlEvents.dispose", "controlEventsChart"); } catch (JSDisconnectedException) { } catch (TaskCanceledException) { }
+    }
+}

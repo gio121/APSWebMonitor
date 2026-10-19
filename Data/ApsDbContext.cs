@@ -8,6 +8,7 @@ public class ApsDbContext : DbContext
     public ApsDbContext(DbContextOptions<ApsDbContext> options) : base(options) { }
 
     public DbSet<Signal> Signals { get; set; }
+    public DbSet<ImportedControlEventConfiguration> ImportedControlEventConfigurations { get; set; }
     public DbSet<ProjectBranding> ProjectBranding { get; set; }
     public DbSet<MaintenancePagePermission> MaintenancePagePermissions { get; set; }
     public DbSet<RoleDefinition> Roles { get; set; }

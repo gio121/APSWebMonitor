@@ -20,6 +20,10 @@ se conservan sus IDs porque pueden estar asignados en diferentes ventanas.
 Todo el CMFX se analiza antes de guardarse y se aplica en una transacción. No se
 reescribe el contenido de las ventanas ni se borran sus asignaciones.
 
+La misma importación conserva también la estructura de los eventos de control.
+La pantalla de eventos utiliza las señales activas guardadas sin solicitar un
+segundo CMFX. Véase [Eventos de control](eventos-control.md).
+
 Al iniciar, `SignalSchema.EnsurePersistentBindings` añade la columna a las bases
 existentes con valor 0. Sigue el mecanismo de actualización incremental de esquema
 que utiliza la aplicación junto con `EnsureCreated`; las instalaciones nuevas ya

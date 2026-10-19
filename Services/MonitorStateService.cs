@@ -38,11 +38,47 @@ public class MonitorStateService : IDisposable
     private Task _monitoringTask = Task.CompletedTask;
     private readonly SemaphoreSlim _protocolGate = new(1, 1);
     public bool IsReprogramming => Volatile.Read(ref _reprogramming) != 0;
+    private bool _downloadingControlEvents;
+    public bool IsDownloadingControlEvents { get { lock (_operationLock) return _downloadingControlEvents; } }
+
+    public async Task<byte[]> DownloadControlEventsAsync(ControlEventConfig config, Action<double>? progress, CancellationToken token)
+    {
+        bool resume;
+        string address;
+        int port;
+        lock (_operationLock)
+        {
+            if (IsReprogramming || _downloadingControlEvents)
+                throw new InvalidOperationException("Hay otra transferencia en curso en el equipo.");
+            address = IpAddress;
+            if (!int.TryParse(Port, out port) || port is < 1 or > 65535)
+                throw new InvalidOperationException("Puerto UDP de control no válido.");
+            resume = IsMonitoring;
+            _downloadingControlEvents = true;
+            StopMonitoring();
+        }
+        NotifyStateChanged();
+        try
+        {
+            await WaitForMonitoringStoppedAsync();
+            return await ApsControlEventsClient.DownloadAsync(address, port, config, progress, token);
+        }
+        finally
+        {
+            lock (_operationLock)
+            {
+                _downloadingControlEvents = false;
+                if (resume && IsConnected && IpAddress == address && Port == port.ToString()) StartMonitoring();
+            }
+            NotifyStateChanged();
+        }
+    }
 
     public bool TryBeginReprogramming()
     {
         lock (_operationLock)
         {
+            if (_downloadingControlEvents) return false;
             if (Interlocked.CompareExchange(ref _reprogramming, 1, 0) != 0) return false;
             StopMonitoring();
             NotifyStateChanged();
@@ -62,7 +98,7 @@ public class MonitorStateService : IDisposable
         await _protocolGate.WaitAsync(token);
         try
         {
-            if (IsReprogramming) throw new OperationCanceledException("Reprogramación en curso.");
+            if (IsReprogramming || IsDownloadingControlEvents) throw new OperationCanceledException("Transferencia en curso.");
 
             // 1. Envío directo por UDP a ControlManager (puerto 50001 habitual en proyectos de comms)
             if (_udpClient != null)
@@ -220,7 +256,7 @@ public class MonitorStateService : IDisposable
     {
         lock (_operationLock)
         {
-            if (!IsConnected || IsMonitoring || IsReprogramming) return;
+            if (!IsConnected || IsMonitoring || IsReprogramming || _downloadingControlEvents) return;
 
             IsMonitoring = true;
             SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
@@ -255,7 +291,7 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public async Task SendTestFrameAsync()
     {
-        if (!IsConnected || IsReprogramming) return;
+        if (!IsConnected || IsReprogramming || IsDownloadingControlEvents) return;
 
         try
         {

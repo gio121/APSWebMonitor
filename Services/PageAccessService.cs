@@ -18,6 +18,7 @@ public sealed class PageAccessService(IDbContextFactory<ApsDbContext> factory)
         new("monitor", "Monitor", "/monitor", false),
         new("reprogramacion", "Reprogramación", "/reprogramacion", false),
         new("logs", "Logs", "/logs", false),
+        new("eventos-control", "Eventos de control", "/eventos-control", false),
         new("analizador-sesiones", "Analizador de sesiones", "/analizador-sesiones", false),
         new("comandos", "Comandos", "/comandos", false),
         new("trdp", "TRDP Config", "/trdp", false),

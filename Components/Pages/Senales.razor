@@ -355,7 +355,8 @@ else
                 }
             }
 
-            await DataService.ImportSignalsAsync(importedSignals);
+            var eventConfigurations = ControlEventsParser.LoadConfig(doc, allowEmpty: true);
+            await DataService.ImportSignalsAsync(importedSignals, eventConfigurations);
             Snackbar.Add($"Se importaron {importados} señales de {nodes.Count} nodos desde '{file.Name}'.", Severity.Success);
             await LoadData();
         }

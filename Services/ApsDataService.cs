@@ -90,7 +90,7 @@ public class ApsDataService
     }
 
     // Reimport by logical identity without replacing the IDs used by windows.
-    public async Task ImportSignalsAsync(IEnumerable<Signal> importedSignals)
+    public async Task ImportSignalsAsync(IEnumerable<Signal> importedSignals, IReadOnlyList<ControlEventConfig>? eventConfigurations = null)
     {
         var incoming = importedSignals.ToList();
         if (incoming.Any(s => string.IsNullOrWhiteSpace(s.Tag)))
@@ -123,7 +123,43 @@ public class ApsDataService
             }
         }
         await context.SaveChangesAsync();
+        if (eventConfigurations is not null)
+        {
+            Data.ControlEventsSchema.EnsureImportedConfiguration(context);
+            var nodes = incoming.Select(s => s.NodoNumero).Distinct().ToArray();
+            var stored = await context.ImportedControlEventConfigurations.Where(c => nodes.Contains(c.NodeNumber)).ToListAsync();
+            context.ImportedControlEventConfigurations.RemoveRange(stored);
+            await context.SaveChangesAsync();
+            foreach (var config in eventConfigurations)
+            {
+                if (!nodes.Contains(config.Node)) throw new ArgumentException("El nodo de eventos no pertenece a las señales importadas.");
+                context.ImportedControlEventConfigurations.Add(new()
+                {
+                    NodeNumber = config.Node,
+                    ConfigurationJson = System.Text.Json.JsonSerializer.Serialize(config)
+                });
+            }
+            await context.SaveChangesAsync();
+        }
         await transaction.CommitAsync();
+    }
+
+    public async Task<List<ControlEventConfig>> GetControlEventConfigurationsAsync()
+    {
+        using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var signals = await context.Signals.AsNoTracking().OrderBy(s => s.Id).ToListAsync();
+        if (signals.Count == 0) return [];
+        var saved = await context.ImportedControlEventConfigurations.AsNoTracking().OrderBy(c => c.NodeNumber).ToListAsync();
+        var result = new List<ControlEventConfig>();
+        foreach (var row in saved)
+        {
+            var layout = System.Text.Json.JsonSerializer.Deserialize<ControlEventConfig>(row.ConfigurationJson)
+                ?? throw new InvalidDataException("La estructura de eventos guardada no es válida.");
+            var bound = ControlEventsParser.BindSignals(layout, signals);
+            if (bound is not null) result.Add(bound);
+        }
+        return result;
     }
 
     // Events

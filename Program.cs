@@ -78,6 +78,7 @@ using (var scope = app.Services.CreateScope())
     context.Database.EnsureCreated(); // Crea tablas si la BD no existe aún
 
     SignalSchema.EnsurePersistentBindings(context);
+    ControlEventsSchema.EnsureImportedConfiguration(context);
     CommandSchema.EnsureControlCommands(context);
     ProjectBrandingService.EnsureSchema(context);
     PageAccessService.EnsureSchema(context);
