@@ -28,6 +28,16 @@
     </div>
     <script>
         window.apsStartup = { complete: () => document.getElementById('app-startup')?.remove() };
+        window.apsNavigation = {
+            openProjects: (replace) => {
+                const url = new URL('proyectos', document.baseURI).href;
+                // Return the interop acknowledgement before unloading this circuit.
+                window.setTimeout(() => {
+                    if (replace) window.location.replace(url);
+                    else window.location.assign(url);
+                }, 0);
+            }
+        };
     </script>
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />

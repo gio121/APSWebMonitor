@@ -1,0 +1,223 @@
+@page "/proyectos"
+@attribute [Authorize]
+@inject ProjectDatabaseService Projects
+@inject ProjectLoadingService Loader
+@inject ILogger<Proyectos> Logger
+@implements IAsyncDisposable
+
+<PageTitle>Cambiar proyecto</PageTitle>
+
+<MudText Typo="Typo.h4" Class="fw-bold mb-2">Cambiar proyecto</MudText>
+<MudText Typo="Typo.body1" Class="mb-6">Selecciona el proyecto con el que quieres trabajar o importa su base de datos.</MudText>
+<MudText Typo="Typo.body2" Class="mb-4" Style="overflow-wrap:anywhere">Carpeta de proyectos: @Projects.RootDirectory</MudText>
+
+<MudPaper Class="pa-6" Style="max-width:760px" Outlined="true">
+    @if (Projects.Current is { } active)
+    {
+        <MudText Typo="Typo.h6" Class="mb-1">Proyecto activo: @active.ProjectFolder · Revisión @active.Revision</MudText>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">Selecciona un proyecto y una revisión para comenzar.</MudAlert>
+    }
+    @if (_catalog.Count == 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-4">No hay carpetas de proyectos en @Projects.RootDirectory.</MudAlert>
+    }
+    <MudText Typo="Typo.body2" Class="mb-5">El proyecto se comparte entre todos los usuarios del monitor. Al cambiarlo se desconecta el equipo y se cierran las sesiones de reproducción abiertas.</MudText>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4" role="alert">@_error</MudAlert>
+    }
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="Severity.Success" Class="mb-4">@_message</MudAlert>
+    }
+
+    <MudSelect T="string" Value="_selectedProject" ValueChanged="SelectProject" Label="Proyecto" Variant="Variant.Outlined" Disabled="_busy" Class="mb-4">
+        @foreach (var project in _catalog)
+        {
+            <MudSelectItem T="string" Value="@project.Name">@project.Name</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="string" Value="_selectedRevision" ValueChanged="SelectRevision" Label="Revisión / versión" Variant="Variant.Outlined" Disabled="@(_busy || SelectedRevisions.Count == 0)" Class="mb-4">
+        @foreach (var revision in SelectedRevisions)
+        {
+            <MudSelectItem T="string" Value="@revision.Version">@revision.Version</MudSelectItem>
+        }
+    </MudSelect>
+    @if (!string.IsNullOrEmpty(_selectedProject) && SelectedRevisions.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">El proyecto «@_selectedProject» todavía no tiene revisiones. Puedes importar su base de datos indicando una versión.</MudAlert>
+    }
+    else if (!string.IsNullOrEmpty(_selectedRevision) && SelectedDatabases.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">La revisión @_selectedRevision todavía no tiene una base de datos. Añádela a su carpeta o impórtala.</MudAlert>
+    }
+    @if (SelectedDatabases.Count > 1)
+    {
+        <MudSelect T="string" @bind-Value="_selectedId" Label="Base de datos" Variant="Variant.Outlined" Disabled="_busy" Class="mb-4">
+            @foreach (var database in SelectedDatabases)
+            {
+                <MudSelectItem T="string" Value="@database.Id">@database.FileName</MudSelectItem>
+            }
+        </MudSelect>
+    }
+    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">Base de datos: @_projects.FirstOrDefault(x => x.Id == _selectedId)?.DatabasePath</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen"
+               OnClick="LoadProject" Disabled="@(_busy || _selectedId == Projects.Current?.Id || string.IsNullOrEmpty(_selectedId))">
+        Cargar proyecto
+    </MudButton>
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshProjects" Disabled="_busy" Class="ml-2">Actualizar lista</MudButton>
+    <MudText Typo="Typo.caption" Class="d-block mt-2">La lista se actualiza automáticamente al añadir o quitar carpetas.</MudText>
+    @if (_busy)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-4" />
+        <MudText Typo="Typo.body2" Class="mt-2" role="status">@_progress</MudText>
+    }
+
+    <MudDivider Class="my-6" />
+    <MudText Typo="Typo.h6" Class="mb-2">Importar base de datos</MudText>
+    <MudText Typo="Typo.body2" Class="mb-3">Indica el proyecto y la versión. Elige un archivo .db, .sqlite o .sqlite3 de APS Monitor, de hasta 100 MiB. Después pulsa «Cargar proyecto».</MudText>
+    <MudTextField @bind-Value="_importProject" Label="Nombre del proyecto" Placeholder="MetroMadrid" Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-4" />
+    <MudTextField @bind-Value="_importRevision" Label="Versión de la revisión" HelperText="Ej.: 0.1, 0.2 o 1.0. Las revisiones existentes se conservan." Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-4" />
+    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">Destino: @ImportDestination</MudText>
+    <label for="project-database" class="d-block mb-2">Base de datos del proyecto</label>
+    <InputFile @key="_fileKey" id="project-database" OnChange="ImportDatabase" accept=".db,.sqlite,.sqlite3" disabled="@(_busy || string.IsNullOrWhiteSpace(_importProject) || string.IsNullOrWhiteSpace(_importRevision))" />
+</MudPaper>
+
+@code {
+    private IReadOnlyList<ProjectDirectory> _catalog = [];
+    private IReadOnlyList<ProjectDatabase> _projects = [];
+    private string _selectedId = "";
+    private string _selectedProject = "";
+    private string _selectedRevision = "";
+    private string _importProject = "";
+    private string _importRevision = "0.1";
+    private string? _error;
+    private string? _message;
+    private string _progress = "";
+    private bool _busy;
+    private int _fileKey;
+    private string? _catalogKey;
+    private readonly CancellationTokenSource _stop = new();
+    private Task? _watchTask;
+    private IReadOnlyList<ProjectRevision> SelectedRevisions => _catalog.FirstOrDefault(x => string.Equals(x.Name, _selectedProject, StringComparison.OrdinalIgnoreCase))?.Revisions ?? [];
+    private IReadOnlyList<ProjectDatabase> SelectedDatabases => SelectedRevisions.FirstOrDefault(x => x.Version == _selectedRevision)?.Databases ?? [];
+    private string ImportDestination => $"{Projects.RootDirectory}{System.IO.Path.DirectorySeparatorChar}{_importProject}{System.IO.Path.DirectorySeparatorChar}Revisions{System.IO.Path.DirectorySeparatorChar}{_importRevision}{System.IO.Path.DirectorySeparatorChar}aps.db";
+
+    protected override void OnInitialized()
+    {
+        RefreshCatalog(selectCurrent: true);
+        _importProject = _selectedProject;
+        _watchTask = WatchCatalogAsync();
+    }
+
+    private void SelectProject(string project)
+    {
+        _selectedProject = project;
+        _importProject = project;
+        SelectRevision(SelectedRevisions.FirstOrDefault()?.Version ?? "");
+    }
+
+    private void SelectRevision(string version)
+    {
+        _selectedRevision = version;
+        _selectedId = SelectedDatabases.FirstOrDefault()?.Id ?? "";
+    }
+
+    private bool RefreshCatalog(bool selectCurrent = false)
+    {
+        var catalog = Projects.GetCatalog();
+        var key = string.Join('\n', catalog.Select(project => project.Name + "\n" + string.Join('\n',
+            project.Revisions.Select(revision => revision.Version + ":" + string.Join('|', revision.Databases.Select(db => db.Id))))));
+        if (key == _catalogKey && !selectCurrent) return false;
+        _catalogKey = key;
+        _catalog = catalog;
+        _projects = catalog.SelectMany(x => x.Revisions).SelectMany(x => x.Databases).ToArray();
+        var selected = selectCurrent ? Projects.Current : null;
+        var folder = selected?.ProjectFolder ?? _selectedProject;
+        _selectedProject = catalog.FirstOrDefault(x => string.Equals(x.Name, folder, StringComparison.OrdinalIgnoreCase))?.Name
+            ?? catalog.FirstOrDefault()?.Name ?? "";
+        var version = selected?.Revision ?? _selectedRevision;
+        _selectedRevision = SelectedRevisions.FirstOrDefault(x => x.Version == version)?.Version
+            ?? SelectedRevisions.FirstOrDefault()?.Version ?? "";
+        var database = selected?.Id ?? _selectedId;
+        _selectedId = SelectedDatabases.FirstOrDefault(x => x.Id == database)?.Id ?? SelectedDatabases.FirstOrDefault()?.Id ?? "";
+        return true;
+    }
+
+    private void RefreshProjects()
+    {
+        try { RefreshCatalog(); }
+        catch (IOException ex)
+        {
+            Logger.LogWarning(ex, "No se pudo actualizar el catálogo de proyectos");
+            _error = "No se pudo actualizar la lista. Vuelve a intentarlo.";
+        }
+    }
+
+    private async Task WatchCatalogAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_stop.Token))
+                await InvokeAsync(() =>
+                {
+                    if (_stop.IsCancellationRequested || _busy) return;
+                    try { if (RefreshCatalog()) StateHasChanged(); }
+                    catch (IOException) { /* A folder may be moving; retry on the next tick. */ }
+                });
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _stop.CancelAsync();
+        if (_watchTask is not null) await _watchTask;
+        _stop.Dispose();
+    }
+
+    private async Task ImportDatabase(InputFileChangeEventArgs args)
+    {
+        _busy = true;
+        _error = _message = null;
+        _progress = "Importando y comprobando la base de datos…";
+        try
+        {
+            await using var stream = args.File.OpenReadStream(ProjectDatabaseService.MaximumDatabaseBytes);
+            var imported = await Projects.ImportAsync(_importProject, _importRevision, args.File.Name, stream);
+            RefreshCatalog();
+            SelectProject(imported.ProjectFolder);
+            SelectRevision(imported.Revision);
+            _selectedId = imported.Id;
+            _message = $"Proyecto «{imported.ProjectFolder}», revisión {imported.Revision}, importado. Pulsa «Cargar proyecto» para abrirlo.";
+        }
+        catch (ArgumentException ex) { _error = ex.Message; }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "No se pudo importar la base de datos del proyecto");
+            _error = "No se pudo importar el archivo. Comprueba que sea una base de datos válida de APS Monitor y que no supere 100 MiB.";
+        }
+        finally { _busy = false; _fileKey++; }
+    }
+
+    private async Task LoadProject()
+    {
+        _busy = true;
+        _error = _message = null;
+        _progress = "Cargando proyecto…";
+        try { await Loader.LoadAsync(_selectedId); }
+        catch (ArgumentException ex) { _error = ex.Message; }
+        catch (InvalidOperationException ex) { _error = ex.Message; }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "No se pudo cargar el proyecto {ProjectId}", _selectedId);
+            _error = "No se pudo cargar el proyecto. Comprueba su base de datos y vuelve a intentarlo.";
+        }
+        finally { _busy = false; }
+    }
+}

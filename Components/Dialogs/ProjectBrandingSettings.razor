@@ -1,5 +1,6 @@
 @inject ProjectBrandingService Branding
 @inject ISnackbar Snackbar
+@inject ProjectDatabaseService Projects
 
 <MudPaper Class="admin-card" Elevation="0">
     <div class="branding-heading">
@@ -46,9 +47,11 @@
     private string? _logo, _error;
     private bool _busy, _loaded;
     private int _fileKey;
+    private string _projectId = "";
 
     protected override async Task OnInitializedAsync()
     {
+        _projectId = Projects.Current?.Id ?? "";
         await Branding.LoadAsync();
         Discard();
         _loaded = true;
@@ -80,7 +83,7 @@
         _busy = true; _error = null;
         try
         {
-            await Branding.SaveAsync(_name, _logo);
+            await Branding.SaveAsync(_name, _logo, _projectId);
             _name = Branding.Current.ProjectName;
             Snackbar.Add("Imagen y nombre del proyecto actualizados.", Severity.Success);
         }

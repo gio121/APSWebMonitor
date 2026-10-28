@@ -1,0 +1,33 @@
+@inject ProjectNavigationService ProjectNavigation
+@implements IDisposable
+
+@if (_navigationUnavailable)
+{
+    <p>No se pudo abrir el selector automáticamente. Pulsa el enlace para continuar.</p>
+}
+<a href="/proyectos" target="_top">Abrir selector de proyectos</a>
+
+@code {
+    [Parameter] public bool Replace { get; set; } = true;
+    private readonly CancellationTokenSource _stop = new();
+    private bool _disposed;
+    private bool _navigationUnavailable;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var opened = await ProjectNavigation.OpenAsync(Replace, _stop.Token);
+        if (!opened && !_disposed)
+        {
+            _navigationUnavailable = true;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _stop.Cancel();
+        _stop.Dispose();
+    }
+}

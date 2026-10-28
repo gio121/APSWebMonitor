@@ -8,7 +8,7 @@ public sealed record ProjectBrandingView(string ProjectName, string? LogoDataUrl
     public string ImageSource => LogoDataUrl ?? "SepsaMedha.jpg";
 }
 
-public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> factory)
+public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> factory, ProjectDatabaseService? projects = null)
 {
     public const int MaximumImageBytes = 2 * 1024 * 1024;
     public const int MaximumNameLength = 80;
@@ -16,6 +16,22 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
     private bool _loaded;
     public ProjectBrandingView Current { get; private set; } = new("APS Monitor", null);
     public event Action? Changed;
+
+    internal async Task ChangeProjectAsync(IDbContextFactory<ApsDbContext> target, Action activate)
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            await using var context = await target.CreateDbContextAsync();
+            var saved = await context.ProjectBranding.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1);
+            activate();
+            Current = saved is null ? new("APS Monitor", null) : new(saved.ProjectName, saved.LogoDataUrl);
+            _loaded = true;
+        }
+        finally { _gate.Release(); }
+        foreach (Action subscriber in Changed?.GetInvocationList() ?? [])
+            try { subscriber(); } catch { }
+    }
 
     public static void EnsureSchema(ApsDbContext context) => context.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS ProjectBranding (
@@ -31,6 +47,7 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
         try
         {
             if (_loaded) return;
+            if (projects is not null && projects.Current is null) return;
             await using var context = await factory.CreateDbContextAsync();
             var saved = await context.ProjectBranding.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1);
             if (saved is not null) Current = new(saved.ProjectName, saved.LogoDataUrl);
@@ -39,7 +56,7 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
         finally { _gate.Release(); }
     }
 
-    public async Task SaveAsync(string name, string? logoDataUrl)
+    public async Task SaveAsync(string name, string? logoDataUrl, string? expectedProjectId = null)
     {
         name = name.Trim();
         if (name.Length is 0 or > MaximumNameLength)
@@ -58,6 +75,8 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
         await _gate.WaitAsync();
         try
         {
+            if (expectedProjectId is not null && projects?.Current?.Id != expectedProjectId)
+                throw new InvalidOperationException("El proyecto activo ha cambiado. Vuelve a abrir la personalización.");
             await using var context = await factory.CreateDbContextAsync();
             var saved = await context.ProjectBranding.SingleOrDefaultAsync(x => x.Id == 1);
             if (saved is null) { saved = new(); context.ProjectBranding.Add(saved); }

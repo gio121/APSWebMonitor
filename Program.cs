@@ -27,17 +27,22 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
-builder.Services.AddDbContextFactory<ApsDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=aps.db"));
+builder.Services.AddSingleton<ApplicationDbContextFactory>();
+builder.Services.AddSingleton<ProjectDatabaseService>();
+builder.Services.AddSingleton<IDbContextFactory<ApsDbContext>, ActiveProjectDbContextFactory>();
+builder.Services.AddSingleton<ProjectLoadingService>();
+builder.Services.AddScoped<ProjectNavigationService>();
 
-builder.Services.AddScoped<ApsDataService>();
+builder.Services.AddScoped(sp => new ApsDataService(
+    sp.GetRequiredService<ProjectDatabaseService>().CaptureFactory(),
+    sp.GetRequiredService<ApplicationDbContextFactory>()));
 builder.Services.AddSingleton<ProjectBrandingService>();
-builder.Services.AddSingleton<PageAccessService>();
+builder.Services.AddSingleton(sp => new PageAccessService(sp.GetRequiredService<ApplicationDbContextFactory>()));
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PageAccessHandler>();
 builder.Services.AddScoped<SessionStateService>();
 builder.Services.AddScoped<MonitorThemeService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
-builder.Services.AddScoped<TrdpConfigService>();
+builder.Services.AddScoped(sp => new TrdpConfigService(sp.GetRequiredService<ProjectDatabaseService>().CaptureFactory()));
 builder.Services.AddHttpClient<SepsaProtocolClient>();
 builder.Services.AddHttpClient("SepsaMonitor"); // cliente nombrado para MonitorStateService (Singleton)
 builder.Services.AddHttpClient("TrdpBackend");  // cliente nombrado para TrdpBackendService
@@ -60,7 +65,9 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<InfluxWriterServic
 // Authentication & Authorization
 builder.Services.AddAuthentication();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped(sp => new CustomAuthenticationStateProvider(
+    sp.GetRequiredService<Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedSessionStorage>(),
+    sp.GetRequiredService<ApplicationDbContextFactory>()));
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<CustomAuthenticationStateProvider>());
 builder.Services.AddAuthorization(options =>
 {
@@ -70,130 +77,14 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-// Inicializar la base de datos
+// Keep application accounts and permissions in the original database.
 using (var scope = app.Services.CreateScope())
 {
-    var contextFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ApsDbContext>>();
-    using var context = contextFactory.CreateDbContext();
-    context.Database.EnsureCreated(); // Crea tablas si la BD no existe aún
-
-    SignalSchema.EnsurePersistentBindings(context);
-    ControlEventsSchema.EnsureImportedConfiguration(context);
-    CommandSchema.EnsureControlCommands(context);
-    ProjectBrandingService.EnsureSchema(context);
-    PageAccessService.EnsureSchema(context);
-
-    // Migración manual de columnas
-    try
-    {
-        using var connection = context.Database.GetDbConnection();
-        connection.Open();
-        using var command = connection.CreateCommand();
-
-        // --- Migrar columna FailuresConfigJson en Windows ---
-        command.CommandText = "PRAGMA table_info(Windows)";
-        using var reader = command.ExecuteReader();
-        bool hasFailuresColumn = false;
-        bool hasPermitirColumn = false;
-        bool hasAllowedRolesColumn = false;
-        while (reader.Read()) 
-        { 
-            var colName = reader.GetString(1);
-            if (colName == "FailuresConfigJson") { hasFailuresColumn = true; } 
-            if (colName == "PermitirMantenimiento") { hasPermitirColumn = true; } 
-            if (colName == "AllowedRolesJson") { hasAllowedRolesColumn = true; } 
-        }
-        reader.Close();
-        
-        if (!hasFailuresColumn) 
-        { 
-            command.CommandText = "ALTER TABLE Windows ADD COLUMN FailuresConfigJson TEXT NOT NULL DEFAULT '[]'"; 
-            command.ExecuteNonQuery(); 
-        }
-
-        // --- Migrar columna PermitirMantenimiento en Windows ---
-        if (!hasPermitirColumn)
-        {
-            command.CommandText = "ALTER TABLE Windows ADD COLUMN PermitirMantenimiento INTEGER NOT NULL DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-
-        // --- Migrar columna AllowedRolesJson en Windows ---
-        if (!hasAllowedRolesColumn)
-        {
-            command.CommandText = "ALTER TABLE Windows ADD COLUMN AllowedRolesJson TEXT NOT NULL DEFAULT '[]'";
-            command.ExecuteNonQuery();
-
-            command.CommandText = "UPDATE Windows SET AllowedRolesJson = '[\"Administrador\"]' WHERE PermitirMantenimiento = 0";
-            command.ExecuteNonQuery();
-
-            command.CommandText = "UPDATE Windows SET AllowedRolesJson = '[\"Administrador\",\"Mantenimiento\"]' WHERE PermitirMantenimiento = 1";
-            command.ExecuteNonQuery();
-        }
-
-        // --- Crear tabla Users si no existe ---
-        command.CommandText = @"CREATE TABLE IF NOT EXISTS Users (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Username TEXT NOT NULL,
-            PasswordHash TEXT NOT NULL,
-            Nombre TEXT NOT NULL,
-            Role TEXT NOT NULL
-        )";
-        command.ExecuteNonQuery();
-
-        // --- Seeding: asegurar usuarios por defecto ---
-        EnsureDefaultUser(command, "admin", "admin", "Administrador", "Administrador");
-        EnsureDefaultUser(command, "mantenimiento", "mantenimiento", "Mantenimiento", "Mantenimiento");
-
-        // --- Crear tabla TrdpConfigs si no existe ---
-        command.CommandText = @"CREATE TABLE IF NOT EXISTS TrdpConfigs (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Nombre TEXT NOT NULL DEFAULT '',
-            Descripcion TEXT NOT NULL DEFAULT '',
-            UltimaModificacion TEXT NOT NULL DEFAULT '',
-            UseDynamicMapping INTEGER NOT NULL DEFAULT 1,
-            ControlFrameJson TEXT NOT NULL DEFAULT '{}',
-            CommsDatasetsJson TEXT NOT NULL DEFAULT '{}',
-            NetworksJson TEXT NOT NULL DEFAULT '[]',
-            TcmsOkJson TEXT NOT NULL DEFAULT '{}'
-        )";
-        command.ExecuteNonQuery();
-
-        // --- Añadir columna TcmsOkJson a TrdpConfigs si no existe ---
-        command.CommandText = "PRAGMA table_info(TrdpConfigs)";
-        using var trdpReader = command.ExecuteReader();
-        bool hasTcmsOkJson = false;
-        while (trdpReader.Read())
-        {
-            if (trdpReader.GetString(1) == "TcmsOkJson") { hasTcmsOkJson = true; }
-        }
-        trdpReader.Close();
-        if (!hasTcmsOkJson)
-        {
-            command.CommandText = "ALTER TABLE TrdpConfigs ADD COLUMN TcmsOkJson TEXT NOT NULL DEFAULT '{}'";
-            command.ExecuteNonQuery();
-        }
-
-        // --- Registrar migraciones en __EFMigrationsHistory para sincronizar con EF ---
-        command.CommandText = @"CREATE TABLE IF NOT EXISTS __EFMigrationsHistory (
-            MigrationId TEXT NOT NULL PRIMARY KEY,
-            ProductVersion TEXT NOT NULL
-        )";
-        command.ExecuteNonQuery();
-
-        command.CommandText = @"INSERT OR IGNORE INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES
-            ('20260325103158_InitialCreate', '10.0.11'),
-            ('20260325112758_AddBitTexts', '10.0.11'),
-            ('20260325115335_AddWindowContentJson', '10.0.11'),
-            ('20260914121829_AddTrdpConfig', '10.0.11')";
-        command.ExecuteNonQuery();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Error al migrar DB manual: " + ex.Message);
-    }
+    var factory = scope.ServiceProvider.GetRequiredService<ApplicationDbContextFactory>();
+    using var context = factory.CreateDbContext();
+    ApsDatabaseInitializer.Initialize(context);
 }
-
+app.Services.GetRequiredService<ProjectDatabaseService>().RestoreSelection();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -213,34 +104,3 @@ app.MapRazorComponents<App>()
     .AllowAnonymous();
 
 app.Run();
-
-static void EnsureDefaultUser(System.Data.Common.DbCommand command, string username, string password, string nombre, string role)
-{
-    command.Parameters.Clear();
-    command.CommandText = "SELECT COUNT(*) FROM Users WHERE Username = $username";
-    AddParameter(command, "$username", username);
-
-    var userExists = Convert.ToInt64(command.ExecuteScalar()) > 0;
-    if (userExists)
-        return;
-
-    command.Parameters.Clear();
-    command.CommandText = @"INSERT INTO Users (Username, PasswordHash, Nombre, Role)
-        VALUES ($username, $passwordHash, $nombre, $role)";
-
-    AddParameter(command, "$username", username);
-    AddParameter(command, "$passwordHash", PasswordHasher.Hash(password));
-    AddParameter(command, "$nombre", nombre);
-    AddParameter(command, "$role", role);
-    command.ExecuteNonQuery();
-
-    Console.WriteLine($"Usuario por defecto creado: {username}");
-}
-
-static void AddParameter(System.Data.Common.DbCommand command, string name, object value)
-{
-    var parameter = command.CreateParameter();
-    parameter.ParameterName = name;
-    parameter.Value = value;
-    command.Parameters.Add(parameter);
-}

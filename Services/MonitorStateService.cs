@@ -35,6 +35,7 @@ public class MonitorStateService : IDisposable
     public bool IsMonitoring { get; private set; } = false;
     private int _reprogramming;
     private readonly object _operationLock = new();
+    private bool _changingProject;
     private Task _monitoringTask = Task.CompletedTask;
     private readonly SemaphoreSlim _protocolGate = new(1, 1);
     public bool IsReprogramming => Volatile.Read(ref _reprogramming) != 0;
@@ -48,7 +49,7 @@ public class MonitorStateService : IDisposable
         int port;
         lock (_operationLock)
         {
-            if (IsReprogramming || _downloadingControlEvents)
+            if (IsReprogramming || _downloadingControlEvents || _changingProject)
                 throw new InvalidOperationException("Hay otra transferencia en curso en el equipo.");
             address = IpAddress;
             if (!int.TryParse(Port, out port) || port is < 1 or > 65535)
@@ -78,7 +79,7 @@ public class MonitorStateService : IDisposable
     {
         lock (_operationLock)
         {
-            if (_downloadingControlEvents) return false;
+            if (_downloadingControlEvents || _changingProject) return false;
             if (Interlocked.CompareExchange(ref _reprogramming, 1, 0) != 0) return false;
             StopMonitoring();
             NotifyStateChanged();
@@ -98,7 +99,7 @@ public class MonitorStateService : IDisposable
         await _protocolGate.WaitAsync(token);
         try
         {
-            if (IsReprogramming || IsDownloadingControlEvents) throw new OperationCanceledException("Transferencia en curso.");
+            if (IsReprogramming || IsDownloadingControlEvents || _changingProject) throw new OperationCanceledException("Transferencia en curso.");
 
             // 1. Envío directo por UDP a ControlManager (puerto 50001 habitual en proyectos de comms)
             if (_udpClient != null)
@@ -199,9 +200,12 @@ public class MonitorStateService : IDisposable
     public async Task ConnectAsync()
     {
         if (string.IsNullOrWhiteSpace(IpAddress)) return;
+        lock (_operationLock)
+        {
+            if (_changingProject || IsConnecting) return;
+            IsConnecting = true;
+        }
         _connectionHealth.Reset();
-
-        IsConnecting = true;
         NotifyStateChanged();
 
         try
@@ -249,6 +253,36 @@ public class MonitorStateService : IDisposable
         NotifyStateChanged();
     }
 
+    public async Task ChangeProjectAsync(Func<Task> activate)
+    {
+        lock (_operationLock)
+        {
+            if (_changingProject || IsConnecting || IsReprogramming || _downloadingControlEvents)
+                throw new InvalidOperationException("Espera a que termine la conexión o transferencia antes de cambiar de proyecto.");
+            _changingProject = true;
+            Disconnect();
+        }
+        try
+        {
+            await WaitForMonitoringStoppedAsync();
+            lock (_valuesLock)
+            {
+                _currentValues.Clear();
+                _previousValues.Clear();
+                _signals = [];
+                _signalsByNode = new();
+                _nodeSizes = new();
+                SessionId = null;
+            }
+            await activate();
+        }
+        finally
+        {
+            lock (_operationLock) _changingProject = false;
+            NotifyStateChanged();
+        }
+    }
+
     /// <summary>
     /// Inicia el bucle de monitorización continua (alterna tramas 0x1A y 0x1D).
     /// </summary>
@@ -256,7 +290,7 @@ public class MonitorStateService : IDisposable
     {
         lock (_operationLock)
         {
-            if (!IsConnected || IsMonitoring || IsReprogramming || _downloadingControlEvents) return;
+            if (!IsConnected || IsMonitoring || IsReprogramming || _downloadingControlEvents || _changingProject) return;
 
             IsMonitoring = true;
             SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";

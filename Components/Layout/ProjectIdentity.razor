@@ -1,11 +1,16 @@
 @implements IDisposable
 @inject ProjectBrandingService Branding
+@inject ProjectDatabaseService Projects
 
-<div class="project-identity">
+<a class="project-identity" href="/proyectos" title="Cambiar proyecto y versión" aria-label="Cambiar proyecto y versión">
     <img src="@Branding.Current.ImageSource" alt="@($"Imagen de {Branding.Current.ProjectName}")" />
     <MudText Typo="Typo.h6" Class="fw-bold" Color="Color.Primary" Style="overflow-wrap:anywhere;line-height:1.3">@Branding.Current.ProjectName</MudText>
     <MudText Typo="Typo.caption" Class="text-muted text-uppercase" Style="letter-spacing:1px">SISTEMA SCADA</MudText>
-</div>
+    @if (Projects.Current is { } project)
+    {
+        <MudText Typo="Typo.caption" Class="text-muted" Style="overflow-wrap:anywhere">@project.ProjectFolder · v@(project.Revision)</MudText>
+    }
+</a>
 
 @code {
     private bool _disposed;

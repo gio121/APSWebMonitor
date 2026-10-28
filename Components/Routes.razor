@@ -2,6 +2,8 @@
 @inject PageAccessService PageAccess
 @inject AuthenticationStateProvider Authentication
 @inject IJSRuntime JS
+@inject ProjectDatabaseService Projects
+@inject SessionStateService Session
 
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
@@ -17,6 +19,20 @@
         {
             <div class="app-startup" role="status">Abriendo acceso…</div>
             <RedirectToLogin />
+        }
+        else if (_projectChanged)
+        {
+            <div class="app-startup" role="status">
+                <p>Proyecto actualizado. Abriendo selector…</p>
+                <RedirectToProject Replace="false" />
+            </div>
+        }
+        else if (Projects.Current is null && routeData.PageType != typeof(Pages.Proyectos))
+        {
+            <div class="app-startup" role="status">
+                <p>Abriendo selector de proyectos…</p>
+                <RedirectToProject />
+            </div>
         }
         else
         {
@@ -44,9 +60,11 @@
     private bool _disposed;
     private bool _authenticationReady;
     private bool _authenticated;
+    private bool _projectChanged;
     protected override async Task OnInitializedAsync()
     {
         PageAccess.Changed += RefreshPermissions;
+        Projects.Changed += ReloadProject;
         Authentication.AuthenticationStateChanged += AuthenticationChanged;
         await UpdateAuthenticationAsync(Authentication.GetAuthenticationStateAsync());
     }
@@ -61,6 +79,13 @@
     {
         await UpdateAuthenticationAsync(task);
         if (!_disposed) StateHasChanged();
+    });
+    private void ReloadProject() => _ = InvokeAsync(() =>
+    {
+        if (_disposed || !_authenticated || _projectChanged) return;
+        Session.CloseSession();
+        _projectChanged = true;
+        StateHasChanged();
     });
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -78,6 +103,7 @@
     {
         _disposed = true;
         PageAccess.Changed -= RefreshPermissions;
+        Projects.Changed -= ReloadProject;
         Authentication.AuthenticationStateChanged -= AuthenticationChanged;
     }
 }
