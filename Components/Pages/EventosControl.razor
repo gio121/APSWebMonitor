@@ -18,7 +18,7 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
         <MudButton OnClick="RefreshSignalsAsync" Disabled="@_busy" StartIcon="@Icons.Material.Filled.Refresh">Actualizar señales</MudButton>
-        <label class="control-file-button @(_configs.Count == 0 ? "unavailable" : "")">Abrir DAT<InputFile OnChange="OpenDatAsync" accept=".dat" disabled="@(_busy || _configs.Count == 0)" aria-label="Abrir DAT de eventos de control" /></label>
+        <label class="control-file-button @(_configs.Count == 0 ? "unavailable" : "")">Abrir Fichero eventos<InputFile OnChange="OpenDatAsync" accept=".dat" disabled="@(_busy || _configs.Count == 0)" aria-label="Abrir DAT de eventos de control" /></label>
         <MudButton OnClick="DownloadOriginalAsync" Disabled="@(_dat is null || _busy)" StartIcon="@Icons.Material.Filled.Download">Guardar DAT</MudButton>
     </div>
 </div>
