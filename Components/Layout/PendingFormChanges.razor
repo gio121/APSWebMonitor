@@ -1,0 +1,22 @@
+@inject IJSRuntime JS
+@inject PendingEditService Edits
+@implements IDisposable
+
+<NavigationLock ConfirmExternalNavigation="Dirty" OnBeforeInternalNavigation="ConfirmNavigation" />
+
+@code {
+    [Parameter] public bool Dirty { get; set; }
+    protected override void OnParametersSet() => Edits.Set(this, Dirty);
+    public void Dispose() => Edits.Set(this, false);
+    private async Task ConfirmNavigation(LocationChangingContext context)
+    {
+        if (!Dirty) return;
+        try
+        {
+            if (!await JS.InvokeAsync<bool>("confirm", "Hay cambios en el formulario sin guardar en el borrador. ¿Quieres salir y perder esos cambios?"))
+                context.PreventNavigation();
+        }
+        catch (JSDisconnectedException) { context.PreventNavigation(); }
+        catch (OperationCanceledException) { context.PreventNavigation(); }
+    }
+}

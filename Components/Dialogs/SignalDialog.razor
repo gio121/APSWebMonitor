@@ -1,6 +1,9 @@
+@inject ISnackbar Snackbar
 @using ApsMonitor.Models
 @using ApsMonitor.Services
 @inject ApsDataService DataService
+@inject IJSRuntime JS
+<PendingFormChanges Dirty="@(_originalForm is not null && _originalForm != FormSnapshot())" />
 
 <MudDialog Class="signal-dialog">
     <DialogContent>
@@ -206,6 +209,8 @@
 
     private int _activeTab = 0;
     private bool IsEditMode => Signal.Id > 0;
+    private string? _originalForm;
+    private string FormSnapshot() => System.Text.Json.JsonSerializer.Serialize(Signal);
 
     protected override void OnParametersSet()
     {
@@ -222,6 +227,7 @@
         Signal.BitEsAlarma ??= new bool[16];
         var alarma = Signal.BitEsAlarma;
         if (alarma.Length < 16) { Array.Resize(ref alarma, 16); Signal.BitEsAlarma = alarma; }
+        _originalForm ??= FormSnapshot();
     }
 
     private async Task OnNodeNumberChanged(int newNumber)
@@ -248,19 +254,27 @@
 
     private async Task Submit()
     {
-        if (string.IsNullOrWhiteSpace(Signal.Nombre) || string.IsNullOrWhiteSpace(Signal.Tag))
+        try
         {
-            _activeTab = 0; // jump to General tab to show validation
-            return;
+            if (string.IsNullOrWhiteSpace(Signal.Nombre) || string.IsNullOrWhiteSpace(Signal.Tag))
+            {
+                _activeTab = 0; // jump to General tab to show validation
+                return;
+            }
+
+            if (IsEditMode)
+                await DataService.UpdateSignalAsync(Signal);
+            else
+                await DataService.AddSignalAsync(Signal);
+
+            MudDialog.Close(DialogResult.Ok(true));
         }
-
-        if (IsEditMode)
-            await DataService.UpdateSignalAsync(Signal);
-        else
-            await DataService.AddSignalAsync(Signal);
-
-        MudDialog.Close(DialogResult.Ok(true));
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
-    private void Cancel() => MudDialog.Cancel();
+    private async Task Cancel()
+    {
+        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", "¿Descartar los cambios sin guardar del formulario?")) return;
+        MudDialog.Cancel();
+    }
 }

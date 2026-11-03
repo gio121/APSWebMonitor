@@ -250,9 +250,119 @@ try
     }
     Check(!(await authorization.AuthorizeAsync(new ClaimsPrincipal(new ClaimsIdentity()), null, policy!)).Succeeded,
         "Project loading still requires authentication");
+    var draftSource = await projects.ImportAsync("DraftChecks", "0.9", "source.db", new MemoryStream(sourceBytes));
+    var immutableBytes = await File.ReadAllBytesAsync(draftSource.DatabasePath);
+    await loader.LoadAsync(draftSource.Id, keepDraft: true);
+    Check(projects.Current.DatabasePath.Contains(".Working") && projects.Current.DatabasePath != draftSource.DatabasePath,
+        "Selected revisions use a separate persistent working copy");
+    Check(!(await projects.GetDraftStatusAsync()).HasChanges && (await projects.GetDraftStatusAsync()).NextRevision == "0.10",
+        "A freshly normalized draft is clean and version increments are numeric");
+    var editorA = new ApsDataService(projects.CaptureFactory(), application, projects.CaptureEventFactory());
+    var editorB = new ApsDataService(projects.CaptureFactory(), application);
+    var signalA = (await editorA.GetSignalsAsync()).Single();
+    var signalB = (await editorB.GetSignalsAsync()).Single();
+    await editorA.UpdateSignalAsync(signalA);
+    Check(!(await projects.GetDraftStatusAsync()).HasChanges, "Saving identical configuration is not a pending revision");
+    await editorA.AddEventAsync(new() { Mensaje = "runtime only" });
+    Check(!(await projects.GetDraftStatusAsync()).HasChanges, "Runtime events do not make a draft dirty");
+    using (var db = projects.CaptureFactory().CreateDbContext())
+        Check(!db.Events.Any(x => x.Mensaje == "runtime only"), "Runtime events use a separate database from revision configuration");
+    Check((await editorA.GetEventsAsync()).Any(x => x.Mensaje == "runtime only"), "Separate runtime logs remain readable");
+    var rollbackData = new ApsDataService(projects.CaptureFactory());
+    await Reject(() => rollbackData.ImportSignalsAsync([new Signal { Tag = "NORTE", NodoNumero = 3, Nombre = "rolled back" }],
+        [new ControlEventConfig("invalid", "invalid", 99, "", 0, 0, 0, 0, 0, 0, new Dictionary<string, ControlEventValue>(), [], [])]), "An invalid import did not roll back");
+    Check(!(await projects.GetDraftStatusAsync()).HasChanges, "A rolled-back multi-save import does not leave pending changes");
+    signalA.Nombre = "Edited safely";
+    await editorA.UpdateSignalAsync(signalA);
+    signalB.Nombre = "stale overwrite";
+    await Reject(() => editorB.UpdateSignalAsync(signalB), "Stale detached edits overwrote another user's changes");
+    Check((await editorA.GetSignalsAsync()).Single().Nombre == "Edited safely", "Conflicts preserve the previously saved values");
+    Check((await projects.GetDraftStatusAsync()).HasChanges, "Saved configuration changes require a new revision");
+    var independentA = new ApsDataService(projects.CaptureFactory());
+    var independentB = new ApsDataService(projects.CaptureFactory());
+    var windowEdit = (await independentA.GetWindowsAsync()).Single();
+    var commandEdit = (await independentB.GetCommandsAsync()).Single();
+    windowEdit.Nombre = "Window edit"; commandEdit.Nombre = "Command edit";
+    await Task.WhenAll(independentA.UpdateWindowAsync(windowEdit), independentB.UpdateCommandAsync(commandEdit));
+    Check((await independentA.GetWindowsAsync()).Single().Nombre == "Window edit" &&
+        (await independentB.GetCommandsAsync()).Single().Nombre == "Command edit", "Independent concurrent edits are both retained");
+    await Reject(() => loader.LoadAsync(initialId), "Switching silently ignored pending changes");
+    var workingPath = projects.Current.DatabasePath;
+    var recovered = new ProjectDatabaseService(environment, NullLogger<ProjectDatabaseService>.Instance, configuration);
+    recovered.RestoreSelection();
+    Check(recovered.Current?.DatabasePath == workingPath && (await recovered.GetDraftStatusAsync()).HasChanges,
+        "Restart resumes the same dirty draft");
+    await loader.LoadAsync(initialId, keepDraft: true);
+    await loader.LoadAsync(draftSource.Id, keepDraft: true);
+    Check(projects.Current.DatabasePath == workingPath, "Switching away and back resumes a kept draft");
+    var admin = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "tester"), new Claim(ClaimTypes.Role, "Administrador")], "test"));
+    await Reject(() => loader.PublishAsync("0.10", "", new ClaimsPrincipal()), "Anonymous publication was accepted");
+    await Reject(() => loader.PublishAsync("0.9", "", admin), "Existing revision was overwritten");
+    Directory.CreateDirectory(Path.Combine(projects.RootDirectory, "DraftChecks", "Revisions", "0.10"));
+    await Reject(() => loader.PublishAsync("0.10", "", admin), "Even an existing empty revision must not be overwritten");
+    Check((await projects.GetDraftStatusAsync()).HasChanges && projects.Current.DatabasePath == workingPath,
+        "Failed publication preserves the entire draft");
+    var pendingWrite = await projects.CaptureFactory().CreateDbContextAsync();
+    var windowDuringPublish = await pendingWrite.Windows.SingleAsync();
+    windowDuringPublish.Descripcion = "Last committed edit";
+    var publicationTask = loader.PublishAsync("0.11", "Test publication", admin);
+    Check(!publicationTask.IsCompleted, "Publication waits for existing editing contexts to finish");
+    await pendingWrite.SaveChangesAsync();
+    await pendingWrite.DisposeAsync();
+    await publicationTask;
+    Check(projects.Current.Revision == "0.11" && !(await projects.GetDraftStatusAsync()).HasChanges,
+        "Publication activates a fresh clean draft based on the new revision");
+    var sourceAfterPublishing = await File.ReadAllBytesAsync(draftSource.DatabasePath);
+    Check(immutableBytes.SequenceEqual(sourceAfterPublishing),
+        "Loading, editing and publishing never alter the original revision bytes");
+    await Reject(() => editorA.AddSignalAsync(new() { Tag = "late write" }), "An old scope edited a published draft");
+    var published = projects.Find(projects.Current.Id);
+    using (var db = new ProjectDbContextFactory(published.ConnectionString).CreateDbContext())
+    {
+        Check(db.Signals.Single().Nombre == "Edited safely", "Published snapshot contains the committed edits");
+        Check(db.Windows.Single().Descripcion == "Last committed edit", "Publication includes edits completed while it was waiting");
+    }
+    Check(File.ReadAllText(Path.Combine(Path.GetDirectoryName(published.DatabasePath)!, "revision.json")).Contains("tester"),
+        "Publication records its author and parent revision");
+    // Simulate a stop after publication rename but before the active-selection pointer changed.
+    var savedSelection = File.ReadAllText(Path.Combine(projects.RootDirectory, "active-project.txt"));
+    var savedPointer = File.ReadAllText(Path.Combine(projects.RootDirectory, "active-project.txt.draft"));
+    File.WriteAllText(Path.Combine(projects.RootDirectory, "active-project.txt"), draftSource.Id);
+    File.WriteAllText(Path.Combine(projects.RootDirectory, "active-project.txt.draft"), Path.GetFileName(Path.GetDirectoryName(workingPath)));
+    var oldManifestPath = Path.Combine(Path.GetDirectoryName(workingPath)!, "estado.json");
+    var oldManifest = System.Text.Json.JsonSerializer.Deserialize<DraftManifest>(File.ReadAllText(oldManifestPath))!;
+    File.WriteAllText(oldManifestPath, System.Text.Json.JsonSerializer.Serialize(oldManifest with { PublishedId = null }));
+    var postPublicationRecovery = new ProjectDatabaseService(environment, NullLogger<ProjectDatabaseService>.Instance, configuration);
+    postPublicationRecovery.RestoreSelection();
+    Check(postPublicationRecovery.Current?.Revision == "0.11", "Restart follows a completed publication even if selection was not updated");
+    File.WriteAllText(Path.Combine(projects.RootDirectory, "active-project.txt"), savedSelection);
+    File.WriteAllText(Path.Combine(projects.RootDirectory, "active-project.txt.draft"), savedPointer);
+    var currentData = new ApsDataService(projects.CaptureFactory(), application);
+    await currentData.AddSignalAsync(new() { Tag = "discard me" });
+    var discardedPath = projects.Current.DatabasePath;
+    await loader.DiscardAsync(admin);
+    Check(File.Exists(discardedPath) && !(await projects.GetDraftStatusAsync()).HasChanges &&
+        (await new ApsDataService(projects.CaptureFactory()).GetSignalsAsync()).Count == 1,
+        "Discard archives the old draft and restores a clean copy");
+    await Reject(() => currentData.AddSignalAsync(new() { Tag = "late discarded write" }), "A discarded draft remained writable");
+    var bulkA = new ApsDataService(projects.CaptureFactory());
+    var bulkB = new ApsDataService(projects.CaptureFactory());
+    var beforeBulk = (await bulkA.GetSignalsAsync()).Single();
+    var concurrent = (await bulkB.GetSignalsAsync()).Single(); concurrent.Nombre = "bulk concurrent";
+    await bulkB.UpdateSignalAsync(concurrent);
+    await Reject(() => bulkA.DeleteAllSignalsAsync(), "Bulk deletion ignored concurrent edits");
+    await Reject(() => bulkA.ImportSignalsAsync([new Signal { Tag = beforeBulk.Tag, NodoNumero = beforeBulk.NodoNumero }]),
+        "Bulk import ignored concurrent edits");
+    var externalData = projects.Find(projects.Current.Id);
+    using (var db = new ProjectDbContextFactory(externalData.ConnectionString).CreateDbContext())
+        await db.Signals.ExecuteUpdateAsync(s => s.SetProperty(x => x.Nombre, "external edit"));
+    Check((await projects.GetDraftStatusAsync()).SourceChanged, "External origin changes are detected");
+    await Reject(() => loader.PublishAsync("0.12", "", admin), "Publication ignored an externally modified origin");
+    await loader.LoadAsync(initialId, keepDraft: true);
     Check(monitor.TryBeginReprogramming(), "Reprogramming guard is acquired");
     await Reject(() => loader.LoadAsync(imported.Id), "Project switched during firmware transfer");
     Check(projects.Current?.Id == initialId, "Firmware transfer keeps the current project selected");
+    monitor.EndReprogramming();
 
     var legacyDirectory = Path.Combine(root, "Projects");
     Directory.CreateDirectory(legacyDirectory);
@@ -281,6 +391,7 @@ try
     renderServices.AddSingleton<IJSRuntime, PreviewJs>();
     renderServices.AddSingleton<NavigationManager, PreviewNavigation>();
     renderServices.AddSingleton(uiProjects);
+    renderServices.AddSingleton(uiBranding);
     renderServices.AddSingleton(new ProjectLoadingService(uiProjects, uiBranding, monitor));
     renderServices.AddSingleton<ProjectNavigationService>();
     await using (var renderProvider = renderServices.BuildServiceProvider())
@@ -321,6 +432,17 @@ try
         File.Delete(Path.Combine(uiRevision, "aps.db"));
         await Until(html => !CanLoad(html));
         Check(uiProjects.Current is null, "Automatic catalog refresh never activates a project on its own");
+        await File.WriteAllBytesAsync(Path.Combine(uiRevision, "aps.db"), sourceBytes);
+        await renderProvider.GetRequiredService<ProjectLoadingService>().LoadAsync(uiProjects.GetProjects().Single().Id);
+        await Until(html => html.Contains("copia temporal persistente"));
+        await new ApsDataService(uiProjects.CaptureFactory()).AddSignalAsync(new() { Tag = "UI_PENDING" });
+        var dirtyHtml = await Until(html => html.Contains("Hay cambios pendientes en esta versión"));
+        Check(dirtyHtml.Contains("Crear nueva revisión") && dirtyHtml.Contains("Descartar borrador"),
+            "The actual Razor page exposes pending changes and revision actions");
+        var identity = await renderer.Dispatcher.InvokeAsync(() => renderer.BeginRenderingComponent(typeof(ProjectIdentity), ParameterView.Empty));
+        await identity.QuiescenceTask;
+        var identityHtml = System.Net.WebUtility.HtmlDecode(await renderer.Dispatcher.InvokeAsync(identity.ToHtmlString));
+        Check(identityHtml.Contains("Cambios pendientes"), "The project header shows pending revision changes");
         var redirect = await renderer.Dispatcher.InvokeAsync(() => renderer.BeginRenderingComponent(typeof(RedirectToProject), ParameterView.Empty));
         await redirect.QuiescenceTask;
         var redirectHtml = await renderer.Dispatcher.InvokeAsync(redirect.ToHtmlString);

@@ -13,7 +13,7 @@ public sealed record ProjectDatabase(string Id, string Name, string FileName, st
 public sealed record ProjectRevision(string Version, IReadOnlyList<ProjectDatabase> Databases);
 public sealed record ProjectDirectory(string Name, IReadOnlyList<ProjectRevision> Revisions);
 
-public sealed class ProjectDatabaseService
+public sealed partial class ProjectDatabaseService
 {
     public const long MaximumDatabaseBytes = 100 * 1024 * 1024;
     public const string DefaultRootDirectory = @"C:\SEPSA\ApsWebMonitor";
@@ -34,8 +34,8 @@ public sealed class ProjectDatabaseService
         _logger = logger;
     }
 
-    public IDbContextFactory<ApsDbContext> CaptureFactory() => new ProjectDbContextFactory(
-        (Current ?? throw new InvalidOperationException("Selecciona un proyecto y una revisión para continuar.")).ConnectionString);
+    public IDbContextFactory<ApsDbContext> CaptureFactory() => new DraftDbContextFactory(
+        Current ?? throw new InvalidOperationException("Selecciona un proyecto y una revisión para continuar."), this);
 
     public IReadOnlyList<ProjectDirectory> GetCatalog()
     {
@@ -199,8 +199,24 @@ public sealed class ProjectDatabaseService
         try
         {
             var saved = Find(File.ReadAllText(_selectionFile).Trim());
-            PrepareAsync(saved).GetAwaiter().GetResult();
-            _current = saved;
+            var draftPointer = _selectionFile + ".draft";
+            if (File.Exists(draftPointer))
+            {
+                var folder = File.ReadAllText(draftPointer).Trim();
+                if (Guid.TryParseExact(folder, "N", out _))
+                {
+                    var draft = AsDraft(saved, Path.Combine(_directory, saved.ProjectFolder, ".Working", folder, "aps.db"));
+                    EnsureLocalDirectory(Path.GetDirectoryName(draft.DatabasePath)!);
+                    if (File.Exists(ManifestPath(draft)))
+                    {
+                        using var recoveryLock = AcquireFileLock(draft.DatabasePath + ".edit.lock");
+                        var manifest = RecoverPublication(draft);
+                        if (manifest.SourceId == saved.Id && manifest.PublishedId is { } published) saved = Find(published);
+                    }
+                }
+            }
+            _current = OpenDraftAsync(saved).GetAwaiter().GetResult();
+            Activate(_current);
         }
         catch (Exception ex)
         {
@@ -210,9 +226,8 @@ public sealed class ProjectDatabaseService
     internal void Activate(ProjectDatabase project)
     {
         Directory.CreateDirectory(_directory);
-        var temporary = _selectionFile + ".tmp";
-        File.WriteAllText(temporary, project.Id);
-        File.Move(temporary, _selectionFile, overwrite: true);
+        WriteAtomicText(_selectionFile, project.Id);
+        WriteAtomicText(_selectionFile + ".draft", Path.GetFileName(Path.GetDirectoryName(project.DatabasePath))!);
         Volatile.Write(ref _current, project);
     }
 

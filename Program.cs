@@ -32,10 +32,12 @@ builder.Services.AddSingleton<ProjectDatabaseService>();
 builder.Services.AddSingleton<IDbContextFactory<ApsDbContext>, ActiveProjectDbContextFactory>();
 builder.Services.AddSingleton<ProjectLoadingService>();
 builder.Services.AddScoped<ProjectNavigationService>();
+builder.Services.AddScoped<PendingEditService>();
 
 builder.Services.AddScoped(sp => new ApsDataService(
     sp.GetRequiredService<ProjectDatabaseService>().CaptureFactory(),
-    sp.GetRequiredService<ApplicationDbContextFactory>()));
+    sp.GetRequiredService<ApplicationDbContextFactory>(),
+    sp.GetRequiredService<ProjectDatabaseService>().CaptureEventFactory()));
 builder.Services.AddSingleton<ProjectBrandingService>();
 builder.Services.AddSingleton(sp => new PageAccessService(sp.GetRequiredService<ApplicationDbContextFactory>()));
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PageAccessHandler>();

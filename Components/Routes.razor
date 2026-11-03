@@ -4,6 +4,15 @@
 @inject IJSRuntime JS
 @inject ProjectDatabaseService Projects
 @inject SessionStateService Session
+@inject PendingEditService PendingEdits
+
+@if (_pendingProjectReload)
+{
+    <div role="alert" style="position:fixed;top:0;left:0;right:0;z-index:2000;background:#fff3cd;color:#664d03;padding:12px;text-align:center">
+        El proyecto activo ha cambiado. Tu formulario sigue abierto para que puedas revisar o copiar los cambios sin guardar.
+        <a href="/proyectos" target="_top">Abrir el proyecto activo</a>
+    </div>
+}
 
 <Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
@@ -61,6 +70,7 @@
     private bool _authenticationReady;
     private bool _authenticated;
     private bool _projectChanged;
+    private bool _pendingProjectReload;
     protected override async Task OnInitializedAsync()
     {
         PageAccess.Changed += RefreshPermissions;
@@ -84,7 +94,8 @@
     {
         if (_disposed || !_authenticated || _projectChanged) return;
         Session.CloseSession();
-        _projectChanged = true;
+        if (PendingEdits.HasChanges) _pendingProjectReload = true;
+        else _projectChanged = true;
         StateHasChanged();
     });
     protected override async Task OnAfterRenderAsync(bool firstRender)

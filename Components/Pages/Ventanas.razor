@@ -211,10 +211,14 @@ else
 
     private async Task ToggleRoleAccess(Window window, string role, bool value)
     {
-        window.SetRoleAllowed(role, value);
-        await DataService.UpdateWindowAsync(window);
-        Snackbar.Add($"Acceso de {role} {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
-        StateHasChanged();
+        try
+        {
+            window.SetRoleAllowed(role, value);
+            await DataService.UpdateWindowAsync(window);
+            Snackbar.Add($"Acceso de {role} {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
+            StateHasChanged();
+        }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task CrearNuevaVentana()
@@ -247,50 +251,62 @@ else
 
     private async Task EditarPropiedades(Window window)
     {
-        var parameters = new DialogParameters<ApsMonitor.Components.Dialogs.NewWindowDialog>
+        try
         {
-            { x => x.WindowName, window.Nombre },
-            { x => x.WindowDescription, window.Descripcion },
-            { x => x.SubmitButtonText, "Guardar" }
-        };
+            var parameters = new DialogParameters<ApsMonitor.Components.Dialogs.NewWindowDialog>
+            {
+                { x => x.WindowName, window.Nombre },
+                { x => x.WindowDescription, window.Descripcion },
+                { x => x.SubmitButtonText, "Guardar" }
+            };
 
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Editar Detalles", parameters, options);
-        var result = await dialog.Result;
+            var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+            var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Editar Detalles", parameters, options);
+            var result = await dialog.Result;
 
-        if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
-        {
-            window.Nombre = windowData.Name;
-            window.Descripcion = windowData.Description;
-            
-            await DataService.UpdateWindowAsync(window);
-            Snackbar.Add("Ventana actualizada correctamente", Severity.Success);
-            StateHasChanged();
+            if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
+            {
+                window.Nombre = windowData.Name;
+                window.Descripcion = windowData.Description;
+
+                await DataService.UpdateWindowAsync(window);
+                Snackbar.Add("Ventana actualizada correctamente", Severity.Success);
+                StateHasChanged();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task EliminarVentana(Window window)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Confirmar Eliminación", 
-            $"¿Estás seguro de que quieres eliminar la ventana '{window.Nombre}' permanentemente?", 
-            yesText: "Eliminar", cancelText: "Cancelar");
-            
-        if (result == true)
+        try
         {
-            await DataService.DeleteWindowAsync(window.Id);
-            _windows.Remove(window);
-            _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
-            StateHasChanged();
+            bool? result = await DialogService.ShowMessageBoxAsync(
+                "Confirmar Eliminación",
+                $"¿Estás seguro de que quieres eliminar la ventana '{window.Nombre}' permanentemente?",
+                yesText: "Eliminar", cancelText: "Cancelar");
+
+            if (result == true)
+            {
+                await DataService.DeleteWindowAsync(window.Id);
+                _windows.Remove(window);
+                _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
+                StateHasChanged();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task ToggleActivarVentana(Window window)
     {
-        window.IsActive = !window.IsActive;
-        await DataService.UpdateWindowAsync(window);
-        Snackbar.Add($"Ventana '{window.Nombre}' {(window.IsActive ? "activada" : "desactivada")} correctamente", Severity.Success);
-        StateHasChanged();
+        try
+        {
+            window.IsActive = !window.IsActive;
+            await DataService.UpdateWindowAsync(window);
+            Snackbar.Add($"Ventana '{window.Nombre}' {(window.IsActive ? "activada" : "desactivada")} correctamente", Severity.Success);
+            StateHasChanged();
+        }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task DuplicarVentana(Window window)

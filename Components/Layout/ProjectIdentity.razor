@@ -1,4 +1,4 @@
-@implements IDisposable
+@implements IAsyncDisposable
 @inject ProjectBrandingService Branding
 @inject ProjectDatabaseService Projects
 
@@ -9,16 +9,51 @@
     @if (Projects.Current is { } project)
     {
         <MudText Typo="Typo.caption" Class="text-muted" Style="overflow-wrap:anywhere">@project.ProjectFolder · v@(project.Revision)</MudText>
+        @if (_hasChanges)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Warning">Cambios pendientes · Crear nueva revisión</MudText>
+        }
+        @if (_sourceChanged)
+        {
+            <MudText Typo="Typo.caption" Color="Color.Error">La revisión de origen ha cambiado</MudText>
+        }
     }
 </a>
 
 @code {
     private bool _disposed;
+    private bool _hasChanges, _sourceChanged;
+    private readonly CancellationTokenSource _stop = new();
+    private Task? _watch;
     protected override async Task OnInitializedAsync()
     {
         Branding.Changed += Refresh;
         await Branding.LoadAsync();
+        _watch = WatchDraft();
+    }
+    private async Task WatchDraft()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            do
+            {
+                try
+                {
+                    var status = await Projects.GetDraftStatusAsync();
+                    await InvokeAsync(() => { _hasChanges = status.HasChanges; _sourceChanged = status.SourceChanged; StateHasChanged(); });
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or Microsoft.Data.Sqlite.SqliteException) { }
+            } while (await timer.WaitForNextTickAsync(_stop.Token));
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
     }
     private void Refresh() { if (!_disposed) _ = InvokeAsync(StateHasChanged); }
-    public void Dispose() { _disposed = true; Branding.Changed -= Refresh; }
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true; Branding.Changed -= Refresh;
+        await _stop.CancelAsync();
+        if (_watch is not null) await _watch;
+        _stop.Dispose();
+    }
 }

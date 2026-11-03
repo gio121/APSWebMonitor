@@ -201,16 +201,20 @@ else
 
     private async Task DeleteCommand(ScadaCommand command)
     {
-        var result = await DialogService.ShowMessageBoxAsync(
-            "Eliminar", 
-            $"¿Eliminar el comando '{command.Nombre}'?", 
-            yesText: "Eliminar", cancelText: "Cancelar");
-            
-        if (result == true)
+        try
         {
-            await DataService.DeleteCommandAsync(command.Id);
-            await LoadData();
+            var result = await DialogService.ShowMessageBoxAsync(
+                "Eliminar",
+                $"¿Eliminar el comando '{command.Nombre}'?",
+                yesText: "Eliminar", cancelText: "Cancelar");
+
+            if (result == true)
+            {
+                await DataService.DeleteCommandAsync(command.Id);
+                await LoadData();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private bool _sending, _disposed;

@@ -8,12 +8,15 @@ public class ApsDataService
     private readonly IDbContextFactory<Data.ApsDbContext> _dbContextFactory;
 
     private readonly IDbContextFactory<Data.ApsDbContext> _accountFactory;
+    private readonly IDbContextFactory<Data.ApsDbContext> _eventFactory;
 
     public ApsDataService(IDbContextFactory<Data.ApsDbContext> dbContextFactory,
-        IDbContextFactory<Data.ApsDbContext>? accountFactory = null)
+        IDbContextFactory<Data.ApsDbContext>? accountFactory = null,
+        IDbContextFactory<Data.ApsDbContext>? eventFactory = null)
     {
         _dbContextFactory = dbContextFactory;
         _accountFactory = accountFactory ?? dbContextFactory;
+        _eventFactory = eventFactory ?? dbContextFactory;
     }
 
     // Windows
@@ -59,7 +62,9 @@ public class ApsDataService
     public async Task DeleteAllSignalsAsync()
     {
         using var context = await _dbContextFactory.CreateDbContextAsync();
-        await context.Signals.ExecuteUpdateAsync(s => s.SetProperty(x => x.IsDeleted, true));
+        var signals = await context.Signals.ToListAsync();
+        foreach (var signal in signals) signal.IsDeleted = true;
+        await context.SaveChangesAsync();
     }
 
     public async Task<Signal> GetSignalAsync(int id)
@@ -169,19 +174,19 @@ public class ApsDataService
     // Events
     public async Task<List<EventMessage>> GetEventsAsync()
     {
-        using var context = await _dbContextFactory.CreateDbContextAsync();
+        using var context = await _eventFactory.CreateDbContextAsync();
         return await context.Events.OrderByDescending(e => e.Fecha).Take(10).ToListAsync();
     }
 
     public async Task<List<EventMessage>> GetAllEventsAsync()
     {
-        using var context = await _dbContextFactory.CreateDbContextAsync();
+        using var context = await _eventFactory.CreateDbContextAsync();
         return await context.Events.OrderByDescending(e => e.Fecha).ToListAsync();
     }
 
     public async Task AddEventAsync(EventMessage evento)
     {
-        using var context = await _dbContextFactory.CreateDbContextAsync();
+        using var context = await _eventFactory.CreateDbContextAsync();
         context.Events.Add(evento);
         await context.SaveChangesAsync();
     }

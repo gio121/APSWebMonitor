@@ -5,6 +5,7 @@
 @using ApsMonitor.Services
 @inject ApsDataService DataService
 @inject ISnackbar Snackbar
+<PendingFormChanges Dirty="@(_savedForm is not null && _savedForm != FormSnapshot())" />
 @inject NavigationManager NavigationManager
 @inject SessionStateService SessionState
 @inject MonitorStateService MonitorState
@@ -715,6 +716,7 @@
             }
         }
         
+        _savedForm = FormSnapshot();
         SessionState.OnStateChanged += SyncValues;
         MonitorState.OnStateChanged += SyncValues;
     }
@@ -1123,11 +1125,18 @@
 
     private async Task SaveSinoptico()
     {
-        if (_window != null)
+        try
         {
-            _window.ContentJson = JsonSerializer.Serialize(_elements);
-            await DataService.UpdateWindowAsync(_window);
-            Snackbar.Add("Sinóptico guardado correctamente", Severity.Success);
+            if (_window != null)
+            {
+                _window.ContentJson = JsonSerializer.Serialize(_elements);
+                await DataService.UpdateWindowAsync(_window);
+                _savedForm = FormSnapshot();
+                Snackbar.Add("Sinóptico guardado correctamente", Severity.Success);
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
+    private string? _savedForm;
+    private string FormSnapshot() => JsonSerializer.Serialize(new { Elements = _elements, Window = _window });
 }

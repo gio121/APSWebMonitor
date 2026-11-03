@@ -11,6 +11,7 @@
 @inject ApsDataService DataService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+<PendingFormChanges Dirty="@(_activeConfig is not null && _savedForm != ConfigSnapshot())" />
 @inject IJSRuntime JS
 @implements IDisposable
 
@@ -753,17 +754,19 @@ else
     }
 
     // ── Config list actions ────────────────────────────────────────────────
-    private void SelectConfig(TrdpSessionConfig cfg)
+    private async Task SelectConfig(TrdpSessionConfig cfg)
     {
+        if (!await CanLeaveConfig()) return;
         _editorTab = 0;
         _datasetTab = 0;
         _activeConfig = cfg;
+        _savedForm = ConfigSnapshot();
         _controlVarTags = GetActiveControlVarTags();
     }
 
-    private void Deselect() => _activeConfig = null;
+    private async Task Deselect() { if (await CanLeaveConfig()) _activeConfig = null; }
 
-    private void CreateNew()
+    private async Task CreateNew()
     {
         var cfg = new TrdpSessionConfig
         {
@@ -771,7 +774,7 @@ else
             Descripcion = "Configuración TRDP personalizada",
             UseDynamicMapping = true
         };
-        SelectConfig(cfg);
+        await SelectConfig(cfg);
     }
 
     private async Task SaveConfig()
@@ -781,6 +784,7 @@ else
         try
         {
             _activeConfig = await TrdpService.SaveAsync(_activeConfig);
+            _savedForm = ConfigSnapshot();
             _configs = await TrdpService.GetAllAsync();
             Snackbar.Add("Configuración guardada correctamente.", Severity.Success);
         }
@@ -793,15 +797,19 @@ else
 
     private async Task DeleteConfig(TrdpSessionConfig cfg)
     {
-        bool? ok = await DialogService.ShowMessageBoxAsync(
-            "Eliminar", $"¿Eliminar '{cfg.Nombre}'?", yesText: "Eliminar", cancelText: "Cancelar");
-        if (ok == true)
+        try
         {
-            await TrdpService.DeleteAsync(cfg.Id);
-            _configs.Remove(cfg);
-            Snackbar.Add("Configuración eliminada.", Severity.Info);
-            StateHasChanged();
+            bool? ok = await DialogService.ShowMessageBoxAsync(
+                "Eliminar", $"¿Eliminar '{cfg.Nombre}'?", yesText: "Eliminar", cancelText: "Cancelar");
+            if (ok == true)
+            {
+                await TrdpService.DeleteAsync(cfg.Id);
+                _configs.Remove(cfg);
+                Snackbar.Add("Configuración eliminada.", Severity.Info);
+                StateHasChanged();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task DuplicateConfig(TrdpSessionConfig cfg)
@@ -832,7 +840,7 @@ else
             cfg = await TrdpService.SaveAsync(cfg);
             _configs = await TrdpService.GetAllAsync();
             Snackbar.Add($"Importado '{cfg.Nombre}' con éxito.", Severity.Success);
-            SelectConfig(cfg);
+            await SelectConfig(cfg);
         }
         catch (Exception ex)
         {
@@ -975,7 +983,7 @@ else
             var saved = await TrdpService.SaveAsync(imported);
             _configs  = await TrdpService.GetAllAsync();
             Snackbar.Add($"Configuración del dispositivo importada: '{saved.Nombre}'", Severity.Success);
-            SelectConfig(saved);
+            await SelectConfig(saved);
             StateHasChanged();
         }
     }
@@ -1284,6 +1292,14 @@ else
         await DialogService.ShowAsync<TrdpSendCommandDialog>($"Enviar comando '{rule.Id}' a Control", parameters);
     }
 
+    private string? _savedForm;
+    private string ConfigSnapshot() => _activeConfig is null ? "" : System.Text.Json.JsonSerializer.Serialize(new
+    {
+        _activeConfig.Nombre, _activeConfig.Descripcion, _activeConfig.UseDynamicMapping,
+        _activeConfig.TcmsOk, _activeConfig.ControlFrame, _activeConfig.CommsDatasets, _activeConfig.Networks
+    });
+    private async Task<bool> CanLeaveConfig() => _activeConfig is null || _savedForm == ConfigSnapshot() ||
+        await JS.InvokeAsync<bool>("confirm", "¿Descartar los cambios sin guardar de esta configuración?");
     public void Dispose() { }
 }
 

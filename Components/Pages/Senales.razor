@@ -445,30 +445,38 @@ else
 
     private async Task DeleteSignal(Signal signal)
     {
-        var result = await DialogService.ShowMessageBoxAsync(
-            "Eliminar", 
-            "¿Eliminar esta señal? Sus asignaciones se conservarán y se recuperarán al importar de nuevo el CMFX.",
-            yesText: "Eliminar", cancelText: "Cancelar");
-            
-        if (result == true)
+        try
         {
-            await DataService.DeleteSignalAsync(signal.Id);
-            await LoadData();
+            var result = await DialogService.ShowMessageBoxAsync(
+                "Eliminar",
+                "¿Eliminar esta señal? Sus asignaciones se conservarán y se recuperarán al importar de nuevo el CMFX.",
+                yesText: "Eliminar", cancelText: "Cancelar");
+
+            if (result == true)
+            {
+                await DataService.DeleteSignalAsync(signal.Id);
+                await LoadData();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 
     private async Task DeleteAllSignals()
     {
-        var result = await DialogService.ShowMessageBoxAsync(
-            "Borrar Todo", 
-            "¿Eliminar todas las señales? Las asignaciones de las ventanas se conservarán y se recuperarán al importar de nuevo el CMFX.",
-            yesText: "Borrar Todo", cancelText: "Cancelar");
-            
-        if (result == true)
+        try
         {
-            await DataService.DeleteAllSignalsAsync();
-            Snackbar.Add("Todas las señales han sido eliminadas.", Severity.Info);
-            await LoadData();
+            var result = await DialogService.ShowMessageBoxAsync(
+                "Borrar Todo",
+                "¿Eliminar todas las señales? Las asignaciones de las ventanas se conservarán y se recuperarán al importar de nuevo el CMFX.",
+                yesText: "Borrar Todo", cancelText: "Cancelar");
+
+            if (result == true)
+            {
+                await DataService.DeleteAllSignalsAsync();
+                Snackbar.Add("Todas las señales han sido eliminadas.", Severity.Info);
+                await LoadData();
+            }
         }
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
     }
 }

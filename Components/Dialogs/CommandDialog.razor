@@ -1,5 +1,7 @@
 ﻿@using ApsMonitor.Models
 @inject ApsDataService DataService
+@inject IJSRuntime JS
+<PendingFormChanges Dirty="@(_originalForm is not null && _originalForm != FormSnapshot())" />
 
 <MudDialog>
     <DialogContent>
@@ -43,6 +45,8 @@
     private string _subcommandHex = "";
     private string? _error;
     private bool _saving;
+    private string? _originalForm;
+    private string FormSnapshot() => System.Text.Json.JsonSerializer.Serialize(new { Command = _draft, Subcommand = _subcommandHex });
 
     protected override async Task OnInitializedAsync()
     {
@@ -50,6 +54,7 @@
         _draft.FrameType ??= 0x7A;
         _subcommandHex = _draft.Subcommand?.ToString("X4") ?? "";
         _signals = (await DataService.GetSignalsAsync(includeDeleted: true)).Where(s => s.NodoNumero == 2).OrderBy(s => s.Tag).ToList();
+        _originalForm = FormSnapshot();
     }
 
     private async Task Submit()
@@ -75,5 +80,9 @@
         catch (Exception ex) { _error = ex.Message; }
         finally { _saving = false; }
     }
-    private void Cancel() => MudDialog.Cancel();
+    private async Task Cancel()
+    {
+        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", "¿Descartar los cambios sin guardar del formulario?")) return;
+        MudDialog.Cancel();
+    }
 }

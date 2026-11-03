@@ -56,7 +56,8 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
         finally { _gate.Release(); }
     }
 
-    public async Task SaveAsync(string name, string? logoDataUrl, string? expectedProjectId = null)
+    public async Task SaveAsync(string name, string? logoDataUrl, string? expectedProjectId = null,
+        ProjectBrandingView? expectedBranding = null, string? expectedDraftPath = null)
     {
         name = name.Trim();
         if (name.Length is 0 or > MaximumNameLength)
@@ -77,6 +78,10 @@ public sealed class ProjectBrandingService(IDbContextFactory<ApsDbContext> facto
         {
             if (expectedProjectId is not null && projects?.Current?.Id != expectedProjectId)
                 throw new InvalidOperationException("El proyecto activo ha cambiado. Vuelve a abrir la personalización.");
+            if (expectedDraftPath is not null && projects?.Current?.DatabasePath != expectedDraftPath)
+                throw new InvalidOperationException("El borrador activo ha cambiado. Vuelve a abrir la personalización.");
+            if (expectedBranding is not null && expectedBranding != Current)
+                throw new InvalidOperationException("Otro usuario ha cambiado la personalización. Recarga la página antes de guardar.");
             await using var context = await factory.CreateDbContextAsync();
             var saved = await context.ProjectBranding.SingleOrDefaultAsync(x => x.Id == 1);
             if (saved is null) { saved = new(); context.ProjectBranding.Add(saved); }
