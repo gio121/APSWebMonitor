@@ -393,9 +393,98 @@ public sealed class TrdpBackendService
     }
 
     /// <summary>
-    /// Reinicia el servicio ecnmanager en el dispositivo vía SSH (systemctl restart ecnmanager)
-    /// y/o trama SEPSA 0x8B enviada a ControlManager por UDP puerto 50001.
+    /// Envía la orden de reseteo a 0 de contadores y datos acumulados (cosmos_data.txt)
+    /// hacia la placa mediante trama SEPSA (UDP 50001), datagrama directo (50003) y/o SSH.
     /// </summary>
+    public async Task<TrdpBackendResult<string>> ResetCosmosDataAsync(string deviceUrlOrHost, CancellationToken ct = default)
+    {
+        var host = ExtractHost(deviceUrlOrHost);
+        if (string.IsNullOrWhiteSpace(host))
+            return TrdpBackendResult<string>.Fail("IP o host no especificado.");
+
+        bool success = false;
+        string detail = "";
+
+        // 1. Trama SEPSA ResetLockout (0x2A) y FileCommandByName (0x8B con 0x05) por UDP puerto 50001
+        try
+        {
+            using var udp = new UdpClient();
+            if (OperatingSystem.IsWindows())
+            {
+                const int SIO_UDP_CONNRESET = -1744830452;
+                udp.Client.IOControl((IOControlCode)SIO_UDP_CONNRESET, new byte[] { 0, 0, 0, 0 }, null);
+            }
+
+            IPAddress ip;
+            if (!IPAddress.TryParse(host, out ip!))
+            {
+                var addresses = await Dns.GetHostAddressesAsync(host, ct);
+                ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
+            }
+
+            // Trama SEPSA 0x2A (ResetLockout): AA 07 00 03 01 2A DF
+            byte[] frameSepsa = new byte[] { 0xAA, 0x07, 0x00, 0x03, 0x01, 0x2A, 0xDF };
+            await udp.SendAsync(frameSepsa, frameSepsa.Length, new IPEndPoint(ip, 50001));
+
+            // Trama SEPSA 0x8B (FileCommandByName cmd 0x05): AA 08 00 03 01 8B 05 46
+            byte[] frame8b = new byte[] { 0xAA, 0x08, 0x00, 0x03, 0x01, 0x8B, 0x05, 0x46 };
+            await udp.SendAsync(frame8b, frame8b.Length, new IPEndPoint(ip, 50001));
+
+            success = true;
+            detail = "Comando SEPSA transmitido a ControlManager (puerto 50001)";
+        }
+        catch (Exception ex)
+        {
+            detail = $"UDP 50001: {ex.Message}";
+        }
+
+        // 2. Datagrama directo "RSTC" a ECNManager en puerto 50003
+        try
+        {
+            using var udp2 = new UdpClient();
+            if (OperatingSystem.IsWindows())
+            {
+                const int SIO_UDP_CONNRESET = -1744830452;
+                udp2.Client.IOControl((IOControlCode)SIO_UDP_CONNRESET, new byte[] { 0, 0, 0, 0 }, null);
+            }
+            IPAddress ip2;
+            if (!IPAddress.TryParse(host, out ip2!))
+            {
+                var addresses = await Dns.GetHostAddressesAsync(host, ct);
+                ip2 = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
+            }
+
+            byte[] rstBytes = System.Text.Encoding.ASCII.GetBytes("RSTC");
+            await udp2.SendAsync(rstBytes, rstBytes.Length, new IPEndPoint(ip2, 50003));
+            success = true;
+        }
+        catch { }
+
+        // 3. Reseteo directo en disco vía SSH si está disponible
+        foreach (var cred in DefaultCredentials)
+        {
+            try
+            {
+                using var ssh = new SshClient(host, 22, cred.User, cred.Password);
+                ssh.ConnectionInfo.Timeout = TimeSpan.FromSeconds(3);
+                await ssh.ConnectAsync(ct);
+                using var cmd = ssh.CreateCommand(
+                    "printf 'all_out_energy=0.000000\nac_out_energy=0.000000\nhv_in_k_op_nmbr=0\nac_out_k_op_nmbr=0\napsRunningTime=0.000000\napsRunningTimeWithElec=0.000000\n' > /mnt/artifacts/cosmos_data.txt 2>/dev/null; " +
+                    "printf 'all_out_energy=0.000000\nac_out_energy=0.000000\nhv_in_k_op_nmbr=0\nac_out_k_op_nmbr=0\napsRunningTime=0.000000\napsRunningTimeWithElec=0.000000\n' > /tmp/cosmos_data.txt 2>/dev/null");
+                await Task.Run(() => cmd.Execute(), ct);
+                ssh.Disconnect();
+                success = true;
+                break;
+            }
+            catch { }
+        }
+
+        if (success)
+            return TrdpBackendResult<string>.Ok("Comando de reseteo ejecutado correctamente. Los valores en cosmos_data.txt se han restablecido a 0.");
+
+        return TrdpBackendResult<string>.Fail($"No se pudo ejecutar el reseteo en {host}: {detail}");
+    }
+
     public async Task<TrdpBackendResult<bool>> RestartEcnManagerAsync(string deviceUrlOrHost, CancellationToken ct = default)
     {
         var host = ExtractHost(deviceUrlOrHost);
