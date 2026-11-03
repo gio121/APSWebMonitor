@@ -139,6 +139,14 @@
                         </MudAlert>
                     </MudItem>
                 }
+                else if (Mode == DeployMode.ResetCosmos)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Error" Dense="true" Class="rounded-lg">
+                            Esta acción enviará la orden de reseteo a 0 de los contadores acumulados de energía (<code>all_out_energy</code>, <code>ac_out_energy</code>), maniobras de contactores (<code>hv_in_k_op_nmbr</code>, <code>ac_out_k_op_nmbr</code>) y horas de funcionamiento en <code>cosmos_data.txt</code> mediante protocolo SEPSA (UDP 50001) y datagrama directo (UDP 50003).
+                        </MudAlert>
+                    </MudItem>
+                }
             </MudGrid>
         }
         else if (_phase == Phase.Working)
@@ -203,7 +211,7 @@
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
-    public enum DeployMode { Send, Receive, SetMode, Restart }
+    public enum DeployMode { Send, Receive, SetMode, Restart, ResetCosmos }
 
     [Parameter] public DeployMode Mode    { get; set; } = DeployMode.Send;
     [Parameter] public TrdpSessionConfig? Config { get; set; }
@@ -227,6 +235,7 @@
         DeployMode.Receive => "Leer configuración del dispositivo",
         DeployMode.SetMode => "Cambiar modo de mapping",
         DeployMode.Restart => "Reiniciar servicio ECNManager",
+        DeployMode.ResetCosmos => "Resetear contadores Cosmos (cosmos_data.txt)",
         _                  => "Backend TRDP"
     };
     private string _titleIcon => Mode switch
@@ -235,6 +244,7 @@
         DeployMode.Receive => Icons.Material.Filled.Download,
         DeployMode.SetMode => Icons.Material.Filled.Tune,
         DeployMode.Restart => Icons.Material.Filled.RestartAlt,
+        DeployMode.ResetCosmos => Icons.Material.Filled.CleaningServices,
         _                  => Icons.Material.Filled.Hub
     };
     private string _titleIconStyle => "color:#38bdf8; font-size:1.6rem;";
@@ -244,6 +254,7 @@
         DeployMode.Receive => Icons.Material.Filled.CloudDownload,
         DeployMode.SetMode => Icons.Material.Filled.SettingsInputComponent,
         DeployMode.Restart => Icons.Material.Filled.RestartAlt,
+        DeployMode.ResetCosmos => Icons.Material.Filled.DeleteSweep,
         _                  => Icons.Material.Filled.Done
     };
     private string _actionLabel => Mode switch
@@ -252,6 +263,7 @@
         DeployMode.Receive => "Leer y importar",
         DeployMode.SetMode => "Aplicar modo",
         DeployMode.Restart => "Reiniciar",
+        DeployMode.ResetCosmos => "Resetear a 0",
         _                  => "Ejecutar"
     };
 
@@ -289,6 +301,9 @@
                 break;
             case DeployMode.Restart:
                 await ExecuteRestart();
+                break;
+            case DeployMode.ResetCosmos:
+                await ExecuteResetCosmos();
                 break;
         }
 
@@ -362,6 +377,22 @@
         {
             _resultOk = true;
             _resultMessage = "Servicio ecnmanager reiniciado correctamente.";
+        }
+        else
+        {
+            Fail(result.Error);
+        }
+    }
+
+    private async Task ExecuteResetCosmos()
+    {
+        _workingMessage = "Enviando comando de reseteo a cosmos_data.txt...";
+        StateHasChanged();
+        var result = await BackendService.ResetCosmosDataAsync(_deviceUrl);
+        if (result.IsSuccess)
+        {
+            _resultOk = true;
+            _resultMessage = result.Data ?? "Contadores de cosmos_data reseteados a 0 correctamente.";
         }
         else
         {

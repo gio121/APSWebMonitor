@@ -57,6 +57,12 @@
                                Size="Size.Medium" OnClick="OpenRestartDialog"
                                Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
             </MudTooltip>
+            <MudTooltip Text="Resetear contadores a 0 en cosmos_data (PTE / Energía)">
+                <MudIconButton Icon="@Icons.Material.Filled.CleaningServices"
+                               Color="Color.Error" Variant="Variant.Outlined"
+                               Size="Size.Medium" OnClick="OpenResetCosmosDialog"
+                               Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)" />
+            </MudTooltip>
             <MudTooltip Text="Cambiar modo dynamic/legacy en el dispositivo">
                 <MudIconButton Icon="@Icons.Material.Filled.Tune"
                                Color="Color.Secondary" Variant="Variant.Outlined"
@@ -117,6 +123,11 @@ else if (_activeConfig is null)
                        StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="OpenRestartDialog"
                        Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)">
                 Reiniciar ECNManager
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.CleaningServices" OnClick="OpenResetCosmosDialog"
+                       Disabled="@string.IsNullOrWhiteSpace(_deviceUrl)">
+                Resetear Cosmos Data
             </MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Info"
                        StartIcon="@Icons.Material.Filled.Upload" OnClick="OpenImportDialog">
@@ -882,6 +893,18 @@ else
             new DialogParameters
             {
                 ["Mode"]       = TrdpDeployDialog.DeployMode.Restart,
+                ["DefaultUrl"] = _deviceUrl
+            },
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        await dlg.Result;
+    }
+
+    private async Task OpenResetCosmosDialog()
+    {
+        var dlg = await DialogService.ShowAsync<TrdpDeployDialog>("Resetear contadores en cosmos data",
+            new DialogParameters
+            {
+                ["Mode"]       = TrdpDeployDialog.DeployMode.ResetCosmos,
                 ["DefaultUrl"] = _deviceUrl
             },
             new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
