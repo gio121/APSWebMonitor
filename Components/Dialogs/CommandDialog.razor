@@ -1,39 +1,39 @@
-﻿@using ApsMonitor.Models
+@using ApsMonitor.Models
 @inject ApsDataService DataService
 @inject IJSRuntime JS
 <PendingFormChanges Dirty="@(_originalForm is not null && _originalForm != FormSnapshot())" />
 
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="_draft.Nombre" Label="Nombre del comando" Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
-        <MudSelect T="int?" @bind-Value="_draft.FrameType" Label="Tipo de comando" Variant="Variant.Outlined" Class="mb-3">
-            <MudSelectItem T="int?" Value="@((int?)0x6A)">6A · Modificación de variable</MudSelectItem>
-            <MudSelectItem T="int?" Value="@((int?)0x7A)">7A · Comando interno</MudSelectItem>
+        <MudTextField @bind-Value="_draft.Nombre" Label="@Ui["Command name"]" Required="true" RequiredError="@Ui["Required"]" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+        <MudSelect T="int?" @bind-Value="_draft.FrameType" Label="@Ui["Command type"]" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem T="int?" Value="@((int?)0x6A)">@Ui["6A · Variable modification"]</MudSelectItem>
+            <MudSelectItem T="int?" Value="@((int?)0x7A)">@Ui["7A · Internal command"]</MudSelectItem>
         </MudSelect>
-        <MudTextField @bind-Value="_subcommandHex" Label="Subcomando hexadecimal" HelperText="0000–FFFF; se admite el prefijo 0x" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_subcommandHex" Label="@Ui["Hexadecimal subcommand"]" HelperText="@Ui["0000–FFFF; the 0x prefix is accepted"]" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
         @if (_draft.FrameType == 0x6A)
         {
-            <MudSelect T="int?" @bind-Value="_draft.SignalId" Label="Variable asociada de control" Required="true" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelect T="int?" @bind-Value="_draft.SignalId" Label="@Ui["Associated control variable"]" Required="true" RequiredError="@Ui["Required"]" Variant="Variant.Outlined" Class="mb-3">
                 @foreach (var signal in _signals)
                 {
                     <MudSelectItem T="int?" Value="@((int?)signal.Id)">@signal.BindingLabel · @signal.TipoVariable</MudSelectItem>
                 }
             </MudSelect>
-            <MudNumericField T="double?" @bind-Value="_draft.VariableValue" Label="Valor a escribir" HelperText="Valor bruto de protocolo, sin aplicar escala ni offset. Se codifica según el tipo de la variable." Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
+            <MudNumericField T="double?" @bind-Value="_draft.VariableValue" Label="@Ui["Value to write"]" HelperText="@Ui["Raw protocol value, without scaling or offset. Encoded according to the variable type."]" Required="true" RequiredError="@Ui["Required"]" Immediate="true" Variant="Variant.Outlined" Class="mb-3" />
         }
-        <MudSelect T="string" @bind-Value="_draft.Estilo" Label="Estilo visual" Variant="Variant.Outlined" Class="mb-3">
-            <MudSelectItem Value='@("success")'>Verde</MudSelectItem>
-            <MudSelectItem Value='@("warning")'>Naranja</MudSelectItem>
-            <MudSelectItem Value='@("destructive")'>Rojo</MudSelectItem>
-            <MudSelectItem Value='@("default")'>Predeterminado</MudSelectItem>
+        <MudSelect T="string" @bind-Value="_draft.Estilo" Label="@Ui["Visual style"]" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem Value='@("success")'>@Ui["Green"]</MudSelectItem>
+            <MudSelectItem Value='@("warning")'>@Ui["Orange"]</MudSelectItem>
+            <MudSelectItem Value='@("destructive")'>@Ui["Red"]</MudSelectItem>
+            <MudSelectItem Value='@("default")'>@Ui["Default"]</MudSelectItem>
         </MudSelect>
-        <MudCheckBox @bind-Value="_draft.RequiereConfirmacion" Label="Requiere confirmación" />
-        <MudText Typo="Typo.caption">Destino: control (nodo 2). Solo se envía con monitorización activa.</MudText>
+        <MudCheckBox @bind-Value="_draft.RequiereConfirmacion" Label="@Ui["Require confirmation"]" />
+        <MudText Typo="Typo.caption">@Ui["Target: control (node 2). Requires active monitoring."]</MudText>
         @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert> }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="_saving">Cancelar</MudButton>
-        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving">Guardar</MudButton>
+        <MudButton OnClick="Cancel" Disabled="_saving">@Ui["Cancel"]</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled" Disabled="_saving">@Ui["Save"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -63,11 +63,11 @@
         _saving = true; _error = null;
         try
         {
-            if (string.IsNullOrWhiteSpace(_draft.Nombre)) throw new ArgumentException("Indique el nombre del comando.");
+            if (string.IsNullOrWhiteSpace(_draft.Nombre)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Enter the command name."));
             string hex = _subcommandHex.Trim();
             if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) hex = hex[2..];
             if (!ushort.TryParse(hex, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out var subcommand))
-                throw new ArgumentException("Subcomando hexadecimal no válido (0000–FFFF).");
+                throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Invalid hexadecimal subcommand (0000–FFFF)."));
             _draft.Subcommand = subcommand;
             if (_draft.FrameType == 0x7A) { _draft.SignalId = null; _draft.VariableValue = null; }
             _ = ControlCommandProtocol.Build(_draft, _signals.FirstOrDefault(s => s.Id == _draft.SignalId));
@@ -82,7 +82,7 @@
     }
     private async Task Cancel()
     {
-        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", "¿Descartar los cambios sin guardar del formulario?")) return;
+        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", ApsMonitor.Resources.MonitorResources.Text("Discard unsaved form changes?"))) return;
         MudDialog.Cancel();
     }
 }

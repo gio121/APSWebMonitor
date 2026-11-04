@@ -3,7 +3,7 @@
 
 <div class="px-4 py-3">
     <MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@(Theme.IsDark ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)" OnClick="Theme.ToggleAsync">
-        @(Theme.IsDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro")
+        @(Theme.IsDark ? Ui["Switch to light theme"] : Ui["Switch to dark theme"])
     </MudButton>
 </div>
 

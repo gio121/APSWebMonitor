@@ -514,7 +514,7 @@ public class TrdpTcmsOkConfig
     public string Id { get; set; } = "tcms_ok";
 
     [JsonPropertyName("description")]
-    public string Description { get; set; } = "Comando periodico TCMS_OK hacia Control";
+    public string Description { get; set; } = "Periodic TCMS_OK command to Control";
 
     [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;

@@ -10,8 +10,8 @@
     <header class="administration-heading">
         <div class="heading-icon"><MudIcon Icon="@Icons.Material.Outlined.Settings" Size="Size.Large" /></div>
         <div>
-            <MudText Typo="Typo.h5" Class="fw-bold">Administración</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Personaliza tu proyecto y gestiona el acceso al monitor.</MudText>
+            <MudText Typo="Typo.h5" Class="fw-bold">@Ui["Administration"]</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Ui["Customise your project and manage access to the monitor."]</MudText>
         </div>
     </header>
 
@@ -24,21 +24,21 @@
                 <div class="section-heading">
                     <div class="section-icon"><MudIcon Icon="@Icons.Material.Outlined.People" /></div>
                     <div>
-                        <MudText Typo="Typo.h6" Class="fw-bold">Gestión de usuarios</MudText>
-                        <MudText Typo="Typo.body2" Class="admin-muted">Roles y permisos de acceso</MudText>
+                        <MudText Typo="Typo.h6" Class="fw-bold">@Ui["User management"]</MudText>
+                        <MudText Typo="Typo.body2" Class="admin-muted">@Ui["Roles and access permissions"]</MudText>
                     </div>
                 </div>
-                <p class="admin-description">Administra las cuentas y las credenciales de los usuarios del monitor.</p>
+                <p class="admin-description">@Ui["Manage monitor user accounts and credentials."]</p>
                 <div class="user-stat">
-                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.AdminPanelSettings" Color="Color.Primary" /><span>Administradores</span></div>
+                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.AdminPanelSettings" Color="Color.Primary" /><span>@Ui["Administrators"]</span></div>
                     <strong>@_adminCount</strong>
                 </div>
                 <div class="user-stat">
-                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.Engineering" Color="Color.Primary" /><span>Usuarios de otros roles</span></div>
+                    <div class="user-stat-label"><MudIcon Icon="@Icons.Material.Outlined.Engineering" Color="Color.Primary" /><span>@Ui["Users with other roles"]</span></div>
                     <strong>@_operatorCount</strong>
                 </div>
                 <div class="users-action">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" StartIcon="@Icons.Material.Outlined.ManageAccounts" OnClick="OpenUserManagement">Gestionar usuarios</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" StartIcon="@Icons.Material.Outlined.ManageAccounts" OnClick="OpenUserManagement">@Ui["Manage users"]</MudButton>
                 </div>
             </MudPaper>
         </MudItem>
@@ -66,7 +66,7 @@
     private async Task OpenUserManagement()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.UserManagementDialog>("Gestión de Usuarios", options);
+        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.UserManagementDialog>(ApsMonitor.Resources.MonitorResources.Text("User management"), options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)

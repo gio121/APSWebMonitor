@@ -6,39 +6,39 @@
 
 <MudDialog>
     <TitleContent>
-        <MudText Typo="Typo.h6">Cambiar fichero · @Software.Id</MudText>
+        <MudText Typo="Typo.h6">@Ui["Change file · {0}", Software.Id]</MudText>
         <MudText Typo="Typo.body2">@Software.Description</MudText>
     </TitleContent>
 <DialogContent>
     <fieldset disabled="@(_loading)" style="border:0;padding:0;margin:0">
         <MudGrid Spacing="2" Class="mb-2">
             <MudItem xs="12" sm="8">
-                <MudTextField @bind-Value="_address" Label="Dirección IP del equipo destino"
+                <MudTextField @bind-Value="_address" Label="@Ui["Target device IP address"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                              Placeholder="192.168.1.10" HelperText="Dirección IP del equipo para reprogramación" />
+                              Placeholder="192.168.1.10" HelperText="@Ui["Device IP address for firmware updates"]" />
             </MudItem>
-            @if (_kind == "Comunicaciones")
+            @if (_kind == "Communications")
             {
                 <MudItem xs="12" sm="4">
-                    <MudTextField Value="@("22")" Label="Puerto SFTP"
+                    <MudTextField Value="@("22")" Label="@Ui["SFTP port"]"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" ReadOnly="true"
-                                  HelperText="Puerto por defecto (SFTP)" />
+                                  HelperText="@Ui["Default port (SFTP)"]" />
                 </MudItem>
             }
             else
             {
                 <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="_udpPort" Label="Puerto UDP SEPSA"
+                    <MudNumericField @bind-Value="_udpPort" Label="@Ui["SEPSA UDP port"]"
                                      Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                     Min="1" Max="65535" HelperText="Puerto de ControlManager (50001)" />
+                                     Min="1" Max="65535" HelperText="@Ui["ControlManager port (50001)"]" />
                 </MudItem>
             }
             @if (_detectedIps.Count > 0)
             {
                 <MudItem xs="12">
-                    <MudSelect T="string" Label="Seleccionar de IPs detectadas" Dense="true" Margin="Margin.Dense"
+                    <MudSelect T="string" Label="@Ui["Select from detected IP addresses"]" Dense="true" Margin="Margin.Dense"
                                Variant="Variant.Outlined" ValueChanged="OnSelectDetectedIp"
-                               Placeholder="Elegir IP detectada (Monitor / DHCP)...">
+                               Placeholder="@Ui["Choose detected IP (Monitor / DHCP)..."]">
                         @foreach (var opt in _detectedIps)
                         {
                             <MudSelectItem Value="@opt.Ip">@opt.Description</MudSelectItem>
@@ -46,71 +46,71 @@
                     </MudSelect>
                 </MudItem>
             }
-            @if (_kind == "Comunicaciones")
+            @if (_kind == "Communications")
             {
                 <MudItem xs="12">
                     <MudDivider Class="my-2" />
-                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">Acceso SFTP y directorio remoto</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">@Ui["SFTP access and remote directory"]</MudText>
                     <div class="d-flex align-center gap-1 my-1">
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary mr-1">Rápido:</MudText>
-                        <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "root" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("root", "changeme"))">root (Recomendado)</MudChip>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mr-1">@Ui["Quick select:"]</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "root" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("root", "changeme"))">@Ui["root (recommended)"]</MudChip>
                         <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "sepsa" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("sepsa", "thisisveryunsafepleasedeactivatemeaftersetup"))">sepsa</MudChip>
                         <MudChip T="string" Size="Size.Small" Color="@(_sftpUser == "update" ? Color.Primary : Color.Default)" Variant="Variant.Outlined" OnClick="@(() => SetCredentials("update", "38I3jf/(Rihs959.fe9L0ra93nf"))">update</MudChip>
                     </div>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_sftpUser" Label="Usuario SFTP"
+                    <MudTextField @bind-Value="_sftpUser" Label="@Ui["SFTP username"]"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                  Placeholder="root" HelperText="Usuario con permisos en /mnt/artifacts (ej. root)" />
+                                  Placeholder="root" HelperText="@Ui["User with access to /mnt/artifacts (e.g. root)"]" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_sftpPassword" Label="Contraseña SFTP"
+                    <MudTextField @bind-Value="_sftpPassword" Label="@Ui["SFTP password"]"
                                   InputType="InputType.Password"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                  Placeholder="Contraseña" HelperText="Contraseña del usuario remoto" />
+                                  Placeholder="@Ui["Password"]" HelperText="@Ui["Remote user password"]" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="_remotePath" Label="Ruta remota destino (Directorio)"
+                    <MudTextField @bind-Value="_remotePath" Label="@Ui["Remote destination path (directory)"]"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                  Placeholder="/mnt/artifacts/update" HelperText="Directorio destino en el equipo remoto donde se copiarán los ficheros" />
+                                  Placeholder="/mnt/artifacts/update" HelperText="@Ui["Destination directory on the remote device for uploaded files"]" />
                 </MudItem>
                 <MudItem xs="12">
                     <MudDivider Class="my-2" />
                 </MudItem>
             }
-            @if (_kind != "Comunicaciones")
+            @if (_kind != "Communications")
             {
                 <MudItem xs="12">
                     <MudDivider Class="my-2" />
-                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">Parámetros de reprogramación SEPSA (Control)</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-1">@Ui["SEPSA firmware update parameters (Control)"]</MudText>
                     <MudGrid Spacing="2">
                         <MudItem xs="6" sm="4">
-                            <MudTextField @bind-Value="_signature" Label="Firma (6 caracteres)"
+                            <MudTextField @bind-Value="_signature" Label="@Ui["Signature (6 characters)"]"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                          MaxLength="6" HelperText="Ej: C135KI o F22044" />
+                                          MaxLength="6" HelperText="E.g. C135KI or F22044" />
                         </MudItem>
                         <MudItem xs="6" sm="4">
-                            <MudNumericField @bind-Value="_blockSize" Label="Tamaño de bloque (bytes)"
+                            <MudNumericField @bind-Value="_blockSize" Label="@Ui["Block size (bytes)"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                             Min="32" Max="4096" HelperText="Por defecto: 128 (Control) / 400 (FPGA)" />
+                                             Min="32" Max="4096" HelperText="@Ui["Default: 128 (Control) / 400 (FPGA)"]" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudTextField Value="@($"0x{_offset:X6}")" Label="Offset Flash"
+                            <MudTextField Value="@($"0x{_offset:X6}")" Label="@Ui["Flash offset"]"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" ReadOnly="true"
-                                          HelperText="Dirección base en memoria" />
+                                          HelperText="@Ui["Memory base address"]" />
                         </MudItem>
                     </MudGrid>
                     <MudDivider Class="my-2" />
                 </MudItem>
                 <MudItem xs="12">
-                    <label for="firmware-file">Fichero BIN, HEX, H86 o MCS (máximo 16 MiB)</label>
+                    <label for="firmware-file">@Ui["BIN, HEX, H86 or MCS file (maximum 16 MiB)"]</label>
                     <InputFile id="firmware-file" OnChange="LoadFirmware" accept=".bin,.hex,.h86,.mcs" class="d-block mt-2" />
                 </MudItem>
             }
             else
             {
                 <MudItem xs="12">
-                    <label for="communications-files">Imágenes .img, archivos .gz (con .md5 si procede), o pareja edf / sdf (máximo 512 MiB)</label>
+                    <label for="communications-files">@Ui[".img images, .gz files (with .md5 where applicable), or an edf / sdf pair (maximum 512 MiB)"]</label>
                     <InputFile id="communications-files" OnChange="LoadCommunications" multiple accept=".img,.md5,.bin,.gz" class="d-block mt-2" />
                 </MudItem>
             }
@@ -120,7 +120,7 @@
     @if (_image is not null)
     {
         <MudAlert Severity="Severity.Info" Class="mt-4">
-            <b>Fichero:</b> @_fileName &nbsp;|&nbsp; <b>Tamaño:</b> @_image.Length bytes &nbsp;|&nbsp; <b>CRC32:</b> @ReprogrammingProtocol.Crc32(_image).ToString("X8")
+            <b>@Ui["File:"]</b> @_fileName &nbsp;|&nbsp; <b>@Ui["Size:"]</b> @_image.Length bytes &nbsp;|&nbsp; <b>CRC32:</b> @ReprogrammingProtocol.Crc32(_image).ToString("X8")
         </MudAlert>
     }
     @if (_files.Count > 0)
@@ -132,8 +132,8 @@
     @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert> }
 </DialogContent>
 <DialogActions>
-    <MudButton OnClick="Cancel" Disabled="_loading">Cancelar</MudButton>
-    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_loading || (_kind == "Comunicaciones" ? _files.Count == 0 : _image is null))">Aceptar</MudButton>
+    <MudButton OnClick="Cancel" Disabled="_loading">@Ui["Cancel"]</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_loading || (_kind == "Communications" ? _files.Count == 0 : _image is null))">@Ui["OK"]</MudButton>
 </DialogActions>
 </MudDialog>
 
@@ -248,7 +248,7 @@
         try
         {
             var selected = args.GetMultipleFiles(32);
-            if (selected.Sum(f => f.Size) > 512L * 1024 * 1024) throw new InvalidDataException("Los archivos superan 512 MiB.");
+            if (selected.Sum(f => f.Size) > 512L * 1024 * 1024) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Files exceed 512 MiB."));
             var files = new List<CommunicationsFile>();
             foreach (var file in selected)
             {
@@ -265,7 +265,7 @@
 
     private void Submit()
     {
-        if (string.IsNullOrWhiteSpace(_address)) { _error = "Especifique una IP de destino."; return; }
+        if (string.IsNullOrWhiteSpace(_address)) { _error = ApsMonitor.Resources.MonitorResources.Text("Specify a destination IP address."); return; }
         int udpPort = _udpPort > 0 ? (_udpPort == 50000 ? 50001 : _udpPort) : 50001;
         var target = new ReprogrammingTarget(_address.Trim(), udpPort, _localPort);
         MudDialog.Close(DialogResult.Ok(new ReprogrammingSelection(

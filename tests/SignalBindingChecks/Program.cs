@@ -51,7 +51,7 @@ try
     await service.DeleteAllSignalsAsync();
     Check((await service.GetSignalsAsync()).Count == 0, "Deleted signals are excluded from monitoring");
     Check((await service.GetSignalsAsync(true)).Count == 3, "Editor retains signal identities");
-    Check((await service.GetSignalsAsync(true)).All(s => s.IsDeleted && s.BindingLabel.Contains("CMFX no cargado")), "Missing CMFX is marked");
+    Check((await service.GetSignalsAsync(true)).All(s => s.IsDeleted && s.BindingLabel.Contains("CMFX not loaded")), "Missing CMFX is marked");
     // Simulate a restart: no in-memory mapping may be needed to restore links.
     service = new ApsDataService(new Factory(options));
     await service.ImportSignalsAsync([MakeSignal("STATE", 2, 80), MakeSignal(" voltage ", 2, 40)]);

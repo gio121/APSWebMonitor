@@ -14,7 +14,7 @@ public class SinopticoElement
     public double StrokeWidth { get; set; } = 1.5; // Canvas pixels, independent of symbol size
 
     // Properties for specific types
-    public string Text { get; set; } = "Texto";
+    public string Text { get; set; } = "Text";
     public int? SignalId { get; set; } // Nullable, bound to Signal if it's a "Señal"
     public string CommandValue { get; set; } = string.Empty; // The actual command to execute
     public string Color { get; set; } = "#000000"; // Default black color
@@ -33,11 +33,36 @@ public class SinopticoElement
     public string ActiveColor { get; set; } = "#4caf50"; // Default active color
     public List<ColorRule> BoxColorRules { get; set; } = new(); // Multiple color rules
     public bool ProportionalScale { get; set; } = true;
+    public bool ShowValue { get; set; }
+    public int? ValueBit { get; set; }
+    public string? ValueFormat { get; set; }
+    public string? ValueUnit { get; set; }
+    public string ValuePrefix { get; set; } = "";
+    public Dictionary<string, string> ValueTexts { get; set; } = new();
+    public List<SynopticTextRule> TextRules { get; set; } = new();
+    public List<SynopticCondition> VisibilityRules { get; set; } = new();
+    public bool VisibilityMatchAll { get; set; }
+    public bool InvertState { get; set; }
+    public bool InvertCommand { get; set; }
+    public bool ProgressCountDown { get; set; }
 }
 
-public class ColorRule
+public class SynopticCondition
 {
     public int? SignalId { get; set; }
     public int? SignalBit { get; set; }
+    public double? ExpectedValue { get; set; }
+    public bool Invert { get; set; }
+    public int? CompareSignalId { get; set; }
+    public int? CompareSignalBit { get; set; }
+}
+
+public class ColorRule : SynopticCondition
+{
     public string Color { get; set; } = "#4caf50";
+}
+
+public class SynopticTextRule : SynopticCondition
+{
+    public string Text { get; set; } = "";
 }

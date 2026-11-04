@@ -7,13 +7,13 @@
     <TitleContent>
         <div class="d-flex align-center gap-2">
             <MudIcon Icon="@Icons.Material.Filled.Send" Color="Color.Warning" />
-            <MudText Typo="Typo.h6" Class="fw-bold">Enviar Comando a Control</MudText>
+            <MudText Typo="Typo.h6" Class="fw-bold">@Ui["Send command to Control"]</MudText>
         </div>
     </TitleContent>
     <DialogContent>
         <MudGrid Spacing="2">
             <MudItem xs="12">
-                <MudTextField @bind-Value="DeviceUrl" Label="IP de la Placa (ControlManager UDP:50001)"
+                <MudTextField @bind-Value="DeviceUrl" Label="@Ui["Board IP (ControlManager UDP:50001)"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                               Placeholder="192.168.15.1" />
             </MudItem>
@@ -35,9 +35,9 @@
             </MudItem>
 
             <MudItem xs="12">
-                <MudTextField @bind-Value="_rawHexPreview" Label="Trama Hexadecimal Resultante"
+                <MudTextField @bind-Value="_rawHexPreview" Label="@Ui["Resulting hexadecimal frame"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                              HelperText="Cabecera: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK]" />
+                              HelperText="@Ui["Header: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK]"]" />
             </MudItem>
 
             @if (!string.IsNullOrEmpty(_resultMessage))
@@ -51,10 +51,10 @@
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cerrar</MudButton>
+        <MudButton OnClick="Cancel">@Ui["Close"]</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Send"
                    OnClick="SendCommand" Disabled="_isSending">
-            @(_isSending ? "Enviando..." : "Enviar a Control")
+            @(_isSending ? Ui["Sending..."] : Ui["Send to Control"])
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -147,20 +147,20 @@
         if (res.IsSuccess)
         {
             _resultSuccess = true;
-            _resultMessage = "Comando transmitido a ControlManager con éxito.";
-            Snackbar.Add("Comando enviado exitosamente.", Severity.Success);
+            _resultMessage = ApsMonitor.Resources.MonitorResources.Text("Command transmitted to ControlManager successfully.");
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Command sent successfully."), Severity.Success);
         }
         else if (res.Error != null && res.Error.Contains("Timeout waiting for ControlManager response"))
         {
             _resultSuccess = true;
             _isWarning = true;
-            _resultMessage = "Trama entregada a WebMonitorBackend y despachada por RS485 a Control. (Nota: ControlManager no emite acuse de recibo UDP síncrono para comandos de Control).";
-            Snackbar.Add("Comando entregado a Control.", Severity.Warning);
+            _resultMessage = ApsMonitor.Resources.MonitorResources.Text("Frame delivered to WebMonitorBackend and dispatched to Control through RS485. (ControlManager does not issue synchronous UDP acknowledgements for Control commands.)");
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Command delivered to Control."), Severity.Warning);
         }
         else
         {
             _resultSuccess = false;
-            _resultMessage = res.Error ?? "Error desconocido";
+            _resultMessage = res.Error ?? ApsMonitor.Resources.MonitorResources.Text("Unknown error");
             Snackbar.Add(_resultMessage, Severity.Error);
         }
     }

@@ -12,7 +12,7 @@
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
-    <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
+    <MudText Typo="Typo.h5" Class="fw-bold">@Ui["Live monitor"]</MudText>
     <div class="d-flex align-center gap-2">
         <MudChip T="string"
                  Color="@(MonitorState.UseTls ? Color.Info : Color.Default)"
@@ -29,11 +29,11 @@
 </div>
 
 @* <MudPaper Class="pa-3 mb-4" Elevation="0">
-    <MudText Typo="Typo.subtitle2">InfluxDB: @(!_influxStatus.Enabled ? "Desactivado" : _influxStatus.Error != null ? "Revisar conexión" : _influxStatus.LastWrite != null ? "Enviando datos" : "Esperando muestras")</MudText>
+    <MudText Typo="Typo.subtitle2">InfluxDB: @(!_influxStatus.Enabled ? Ui["Disabled"] : _influxStatus.Error != null ? Ui["Check connection"] : _influxStatus.LastWrite != null ? Ui["Sending data"] : Ui["Waiting for samples"])</MudText>
     @if (_influxStatus.Enabled)
     {
-        <MudText Typo="Typo.body2">Confirmadas: @_influxStatus.Written · Pendientes: @_influxStatus.Pending · Descartadas/no confirmadas: @_influxStatus.Dropped</MudText>
-        <MudText Typo="Typo.caption">Última escritura: @(_influxStatus.LastWrite?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—") · Sesión: @(MonitorState.SessionId ?? "—")</MudText>
+        <MudText Typo="Typo.body2">@Ui["Confirmed: {0} · Pending: {1} · Dropped/unconfirmed: {2}", _influxStatus.Written, _influxStatus.Pending, _influxStatus.Dropped]</MudText>
+        <MudText Typo="Typo.caption">Last write: @(_influxStatus.LastWrite?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? "—") · Session: @(MonitorState.SessionId ?? "—")</MudText>
         @if (_influxStatus.Error != null)
         {
             <MudText Color="Color.Warning">@_influxStatus.Error</MudText>
@@ -79,32 +79,32 @@
                 </div>
             </div>
 
-            <MudTextField @bind-Value="MonitorState.IpAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" Disabled="@MonitorState.IsConnected" />
+            <MudTextField @bind-Value="MonitorState.IpAddress" Label="@Ui["Board IP address"]" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="@Ui["E.g. 192.168.1.100"]" Disabled="@MonitorState.IsConnected" />
             @if (MonitorState.UseTls)
             {
                 <MudNumericField T="int" @bind-Value="MonitorState.TlsSecurity.HttpsApiPort" Label="Puerto HTTPS API (TLS/mTLS)" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Min="1" Max="65535" Disabled="@MonitorState.IsConnected" />
             }
             else
             {
-                <MudTextField @bind-Value="MonitorState.Port" Label="Puerto UDP ControlManager" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="50001" Disabled="@MonitorState.IsConnected" />
+                <MudTextField @bind-Value="MonitorState.Port" Label="@Ui["ControlManager UDP port"]" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="50001" Disabled="@MonitorState.IsConnected" />
             }
-            <MudTextField @bind-Value="MonitorState.PayloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
+            <MudTextField @bind-Value="MonitorState.PayloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="@Ui["E.g. 00 00 00 00 00 00 00"]" />
 
             <MudButton Variant="Variant.Filled" Color="@(MonitorState.IsConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@MonitorState.IsConnecting">
                 @if (MonitorState.IsConnecting)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>Conectando...</span>
+                    <span>Connecting...</span>
                 }
                 else if (MonitorState.IsConnected)
                 {
                     <MudIcon Icon="@Icons.Material.Filled.PowerOff" Class="mr-2" />
-                    <span>Desconectar</span>
+                    <span>@Ui["Disconnect"]</span>
                 }
                 else
                 {
                     <MudIcon Icon="@Icons.Material.Filled.Power" Class="mr-2" />
-                    <span>Conectar</span>
+                    <span>@Ui["Connect"]</span>
                 }
             </MudButton>
 
@@ -118,29 +118,29 @@
                     @if (MonitorState.IsMonitoring)
                     {
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                        <span>Detener Monitorización</span>
+                        <span>@Ui["Stop monitoring"]</span>
                     }
                     else
                     {
                         <MudIcon Icon="@Icons.Material.Filled.Sensors" Class="mr-2" />
-                        <span>Monitorizar</span>
+                        <span>@Ui["Start monitoring"]</span>
                     }
                 </MudButton>
             }
 
             <MudDivider Class="my-4 custom-divider" />
 
-            <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">Acciones de Prueba</MudText>
+            <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">@Ui["Test actions"]</MudText>
             <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" OnClick="TestSendPayload" Disabled="!MonitorState.IsConnected || _isSending || MonitorState.IsMonitoring" Class="mb-2">
                 @if (_isSending)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>Enviando...</span>
+                    <span>Sending...</span>
                 }
                 else
                 {
                     <MudIcon Icon="@Icons.Material.Filled.Send" Class="mr-2" />
-                    <span>Enviar Trama de Prueba</span>
+                    <span>@Ui["Send test frame"]</span>
                 }
             </MudButton>
         </MudPaper>
@@ -156,7 +156,7 @@
                         <div class="console-title-icon">
                             <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" />
                         </div>
-                        <span class="console-title">TRÁFICO DE RED</span>
+                        <span class="console-title">@Ui["NETWORK TRAFFIC"]</span>
                         @if (MonitorState.IsConnected)
                         {
                             <span class="console-live-dot"></span>
@@ -177,7 +177,7 @@
                             <span class="stat-count">@MonitorState.TotalErCount</span>
                         </div>
                         <div class="console-header-divider"></div>
-                        <MudIconButton Icon="@Icons.Material.Filled.ClearAll" Size="Size.Small" Class="console-clear-btn" OnClick="ClearLogs" Title="Limpiar Consola" />
+                        <MudIconButton Icon="@Icons.Material.Filled.ClearAll" Size="Size.Small" Class="console-clear-btn" OnClick="ClearLogs" Title="@Ui["Clear console"]" />
                     </div>
                 </div>
 
@@ -190,8 +190,8 @@
                             <div class="console-empty-icon">
                                 <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" Size="Size.Large" />
                             </div>
-                            <span class="console-empty-text">Esperando tráfico de red...</span>
-                            <span class="console-empty-sub">Conecta a un dispositivo y envía una trama para comenzar</span>
+                            <span class="console-empty-text">@Ui["Waiting for network traffic..."]</span>
+                            <span class="console-empty-sub">@Ui["Connect to a device and send a frame to begin"]</span>
                         </div>
                     }
                     else
@@ -213,7 +213,7 @@
                 <!-- Footer -->
                 <div class="console-footer">
                     <span>@_logs.Count entradas</span>
-                    <span>máx. 100</span>
+                    <span>@Ui["max. 100"]</span>
                 </div>
             </MudPaper>
         </div>
@@ -227,16 +227,16 @@
     <div class="d-flex align-center">
         <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Info" Class="mr-2" />
         <div>
-            <MudText Typo="Typo.h6" Class="fw-bold">Variables del Sistema</MudText>
-            <MudText Typo="Typo.caption" Class="text-muted">Valores en tiempo real decodificados de la comunicación con la tarjeta</MudText>
+            <MudText Typo="Typo.h6" Class="fw-bold">@Ui["System variables"]</MudText>
+            <MudText Typo="Typo.caption" Class="text-muted">@Ui["Live values decoded from board communications"]</MudText>
         </div>
     </div>
     <div class="d-flex align-center gap-3">
-        <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar señal..." 
+        <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="@Ui["Search signal..."]"
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
                       IconSize="Size.Small" Variant="Variant.Outlined" Margin="Margin.Dense" 
                       Style="max-width:300px; background-color:var(--mud-palette-surface);" />
-        <MudText Typo="Typo.caption" Class="text-muted d-none d-md-flex">Despliega un nodo para ver sus valores en tiempo real</MudText>
+        <MudText Typo="Typo.caption" Class="text-muted d-none d-md-flex">@Ui["Expand a node to view its live values"]</MudText>
     </div>
 </div>
 
@@ -250,8 +250,8 @@ else if (_currentValues.Count == 0)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center justify-center session-empty" Elevation="0">
         <MudIcon Icon="@Icons.Material.Filled.SensorsOff" Size="Size.Large" Color="Color.Default" Class="mb-3" Style="font-size: 48px;" />
-        <MudText Typo="Typo.subtitle1" Class="text-muted mb-1">No hay señales configuradas</MudText>
-        <MudText Typo="Typo.body2" Class="text-muted">Añade señales desde la sección de Señales para visualizarlas en el monitor</MudText>
+        <MudText Typo="Typo.subtitle1" Class="text-muted mb-1">@Ui["No signals configured"]</MudText>
+        <MudText Typo="Typo.body2" Class="text-muted">@Ui["Add signals in the Signals section to display them in the monitor"]</MudText>
     </MudPaper>
 }
 else
@@ -268,8 +268,8 @@ else
                     <div class="d-flex align-center">
                         <MudIcon Icon="@Icons.Material.Filled.Router" Color="Color.Info" Class="mr-3" />
                         <div class="flex-grow-1">
-                            <MudText Typo="Typo.subtitle1" Class="fw-bold">Nodo @nodeNum: @nodeDesc</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() señales en este nodo</MudText>
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@Ui["Node {0}: {1}", nodeNum, nodeDesc]</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() signals in this node</MudText>
                         </div>
                         @if (changingCount > 0)
                         {
@@ -284,15 +284,15 @@ else
                         <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
                                 <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
-                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
-                                <TemplateColumn Title="Valor" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
+                                <PropertyColumn Property="x => x.Nombre" Title="@Ui["Name"]" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
+                                <TemplateColumn Title="@Ui["Value_Lowercase"]" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
                                     <CellTemplate>
                                         <div class="@(context.Item.HasChanged ? "value-changed" : "")" style="width: 230px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                             @context.Item.FormattedValue
                                         </div>
                                     </CellTemplate>
                                 </TemplateColumn>
-                                <PropertyColumn Property="x => x.Unidad" Title="Unidad" Width="80px" />
+                                <PropertyColumn Property="x => x.Unidad" Title="@Ui["Unit"]" Width="80px" />
                                 <TemplateColumn Title="Raw Value" CellStyle="width: 120px;" HeaderStyle="width: 120px;">
                                     <CellTemplate>
                                         <div style="font-variant-numeric: tabular-nums;">
@@ -739,7 +739,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al cargar señales: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Unable to load signals: {0}",ex.Message), Severity.Error);
         }
         finally
         {
@@ -752,17 +752,17 @@ else
         if (MonitorState.IsConnected)
         {
             MonitorState.Disconnect();
-            Snackbar.Add("Desconectado", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Disconnected_Text"), Severity.Info);
         }
         else
         {
             if (string.IsNullOrWhiteSpace(MonitorState.IpAddress))
             {
-                Snackbar.Add("Introduce una dirección IP válida", Severity.Warning);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Enter a valid IP address"), Severity.Warning);
                 return;
             }
             await MonitorState.ConnectAsync();
-            Snackbar.Add("Conectado a la tarjeta de comunicaciones", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Connected to the communications board"), Severity.Success);
         }
     }
 
@@ -771,12 +771,12 @@ else
         if (MonitorState.IsMonitoring)
         {
             MonitorState.StopMonitoring();
-            Snackbar.Add("Monitorización detenida", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Monitoring stopped"), Severity.Info);
         }
         else
         {
             MonitorState.StartMonitoring();
-            Snackbar.Add("Monitorización continua iniciada", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Continuous monitoring started"), Severity.Success);
         }
     }
 
@@ -791,7 +791,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al enviar: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Send failed: {0}",ex.Message), Severity.Error);
         }
         finally
         {

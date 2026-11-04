@@ -24,7 +24,7 @@ static class IntegrationChecks
         void Check(bool condition, string text) { if (!condition) throw new Exception(text); checks++; }
         var dbPath = Path.Combine(Path.GetTempPath(), $"aps-events-{Guid.NewGuid():N}.db");
         var services = new ServiceCollection();
-        services.AddLogging(); services.AddHttpClient(); services.AddMudServices();
+        services.AddLogging(); services.AddLocalization(); services.AddHttpClient(); services.AddMudServices();
         services.AddSingleton<NavigationManager, TestNavigation>();
         services.AddSingleton<IJSRuntime, TestJs>();
         services.AddDbContextFactory<ApsDbContext>(o => o.UseSqlite($"Data Source={dbPath};Pooling=False"));
@@ -114,7 +114,7 @@ static class IntegrationChecks
                 });
             }
             string html = await RenderAsync();
-            Check(html.Contains("No hay nodos de eventos disponibles") && !html.Contains("Cargar CMFX"), "Initial page uses existing signals and has no CMFX picker.");
+            Check(html.Contains("No event nodes available") && !html.Contains("Load CMFX"), "Initial page uses existing signals and has no CMFX picker.");
             var data = provider.GetRequiredService<ApsDataService>();
             var signals = config.Values.Values.Select(v => new Signal
             {
@@ -146,8 +146,8 @@ static class IntegrationChecks
             await data.ImportSignalsAsync(signals, [config]);
             EventsPreview.Image = image;
             html = await RenderAsync();
-            Check(html.Contains("Fallo de prueba") && html.Contains("0042") && html.Contains("Trazas del evento"), "Render parsed event, details and trace controls.");
-            Check(html.Contains("19/07/2026 14:34:56") && html.Contains("signed ES") && html.Contains("Control importado") && !html.Contains("Cargar CMFX"), "Render database signals and localized timestamp without a second CMFX import.");
+            Check(html.Contains("Fallo de prueba") && html.Contains("0042") && html.Contains("Event traces"), "Render parsed event, details and trace controls.");
+            Check(html.Contains("19/07/2026 14:34:56") && html.Contains("signed ES") && html.Contains("Control importado") && !html.Contains("Load CMFX"), "Render database signals and localized timestamp without a second CMFX import.");
             await data.DeleteAllSignalsAsync();
             Check((await data.GetControlEventConfigurationsAsync()).Count == 0, "Removing all signals also makes event nodes unavailable.");
             Console.WriteLine($"PASS: {checks} monitoring coordination and Razor rendering checks.");

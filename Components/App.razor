@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="@MonitorLocalization.HtmlLanguage">
 
 <head>
     <meta charset="utf-8" />
@@ -24,7 +24,7 @@
 <body>
     <div id="app-startup" class="app-startup" role="status">
         <img src="SepsaMedha.jpg" alt="APS Monitor" />
-        <span>Cargando monitor…</span>
+        <span>@Ui["Loading monitor…"]</span>
     </div>
     <script>
         window.apsStartup = { complete: () => document.getElementById('app-startup')?.remove() };

@@ -9,8 +9,8 @@
 @if (_pendingProjectReload)
 {
     <div role="alert" style="position:fixed;top:0;left:0;right:0;z-index:2000;background:#fff3cd;color:#664d03;padding:12px;text-align:center">
-        El proyecto activo ha cambiado. Tu formulario sigue abierto para que puedas revisar o copiar los cambios sin guardar.
-        <a href="/proyectos" target="_top">Abrir el proyecto activo</a>
+        @Ui["The active project has changed. Your form remains open so you can review or copy unsaved changes."]
+        <a href="/proyectos" target="_top">@Ui["Open the active project"]</a>
     </div>
 }
 
@@ -18,7 +18,7 @@
     <Found Context="routeData">
         @if (!_authenticationReady)
         {
-            <div class="app-startup" role="status">Comprobando sesión…</div>
+            <div class="app-startup" role="status">@Ui["Checking session…"]</div>
         }
         else if (routeData.PageType == typeof(Pages.Login))
         {
@@ -26,20 +26,20 @@
         }
         else if (!_authenticated)
         {
-            <div class="app-startup" role="status">Abriendo acceso…</div>
+            <div class="app-startup" role="status">@Ui["Opening access…"]</div>
             <RedirectToLogin />
         }
         else if (_projectChanged)
         {
             <div class="app-startup" role="status">
-                <p>Proyecto actualizado. Abriendo selector…</p>
+                <p>@Ui["Project updated. Opening project selector…"]</p>
                 <RedirectToProject Replace="false" />
             </div>
         }
         else if (Projects.Current is null && routeData.PageType != typeof(Pages.Proyectos))
         {
             <div class="app-startup" role="status">
-                <p>Abriendo selector de proyectos…</p>
+                <p>@Ui["Opening project selector…"]</p>
                 <RedirectToProject />
             </div>
         }
@@ -48,14 +48,14 @@
         <AuthorizeRouteView @key="_permissionVersion" RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <NotAuthorized>
                 <AuthorizeView Context="pageUser">
-                    <Authorized><MudAlert Severity="Severity.Warning">No tienes permiso para acceder a esta página. Contacta con el administrador.</MudAlert></Authorized>
+                    <Authorized><MudAlert Severity="Severity.Warning">@Ui["You do not have permission to access this page. Contact the administrator."]</MudAlert></Authorized>
                     <NotAuthorized><RedirectToLogin /></NotAuthorized>
                 </AuthorizeView>
             </NotAuthorized>
             <Authorizing>
                 <div class="d-flex justify-center align-center pa-12">
                     <MudProgressCircular Color="Color.Info" Indeterminate="true" Size="Size.Medium" />
-                    <MudText Typo="Typo.body2" Class="ml-3 text-muted">Cargando permisos...</MudText>
+                    <MudText Typo="Typo.body2" Class="ml-3 text-muted">@Ui["Loading permissions..."]</MudText>
                 </div>
             </Authorizing>
         </AuthorizeRouteView>

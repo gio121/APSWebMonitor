@@ -15,7 +15,7 @@
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2 flex-wrap gap-2">
     <div>
-        <MudText Typo="Typo.h5" Class="fw-bold">Gestión de Sesiones</MudText>
+        <MudText Typo="Typo.h5" Class="fw-bold">@Ui["Session management"]</MudText>
         <MudText Typo="Typo.caption" Class="text-muted">Carga sesiones locales (.dat / .json) o consulta el buffer circular de tramas en placa (puerto 8080)</MudText>
     </div>
     <div class="d-flex align-center gap-2 flex-wrap">
@@ -30,7 +30,7 @@
             @if (_isLoading)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span>Procesando...</span>
+                <span>@Ui["Processing..."]</span>
             }
             else
             {
@@ -402,7 +402,7 @@
                                 </MudSelect>
                             </MudItem>
                             <MudItem xs="5">
-                                <MudTextField @bind-Value="_replayTargetIp" Label="IP Destino" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudTextField @bind-Value="_replayTargetIp" Label="@Ui["Destination IP"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
                             </MudItem>
                             <MudItem xs="3">
                                 <MudNumericField T="ushort" @bind-Value="_replayTargetPort" Label="Puerto" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" Max="65535" />
@@ -479,15 +479,15 @@ else
                 <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">DETALLES DE LA SESIÓN ACTIVA</MudText>
                 <div class="d-flex flex-column gap-2">
                     <div class="d-flex justify-space-between">
-                        <MudText Typo="Typo.body2">Origen:</MudText>
+                        <MudText Typo="Typo.body2">@Ui["Source:"]</MudText>
                         <MudText Typo="Typo.body2" Class="fw-bold">@SessionState.FileName</MudText>
                     </div>
                     <div class="d-flex justify-space-between">
-                        <MudText Typo="Typo.body2">Tramas:</MudText>
+                        <MudText Typo="Typo.body2">@Ui["Frames:"]</MudText>
                         <MudText Typo="Typo.body2">@SessionState.Dataset?.FrameCount.ToString("N0")</MudText>
                     </div>
                     <div class="d-flex justify-space-between">
-                        <MudText Typo="Typo.body2">Hora Fin:</MudText>
+                        <MudText Typo="Typo.body2">@Ui["End time:"]</MudText>
                         <MudText Typo="Typo.body2">@FormatAbsoluteTime(SessionState.Dataset!.FrameCount - 1)</MudText>
                     </div>
                 </div>
@@ -495,23 +495,23 @@ else
         </MudItem>
         <MudItem xs="12" md="8">
             <MudPaper Class="pa-4 h-100 d-flex flex-column justify-center" Elevation="0" Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default);">
-                <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">POSICIÓN ACTUAL</MudText>
+                <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">@Ui["CURRENT POSITION"]</MudText>
                 <div class="d-flex align-center gap-4">
                     <MudText Typo="Typo.h4" Color="Color.Primary" Class="fw-bold">@FormatAbsoluteTime(SessionState.CurrentFrame)</MudText>
                     <MudText Typo="Typo.subtitle1" Class="text-muted">/ @FormatAbsoluteTime(SessionState.Dataset!.FrameCount - 1)</MudText>
                     <MudSpacer />
-                    <MudChip T="string" Color="Color.Info" Variant="Variant.Text">Trama @(SessionState.CurrentFrame + 1)</MudChip>
+                    <MudChip T="string" Color="Color.Info" Variant="Variant.Text">Frame @(SessionState.CurrentFrame + 1)</MudChip>
                 </div>
             </MudPaper>
         </MudItem>
     </MudGrid>
     <div>
-        <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar señal..." 
+        <MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="@Ui["Search signal..."]"
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" 
                       IconSize="Size.Small" Variant="Variant.Outlined" Margin="Margin.Dense" 
                       Style="max-width:300px; background-color:var(--mud-palette-surface);" />
         <MudSpacer />
-        <MudText Typo="Typo.caption" Class="text-muted">Despliega un nodo para ver sus valores en tiempo real</MudText>
+        <MudText Typo="Typo.caption" Class="text-muted">@Ui["Expand a node to view its live values"]</MudText>
     </div>
 
     <MudExpansionPanels MultiExpansion="true" Class="nodes-container">
@@ -526,8 +526,8 @@ else
                     <div class="d-flex align-center">
                         <MudIcon Icon="@Icons.Material.Filled.Router" Color="Color.Info" Class="mr-3" />
                         <div class="flex-grow-1">
-                            <MudText Typo="Typo.subtitle1" Class="fw-bold">Nodo @nodeNum: @nodeDesc</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() señales en este nodo</MudText>
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@Ui["Node {0}: {1}", nodeNum, nodeDesc]</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() signals in this node</MudText>
                         </div>
                         @if (changingCount > 0)
                         {
@@ -542,15 +542,15 @@ else
                         <MudDataGrid T="SignalValue" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
                                 <PropertyColumn Property="x => x.Tag" Title="Tag" CellStyle="width: 150px;" HeaderStyle="width: 150px;" />
-                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
-                                <TemplateColumn Title="Valor" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
+                                <PropertyColumn Property="x => x.Nombre" Title="@Ui["Name"]" CellStyle="width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" HeaderStyle="width: 350px;" />
+                                <TemplateColumn Title="@Ui["Value_Lowercase"]" CellStyle="width: 250px;" HeaderStyle="width: 250px;">
                                     <CellTemplate>
                                         <div class="@(context.Item.HasChanged ? "value-changed" : "")" style="width: 230px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                             @context.Item.FormattedValue
                                         </div>
                                     </CellTemplate>
                                 </TemplateColumn>
-                                <PropertyColumn Property="x => x.Unidad" Title="Unidad" Width="80px" />
+                                <PropertyColumn Property="x => x.Unidad" Title="@Ui["Unit"]" Width="80px" />
                                 <TemplateColumn Title="Raw Value" CellStyle="width: 120px;" HeaderStyle="width: 120px;">
                                     <CellTemplate>
                                         <div style="font-variant-numeric: tabular-nums;">
@@ -1251,7 +1251,7 @@ else
             var signals = await DataService.GetSignalsAsync();
             if (signals.Count == 0)
             {
-                Snackbar.Add("No hay señales configuradas.", Severity.Warning);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("No signals configured."), Severity.Warning);
                 return;
             }
 
@@ -1263,12 +1263,12 @@ else
 
             if (dataset == null)
             {
-                Snackbar.Add("El archivo no contiene tramas válidas.", Severity.Warning);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The file contains no valid frames."), Severity.Warning);
                 return;
             }
 
             SessionState.LoadSession(dataset, signals, file.Name);
-            Snackbar.Add($"Sesión cargada correctamente.", Severity.Success);
+            Snackbar.Add($"Session loaded successfully.", Severity.Success);
         }
         catch (Exception ex)
         {

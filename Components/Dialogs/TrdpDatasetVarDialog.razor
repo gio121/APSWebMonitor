@@ -6,7 +6,7 @@
     <TitleContent>
         <div class="d-flex align-center gap-2">
             <MudIcon Icon="@Icons.Material.Filled.DataObject" Color="Color.Info" />
-            <MudText Typo="Typo.h6">@(IsNew ? "Nueva Variable" : Variable.Id)</MudText>
+            <MudText Typo="Typo.h6">@(IsNew ? Ui["New variable"] : Variable.Id)</MudText>
             @if (_links.Count > 0)
             {
                 <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
@@ -22,13 +22,13 @@
             @if (Variable.Cumulative)
             {
                 <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Filled" Icon="@Icons.Material.Filled.TrendingUp">
-                    Acumulativa
+                    @Ui["Cumulative"]
                 </MudChip>
             }
             @if (Variable.SumToCurrent)
             {
                 <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" Icon="@Icons.Material.Filled.AddCircle">
-                    += Sumar
+                    @Ui["+= Add"]
                 </MudChip>
             }
         </div>
@@ -37,15 +37,15 @@
         <MudTabs @bind-ActivePanelIndex="_tab" Rounded="true" Color="Color.Dark" Class="var-dialog-tabs">
 
             <!-- ── Tab 1: Propiedades ──────────────────────────────────── -->
-            <MudTabPanel Text="Propiedades" Icon="@Icons.Material.Filled.Tune">
+            <MudTabPanel Text="@Ui["Properties"]" Icon="@Icons.Material.Filled.Tune">
                 <MudGrid Spacing="3" Class="pt-3">
                     <MudItem xs="12" sm="4">
-                        <MudTextField @bind-Value="Variable.Id" Label="ID *" Required="true"
+                        <MudTextField @bind-Value="Variable.Id" Label="ID *" Required="true" RequiredError="@Ui["Required"]"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                      Placeholder="p.ej. hv_cat_volt" />
+                                      Placeholder="E.g. hv_cat_volt" />
                     </MudItem>
                     <MudItem xs="12" sm="3">
-                        <MudSelect @bind-Value="Variable.Type" Label="Tipo *" Variant="Variant.Outlined"
+                        <MudSelect @bind-Value="Variable.Type" Label="@Ui["Type *"]" Variant="Variant.Outlined"
                                    Margin="Margin.Dense" FullWidth="true" T="string">
                             @foreach (var t in _types)
                             {
@@ -54,7 +54,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="5">
-                        <MudTextField @bind-Value="Variable.Description" Label="Descripción"
+                        <MudTextField @bind-Value="Variable.Description" Label="@Ui["Description"]"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" />
                     </MudItem>
 
@@ -64,20 +64,20 @@
                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudNumericField @bind-Value="_bitOffset" Label="Bit (0-7, opcional)"
+                        <MudNumericField @bind-Value="_bitOffset" Label="@Ui["Bit (0–7, optional)"]"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0" Max="7"
                                          Placeholder="0" />
                     </MudItem>
                     <MudItem xs="12" sm="4">
-                        <MudNumericField @bind-Value="_varOffsetBits" Label="VarOffset (bits) *"
+                        <MudNumericField @bind-Value="_varOffsetBits" Label="@Ui["VarOffset (bits) *"]"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="0"
-                                         HelperText="Offset total en bits (byte × 8 + bit)" />
+                                         HelperText="@Ui["Total bit offset (byte × 8 + bit)"]" />
                     </MudItem>
 
                     @if (Variable.Type == "bytes")
                     {
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_size" Label="Tamaño (bytes)"
+                            <MudNumericField @bind-Value="_size" Label="@Ui["Size (bytes)"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Min="1" />
                         </MudItem>
                     }
@@ -86,22 +86,22 @@
                     {
                         <MudItem xs="12"><MudDivider /></MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_scale" Label="Escala (scale)"
+                            <MudNumericField @bind-Value="_scale" Label="@Ui["Scale (scale)"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_offsetVal" Label="Offset de valor"
+                            <MudNumericField @bind-Value="_offsetVal" Label="@Ui["Value offset"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true" Format="G6" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudTextField @bind-Value="Variable.Unit" Label="Unidad"
+                            <MudTextField @bind-Value="Variable.Unit" Label="@Ui["Unit"]"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                                           Placeholder="V, A, kW, °C…" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
                             <MudSelect @bind-Value="_endian" Label="Endianness" Variant="Variant.Outlined"
                                        Margin="Margin.Dense" FullWidth="true" T="string">
-                                <MudSelectItem Value='"little"'>Little endian (por defecto)</MudSelectItem>
+                                <MudSelectItem Value='"little"'>@Ui["Little endian (default)"]</MudSelectItem>
                                 <MudSelectItem Value='"big"'>Big endian</MudSelectItem>
                             </MudSelect>
                         </MudItem>
@@ -117,9 +117,9 @@
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Persistent" Color="Color.Warning" />
                                 <div>
-                                    <MudText Typo="Typo.body2" Class="fw-bold">Guardar en cosmos_data.txt</MudText>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">@Ui["Save to cosmos_data.txt"]</MudText>
                                     <MudText Typo="Typo.caption" Class="trdp-muted">
-                                        Persistencia de valor en <code>/root/cosmos_data.txt</code> entre reinicios.
+                                        @Ui["Persist value in"] <code>/root/cosmos_data.txt</code> @Ui["across restarts."]
                                     </MudText>
                                 </div>
                             </div>
@@ -130,9 +130,9 @@
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.Cumulative" Color="Color.Tertiary" />
                                 <div>
-                                    <MudText Typo="Typo.body2" Class="fw-bold">Variable Acumulativa</MudText>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">@Ui["Cumulative variable"]</MudText>
                                     <MudText Typo="Typo.caption" Class="trdp-muted">
-                                        Acumula los incrementos positivos a lo largo del tiempo.
+                                        @Ui["Accumulates positive increments over time."]
                                     </MudText>
                                 </div>
                             </div>
@@ -143,43 +143,43 @@
                             <div class="d-flex align-center gap-2">
                                 <MudCheckBox @bind-Value="Variable.SumToCurrent" Color="Color.Primary" />
                                 <div>
-                                    <MudText Typo="Typo.body2" Class="fw-bold">Sumar al valor actual</MudText>
+                                    <MudText Typo="Typo.body2" Class="fw-bold">@Ui["Add to current value"]</MudText>
                                     <MudText Typo="Typo.caption" Class="trdp-muted">
-                                        Suma el resultado de la fórmula al valor acumulado en cada ciclo (+=).
+                                        @Ui["Adds the formula result to the accumulated value on each cycle (+=)."]
                                     </MudText>
                                 </div>
                             </div>
                         </MudPaper>
                     </MudItem>
                     <MudItem xs="12">
-                        <MudTextField @bind-Value="Variable.Formula" Label="Fórmula directa en dataset (opcional)"
+                        <MudTextField @bind-Value="Variable.Formula" Label="@Ui["Direct dataset formula (optional)"]"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                                      Placeholder="p.ej. POTENCIA * delta_h o (v1 + v2) / 2"
-                                      HelperText="Si se define, se evaluará la expresión matemática al generar la variable." />
+                                      Placeholder="E.g. POWER * delta_h or (v1 + v2) / 2"
+                                      HelperText="@Ui["If defined, the mathematical expression is evaluated when generating the variable."]" />
 
-                        <!-- Asistente de Fórmula -->
+                        <!-- Formula assistant -->
                         <MudPaper Elevation="0" Class="pa-3 mt-2" Style="background:var(--mud-palette-background); border:1px solid rgba(56,189,248,0.2); border-radius:8px;">
                             <div class="d-flex align-center justify-space-between mb-2">
                                 <div class="d-flex align-center gap-1">
                                     <MudIcon Icon="@Icons.Material.Filled.Functions" Size="Size.Small" Style="color:#38bdf8;" />
                                     <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:#38bdf8;">
-                                        Asistente de Fórmula
+                                        @Ui["Formula assistant"]
                                     </MudText>
                                 </div>
                                 <MudText Typo="Typo.caption" Class="trdp-muted">
-                                    Haz clic para insertar en la fórmula
+                                    @Ui["Click to insert into the formula"]
                                 </MudText>
                             </div>
 
                             <!-- Deltas de tiempo -->
                             <div class="mb-2">
                                 <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:#a78bfa;">
-                                    ⏱️ Variable delta de tiempo transcurrido (para integrar energía, distancia, etc.):
+                                    @Ui["⏱️ Elapsed time delta variable (for integrating energy, distance, etc.):"]
                                 </MudText>
                                 <div class="d-flex flex-wrap gap-1">
                                     <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
                                              OnClick="@(() => InsertFormulaDirect("delta_s"))">
-                                        delta_s (seg)
+                                        @Ui["delta_s (s)"]
                                     </MudChip>
                                     <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
                                              OnClick="@(() => InsertFormulaDirect("delta_m"))">
@@ -187,7 +187,7 @@
                                     </MudChip>
                                     <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
                                              OnClick="@(() => InsertFormulaDirect("delta_h"))">
-                                        delta_h (horas)
+                                        @Ui["delta_h (hours)"]
                                     </MudChip>
                                     <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled"
                                              OnClick="@(() => InsertFormulaDirect("delta_ms"))">
@@ -199,7 +199,7 @@
                                     </MudChip>
                                     <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Outlined"
                                              OnClick="@(() => InsertFormulaDirect("* delta_h"))">
-                                        * delta_h (ej. kWh)
+                                        @Ui["* delta_h (e.g. kWh)"]
                                     </MudChip>
                                 </div>
                             </div>
@@ -207,7 +207,7 @@
                             <!-- Operadores y funciones matemáticas -->
                             <div class="mb-2">
                                 <MudText Typo="Typo.caption" Class="fw-bold d-block mb-1" Style="color:var(--mud-palette-text-secondary);">
-                                    Operadores y Funciones:
+                                    @Ui["Operators and functions:"]
                                 </MudText>
                                 <div class="d-flex flex-wrap gap-1">
                                     @foreach (var op in new[] { "+", "-", "*", "/", "(", ")", "max(", "min(", "abs(" })
@@ -226,9 +226,9 @@
                                 <div>
                                     <div class="d-flex align-center justify-space-between mb-1">
                                         <MudText Typo="Typo.caption" Class="fw-bold" Style="color:#38bdf8;">
-                                            Variables de control:
+                                            @Ui["Control variables:"]
                                         </MudText>
-                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="Buscar variable de control…"
+                                        <MudTextField @bind-Value="_formulaVarFilter" Placeholder="@Ui["Search control variable…"]"
                                                       Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                                       Style="max-width:200px; font-size:0.75rem;" Class="my-0 py-0" />
                                     </div>
@@ -255,11 +255,11 @@
                          Text="@($"Mappings ({_links.Count})")">
                 <div class="d-flex justify-space-between align-center mt-3 mb-3">
                     <MudText Typo="Typo.caption" Class="trdp-muted">
-                        Links que escriben en <strong>@Variable.Id</strong> cuando el motor TRDP procesa la trama de control.
+                        @Ui["Links that write to"] <strong>@Variable.Id</strong> @Ui["when the TRDP engine processes the control frame."]
                     </MudText>
                     <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Info"
                                StartIcon="@Icons.Material.Filled.Add" OnClick="AddLink">
-                        Añadir mapping
+                        @Ui["Add mapping"]
                     </MudButton>
                 </div>
 
@@ -268,7 +268,7 @@
                     <MudPaper Elevation="0" Class="pa-6 text-center"
                               Style="background:var(--mud-palette-background); border:1px dashed var(--mud-palette-lines-default); border-radius:8px;">
                         <MudIcon Icon="@Icons.Material.Filled.LinkOff" Style="font-size:2.5rem; opacity:.2;" />
-                        <MudText Typo="Typo.body2" Class="trdp-muted mt-2">Sin mappings. Esta variable no se rellenará automáticamente.</MudText>
+                        <MudText Typo="Typo.body2" Class="trdp-muted mt-2">@Ui["No mappings. This variable will not be populated automatically."]</MudText>
                     </MudPaper>
                 }
                 else
@@ -301,9 +301,9 @@
         </MudTabs>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">@Ui["Cancel"]</MudButton>
         <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
-                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                   StartIcon="@Icons.Material.Filled.Save">@Ui["Save"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -409,7 +409,7 @@
         {
             var desc = string.IsNullOrEmpty(cv.Description) ? "" : $"{cv.Description} | ";
             var unit = string.IsNullOrEmpty(cv.Unit) ? "" : $" [{cv.Unit}]";
-            return $"{desc}Tipo: {cv.Type}, Offset: {cv.Offset} (bit {cv.VarOffsetBits}){unit}";
+            return ApsMonitor.Resources.MonitorResources.Format("{0}Type: {1}, Offset: {2} (bit {3}){4}",desc,cv.Type,cv.Offset,cv.VarOffsetBits,unit);
         }
         return varName;
     }
@@ -475,7 +475,7 @@
     private async Task<TrdpVariableLink?> OpenLinkDialog(TrdpVariableLink link, bool isNew)
     {
         var dlg = await DialogService.ShowAsync<TrdpVariableLinkDialog>(
-            isNew ? "Nuevo Mapping" : "Editar Mapping",
+            isNew ? ApsMonitor.Resources.MonitorResources.Text("New mapping") : ApsMonitor.Resources.MonitorResources.Text("Edit mapping"),
             new DialogParameters
             {
                 ["Link"]             = link,
@@ -498,7 +498,7 @@
     {
         if (string.IsNullOrWhiteSpace(Variable.Id))
         {
-            Snackbar.Add("El ID de la variable es obligatorio.", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The variable ID is required."), Severity.Warning);
             return;
         }
         if (Variable.Type == "bytes") Variable.Size = _size;
@@ -563,7 +563,7 @@
                 var inc = lnk.Increment ?? 1.0;
                 var bit = lnk.SourceBit;
                 var invText = lnk.Invert ? " (flanco 1→0 / NOT)" : "";
-                __builder.AddContent(0, $"Flanco 0→1 de {lnk.SourceControlVar}[bit {bit}]{invText}  →  +{inc:G4}");
+                __builder.AddContent(0, ApsMonitor.Resources.MonitorResources.Format("Rising edge 0→1 of {0}[bit {1}]{2}  →  +{3:G4}",lnk.SourceControlVar,bit,invText,inc));
                 break;
             case "direct_copy":
                 __builder.AddContent(0, $"{lnk.SourceControlVar}  →  {lnk.Length} byte(s)");
@@ -586,7 +586,7 @@
                 var count = lnk.Inputs?.Count ?? 0;
                 var invCount = lnk.Inputs?.Count(i => i.Invert) ?? 0;
                 var invNote = invCount > 0 ? $" ({invCount} invertidas)" : "";
-                __builder.AddContent(0, $"{op} de {count} entradas{invNote}  →  bit {lnk.TargetBit}");
+                __builder.AddContent(0, ApsMonitor.Resources.MonitorResources.Format("{0} of {1} inputs{2}  →  bit {3}",op,count,invNote,lnk.TargetBit));
                 break;
             default:
                 __builder.AddContent(0, lnk.SourceControlVar ?? "—");

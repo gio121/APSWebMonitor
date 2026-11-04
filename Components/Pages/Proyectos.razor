@@ -5,16 +5,16 @@
 @inject ILogger<Proyectos> Logger
 @implements IAsyncDisposable
 
-<PageTitle>Cambiar proyecto</PageTitle>
+<PageTitle>@Ui["Change project"]</PageTitle>
 
 <div class="projects-page">
 <header class="projects-heading">
     <div>
-        <MudText Typo="Typo.h4" Class="fw-bold mb-1">Cambiar proyecto</MudText>
-        <MudText Typo="Typo.body1">Selecciona el proyecto con el que quieres trabajar o importa su base de datos.</MudText>
+        <MudText Typo="Typo.h4" Class="fw-bold mb-1">@Ui["Change project"]</MudText>
+        <MudText Typo="Typo.body1">@Ui["Select the project to work with or import its database."]</MudText>
     </div>
     <div class="projects-root">
-        <MudText Typo="Typo.caption">Carpeta de proyectos</MudText>
+        <MudText Typo="Typo.caption">@Ui["Projects folder"]</MudText>
         <MudText Typo="Typo.body2" Style="overflow-wrap:anywhere">@Projects.RootDirectory</MudText>
     </div>
 </header>
@@ -22,35 +22,35 @@
 <MudPaper Class="pa-4" Outlined="true">
     @if (Projects.Current is { } active)
     {
-        <MudText Typo="Typo.h6" Class="mb-1">Proyecto activo: @active.ProjectFolder · Revisión @active.Revision</MudText>
+        <MudText Typo="Typo.h6" Class="mb-1">@Ui["Active project: {0} · Revision {1}", active.ProjectFolder, active.Revision]</MudText>
         <MudAlert Severity="@(_draftStatus.HasChanges ? Severity.Warning : Severity.Info)" Class="my-3">
-            @(_draftStatus.HasChanges ? "Hay cambios pendientes en esta versión. Crea la siguiente revisión para conservarlos como una versión definitiva." : "Trabajando en una copia temporal persistente. La revisión guardada está protegida.")
+            @(_draftStatus.HasChanges ? Ui["This version has pending changes. Create the next revision to preserve them as a final version."] : Ui["Working in a persistent temporary copy. The saved revision is protected."])
         </MudAlert>
         @if (_draftStatus.SourceChanged)
         {
-            <MudAlert Severity="Severity.Error" Class="mb-3">La revisión de origen ha cambiado fuera de la aplicación. El borrador está conservado; restaura el origen antes de publicar.</MudAlert>
+            <MudAlert Severity="Severity.Error" Class="mb-3">@Ui["The source revision has changed outside the application. The draft is preserved; restore the source before publishing."]</MudAlert>
         }
         @if (_draftStatus.HasChanges)
         {
             <div class="projects-publish">
-            <MudTextField @bind-Value="_publishRevision" Label="Nueva revisión" HelperText="Las revisiones existentes nunca se sobrescriben." Disabled="_busy" />
-            <MudTextField @bind-Value="_description" Label="Descripción de los cambios (opcional)" Disabled="_busy" />
+            <MudTextField @bind-Value="_publishRevision" Label="@Ui["New revision"]" HelperText="@Ui["Existing revisions are never overwritten."]" Disabled="_busy" />
+            <MudTextField @bind-Value="_description" Label="@Ui["Change description (optional)"]" Disabled="_busy" />
             <div class="projects-actions">
-            <MudButton OnClick="Publish" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(_busy || _draftStatus.SourceChanged)">Crear nueva revisión</MudButton>
-            <MudButton OnClick="DiscardDraft" Color="Color.Error" Disabled="_busy">Descartar borrador</MudButton>
+            <MudButton OnClick="Publish" Color="Color.Primary" Variant="Variant.Filled" Disabled="@(_busy || _draftStatus.SourceChanged)">@Ui["Create new revision"]</MudButton>
+            <MudButton OnClick="DiscardDraft" Color="Color.Error" Disabled="_busy">@Ui["Discard draft"]</MudButton>
             </div>
             </div>
         }
     }
     else
     {
-        <MudAlert Severity="Severity.Info" Class="mb-4">Selecciona un proyecto y una revisión para comenzar.</MudAlert>
+        <MudAlert Severity="Severity.Info" Class="mb-4">@Ui["Select a project and revision to begin."]</MudAlert>
     }
     @if (_catalog.Count == 0)
     {
-        <MudAlert Severity="Severity.Warning" Class="mb-4">No hay carpetas de proyectos en @Projects.RootDirectory.</MudAlert>
+        <MudAlert Severity="Severity.Warning" Class="mb-4">@Ui["No project folders in {0}.", Projects.RootDirectory]</MudAlert>
     }
-    <MudText Typo="Typo.body2" Class="mt-2">El proyecto se comparte entre todos los usuarios del monitor. Al cambiarlo se desconecta el equipo y se cierran las sesiones de reproducción abiertas.</MudText>
+    <MudText Typo="Typo.body2" Class="mt-2">@Ui["The project is shared by all monitor users. Changing it disconnects the device and closes open playback sessions."]</MudText>
 </MudPaper>
 
     @if (!string.IsNullOrEmpty(_error))
@@ -64,15 +64,15 @@
 
 <div class="projects-columns">
 <MudPaper Class="pa-4" Outlined="true">
-    <MudText Typo="Typo.h6" Class="mb-3">Seleccionar proyecto</MudText>
+    <MudText Typo="Typo.h6" Class="mb-3">@Ui["Select project"]</MudText>
     <div class="projects-fields">
-    <MudSelect T="string" Value="_selectedProject" ValueChanged="SelectProject" Label="Proyecto" Variant="Variant.Outlined" Disabled="_busy" Class="mb-3">
+    <MudSelect T="string" Value="_selectedProject" ValueChanged="SelectProject" Label="@Ui["Project"]" Variant="Variant.Outlined" Disabled="_busy" Class="mb-3">
         @foreach (var project in _catalog)
         {
             <MudSelectItem T="string" Value="@project.Name">@project.Name</MudSelectItem>
         }
     </MudSelect>
-    <MudSelect T="string" Value="_selectedRevision" ValueChanged="SelectRevision" Label="Revisión / versión" Variant="Variant.Outlined" Disabled="@(_busy || SelectedRevisions.Count == 0)" Class="mb-3">
+    <MudSelect T="string" Value="_selectedRevision" ValueChanged="SelectRevision" Label="@Ui["Revision / version"]" Variant="Variant.Outlined" Disabled="@(_busy || SelectedRevisions.Count == 0)" Class="mb-3">
         @foreach (var revision in SelectedRevisions)
         {
             <MudSelectItem T="string" Value="@revision.Version">@revision.Version</MudSelectItem>
@@ -81,42 +81,42 @@
     </div>
     @if (!string.IsNullOrEmpty(_selectedProject) && SelectedRevisions.Count == 0)
     {
-        <MudAlert Severity="Severity.Info" Class="mb-4">El proyecto «@_selectedProject» todavía no tiene revisiones. Puedes importar su base de datos indicando una versión.</MudAlert>
+        <MudAlert Severity="Severity.Info" Class="mb-4">@Ui["Project «{0}» has no revisions yet. You can import its database by specifying a version.", _selectedProject]</MudAlert>
     }
     else if (!string.IsNullOrEmpty(_selectedRevision) && SelectedDatabases.Count == 0)
     {
-        <MudAlert Severity="Severity.Info" Class="mb-4">La revisión @_selectedRevision todavía no tiene una base de datos. Añádela a su carpeta o impórtala.</MudAlert>
+        <MudAlert Severity="Severity.Info" Class="mb-4">@Ui["Revision {0} has no database yet. Add it to its folder or import it.", _selectedRevision]</MudAlert>
     }
     @if (SelectedDatabases.Count > 1)
     {
-        <MudSelect T="string" @bind-Value="_selectedId" Label="Base de datos" Variant="Variant.Outlined" Disabled="_busy" Class="mb-4">
+        <MudSelect T="string" @bind-Value="_selectedId" Label="@Ui["Database"]" Variant="Variant.Outlined" Disabled="_busy" Class="mb-4">
             @foreach (var database in SelectedDatabases)
             {
                 <MudSelectItem T="string" Value="@database.Id">@database.FileName</MudSelectItem>
             }
         </MudSelect>
     }
-    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">Base de datos: @_projects.FirstOrDefault(x => x.Id == _selectedId)?.DatabasePath</MudText>
+    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">Database: @_projects.FirstOrDefault(x => x.Id == _selectedId)?.DatabasePath</MudText>
     <div class="projects-actions">
     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen"
                OnClick="LoadProject" Disabled="@(_busy || _selectedId == Projects.Current?.Id || string.IsNullOrEmpty(_selectedId))">
-        Cargar proyecto
+        @Ui["Load project"]
     </MudButton>
-    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshProjects" Disabled="_busy">Actualizar lista</MudButton>
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshProjects" Disabled="_busy">@Ui["Refresh list"]</MudButton>
     </div>
     @if (_confirmSwitch)
     {
-        <MudAlert Severity="Severity.Warning" Class="mt-3">Hay cambios en la revisión activa. Puedes publicarlos arriba, conservar el borrador para retomarlo después o cancelar.</MudAlert>
-        <MudButton OnClick="KeepAndSwitch" Disabled="_busy">Conservar borrador y cambiar</MudButton>
-        <MudButton OnClick="@(() => _confirmSwitch = false)" Disabled="_busy">Cancelar</MudButton>
+        <MudAlert Severity="Severity.Warning" Class="mt-3">@Ui["The active revision has changes. You can publish them above, keep the draft to resume later, or cancel."]</MudAlert>
+        <MudButton OnClick="KeepAndSwitch" Disabled="_busy">@Ui["Keep draft and switch"]</MudButton>
+        <MudButton OnClick="@(() => _confirmSwitch = false)" Disabled="_busy">@Ui["Cancel"]</MudButton>
     }
     @if (_confirmDiscard)
     {
-        <MudAlert Severity="Severity.Warning" Class="mt-3">Se dejará de usar el borrador compartido y todos los usuarios volverán a una copia de la revisión guardada. El borrador descartado quedará archivado.</MudAlert>
-        <MudButton OnClick="ConfirmDiscard" Color="Color.Error" Disabled="_busy">Confirmar descarte</MudButton>
-        <MudButton OnClick="@(() => _confirmDiscard = false)" Disabled="_busy">Cancelar</MudButton>
+        <MudAlert Severity="Severity.Warning" Class="mt-3">@Ui["The shared draft will no longer be used and all users will return to a copy of the saved revision. The discarded draft will be archived."]</MudAlert>
+        <MudButton OnClick="ConfirmDiscard" Color="Color.Error" Disabled="_busy">@Ui["Confirm discard"]</MudButton>
+        <MudButton OnClick="@(() => _confirmDiscard = false)" Disabled="_busy">@Ui["Cancel"]</MudButton>
     }
-    <MudText Typo="Typo.caption" Class="d-block mt-2">La lista se actualiza automáticamente al añadir o quitar carpetas.</MudText>
+    <MudText Typo="Typo.caption" Class="d-block mt-2">@Ui["The list refreshes automatically when folders are added or removed."]</MudText>
     @if (_busy)
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-4" />
@@ -125,14 +125,14 @@
 
 </MudPaper>
 <MudPaper Class="pa-4" Outlined="true">
-    <MudText Typo="Typo.h6" Class="mb-2">Importar base de datos</MudText>
-    <MudText Typo="Typo.body2" Class="mb-3">Indica el proyecto y la versión. Elige un archivo .db, .sqlite o .sqlite3 de APS Monitor, de hasta 100 MiB. Después pulsa «Cargar proyecto».</MudText>
+    <MudText Typo="Typo.h6" Class="mb-2">@Ui["Import database"]</MudText>
+    <MudText Typo="Typo.body2" Class="mb-3">@Ui["Enter the project and version. Choose an APS Monitor .db, .sqlite or .sqlite3 file up to 100 MiB, then press «Load project»."]</MudText>
     <div class="projects-fields">
-    <MudTextField @bind-Value="_importProject" Label="Nombre del proyecto" Placeholder="MetroMadrid" Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-3" />
-    <MudTextField @bind-Value="_importRevision" Label="Versión de la revisión" HelperText="Ej.: 0.1, 0.2 o 1.0. Las revisiones existentes se conservan." Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-3" />
+    <MudTextField @bind-Value="_importProject" Label="@Ui["Project name"]" Placeholder="MetroMadrid" Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-3" />
+    <MudTextField @bind-Value="_importRevision" Label="@Ui["Revision version"]" HelperText="@Ui["E.g. 0.1, 0.2 or 1.0. Existing revisions are preserved."]" Variant="Variant.Outlined" MaxLength="80" Disabled="_busy" Immediate="true" Class="mb-3" />
     </div>
-    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">Destino: @ImportDestination</MudText>
-    <label for="project-database" class="d-block mb-2">Base de datos del proyecto</label>
+    <MudText Typo="Typo.caption" Class="d-block mb-4" Style="overflow-wrap:anywhere">@Ui["Destination: {0}", ImportDestination]</MudText>
+    <label for="project-database" class="d-block mb-2">@Ui["Project database"]</label>
     <InputFile @key="_fileKey" id="project-database" OnChange="ImportDatabase" accept=".db,.sqlite,.sqlite3" disabled="@(_busy || string.IsNullOrWhiteSpace(_importProject) || string.IsNullOrWhiteSpace(_importRevision))" />
 </MudPaper>
 </div>
@@ -242,8 +242,8 @@
         try { RefreshCatalog(); }
         catch (IOException ex)
         {
-            Logger.LogWarning(ex, "No se pudo actualizar el catálogo de proyectos");
-            _error = "No se pudo actualizar la lista. Vuelve a intentarlo.";
+            Logger.LogWarning(ex, ApsMonitor.Resources.MonitorResources.Text("Unable to refresh the project catalogue"));
+            _error = ApsMonitor.Resources.MonitorResources.Text("Unable to refresh the list. Please try again.");
         }
     }
 
@@ -274,7 +274,7 @@
     {
         _busy = true;
         _error = _message = null;
-        _progress = "Importando y comprobando la base de datos…";
+        _progress = ApsMonitor.Resources.MonitorResources.Text("Importing and checking the database…");
         try
         {
             await using var stream = args.File.OpenReadStream(ProjectDatabaseService.MaximumDatabaseBytes);
@@ -283,13 +283,13 @@
             SelectProject(imported.ProjectFolder);
             SelectRevision(imported.Revision);
             _selectedId = imported.Id;
-            _message = $"Proyecto «{imported.ProjectFolder}», revisión {imported.Revision}, importado. Pulsa «Cargar proyecto» para abrirlo.";
+            _message = ApsMonitor.Resources.MonitorResources.Format("Project «{0}», revision {1}, imported. Press «Load project» to open it.",imported.ProjectFolder,imported.Revision);
         }
         catch (ArgumentException ex) { _error = ex.Message; }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "No se pudo importar la base de datos del proyecto");
-            _error = "No se pudo importar el archivo. Comprueba que sea una base de datos válida de APS Monitor y que no supere 100 MiB.";
+            Logger.LogWarning(ex, ApsMonitor.Resources.MonitorResources.Text("Unable to import the project database"));
+            _error = ApsMonitor.Resources.MonitorResources.Text("Unable to import the file. Check that it is a valid APS Monitor database no larger than 100 MiB.");
         }
         finally { _busy = false; _fileKey++; }
     }
@@ -304,14 +304,14 @@
     {
         _busy = true;
         _error = _message = null;
-        _progress = "Cargando proyecto…";
+        _progress = ApsMonitor.Resources.MonitorResources.Text("Loading project…");
         try { await Loader.LoadAsync(_selectedId, keepDraft); }
         catch (ArgumentException ex) { _error = ex.Message; }
         catch (InvalidOperationException ex) { _error = ex.Message; }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "No se pudo cargar el proyecto {ProjectId}", _selectedId);
-            _error = "No se pudo cargar el proyecto. Comprueba su base de datos y vuelve a intentarlo.";
+            Logger.LogError(ex, ApsMonitor.Resources.MonitorResources.Text("Unable to load project {ProjectId}"), _selectedId);
+            _error = ApsMonitor.Resources.MonitorResources.Text("Unable to load the project. Check its database and try again.");
         }
         finally { _busy = false; }
     }

@@ -4,11 +4,11 @@
 
 <MudDialog>
     <DialogContent>
-        <MudText Typo="Typo.body2" Class="mb-4 text-muted">Configura las categorías de fallos que aparecerán en el diálogo de estado. Agrega las señales correspondientes a cada categoría.</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4 text-muted">@Ui["Configure the fault categories shown in the status dialog. Add the relevant signals to each category."]</MudText>
         
         @if (Categories.Count == 0)
         {
-            <MudAlert Severity="Severity.Info" Class="mb-4">No hay categorías configuradas. Presiona "Añadir Categoría" para empezar.</MudAlert>
+            <MudAlert Severity="Severity.Info" Class="mb-4">No categories configured. Press "Add category" to begin.</MudAlert>
         }
 
         <div style="max-height: 50vh; overflow-y: auto; padding-right: 8px;">
@@ -16,33 +16,33 @@
             {
                 <MudPaper @key="category.Id" Class="pa-4 mb-4" Elevation="0" Outlined="true" Style="background-color: rgba(255,255,255,0.02)">
                     <div class="d-flex justify-space-between align-center mb-2">
-                        <MudTextField @bind-Value="category.Name" Label="Nombre de Categoría" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1 mr-4" />
+                        <MudTextField @bind-Value="category.Name" Label="@Ui["Category name"]" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1 mr-4" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveCategory(category))" />
                     </div>
 
                     <div class="mt-4">
-                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">Señal de Estado (Bits de Color)</MudText>
+                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">@Ui["Status signal (color bits)"]</MudText>
                         <MudAutocomplete T="Signal" 
-                                         Label="Opcional: Señal de estado (status_ac, status_dc, etc)..." 
+                                         Label="@Ui["Optional: status signal (status_ac, status_dc, etc.)..."]"
                                          Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.StatusSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? "Ninguna" : s.BindingLabel + " - " + s.Nombre)"
+                                         ToStringFunc="@(s => s == null ? "None" : s.BindingLabel + " - " + s.Nombre)"
                                          ValueChanged="@((s) => category.StatusSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                     </div>
 
                     <div class="mt-4">
-                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">Señal de Contador (Badge)</MudText>
+                        <MudText Typo="Typo.caption" Class="fw-bold text-uppercase d-block mb-1">@Ui["Counter signal (badge)"]</MudText>
                         <MudAutocomplete T="Signal" 
-                                         Label="Opcional: Señal para el conteo total..." 
+                                         Label="@Ui["Optional: total count signal..."]"
                                          Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.CountSignalId))"
                                          SearchFunc="@SearchSignals"
-                                         ToStringFunc="@(s => s == null ? "Ninguna (usar suma de bits)" : s.BindingLabel + " - " + s.Nombre)"
+                                         ToStringFunc="@(s => s == null ? "None (use bit sum)" : s.BindingLabel + " - " + s.Nombre)"
                                          ValueChanged="@((s) => category.CountSignalId = s?.Id)"
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                     </div>
 
-                    <MudText Typo="Typo.caption" Class="fw-bold text-uppercase mt-4 d-block">Señales de Detalle (Descriptivas)</MudText>
+                    <MudText Typo="Typo.caption" Class="fw-bold text-uppercase mt-4 d-block">@Ui["Detail signals (descriptions)"]</MudText>
                     
                     @if (category.SignalIds.Any())
                     {
@@ -59,20 +59,20 @@
 
                     <div class="mt-4">
                         <MudExpansionPanels Elevation="0">
-                            <MudExpansionPanel Text="Gestionar señales de detalle..." Style="background: transparent; border: 1px solid var(--mud-palette-lines-default);">
+                            <MudExpansionPanel Text="@Ui["Manage detail signals..."]" Style="background: transparent; border: 1px solid var(--mud-palette-lines-default);">
                                 <TitleContent>
                                     <div class="d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="mr-2" />
-                                        <MudText Typo="Typo.body2">Añadir / Filtrar señales de detalle</MudText>
+                                        <MudText Typo="Typo.body2">@Ui["Add / filter detail signals"]</MudText>
                                     </div>
                                 </TitleContent>
                                 <ChildContent>
                                     <div class="pa-2">
                                         <MudTextField @bind-Value="_searchTerms[category.Id]" 
-                                                     Label="Filtrar señales para añadir..." 
+                                                     Label="@Ui["Filter signals to add..."]"
                                                      Variant="Variant.Outlined" Margin="Margin.Dense" 
                                                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.FilterList"
-                                                     Placeholder="Escribe para buscar..." 
+                                                     Placeholder="@Ui["Type to search..."]"
                                                      Immediate="true" />
                                         
                                         <div class="mt-2 rounded border border-solid border-white-5" style="height: 250px; overflow-y: auto; background: #1a1a1a;">
@@ -102,7 +102,7 @@
                                             @if (!filtered.Any())
                                             {
                                                 <div class="pa-4 text-center">
-                                                    <MudText Typo="Typo.caption" Class="text-muted">No se encontraron señales</MudText>
+                                                    <MudText Typo="Typo.caption" Class="text-muted">@Ui["No signals found"]</MudText>
                                                 </div>
                                             }
                                         </div>
@@ -119,37 +119,37 @@
                                 <TitleContent>
                                     <div class="d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Class="mr-2" />
-                                        <MudText Typo="Typo.body2">Subcomandos Start / Stop / Reset</MudText>
+                                        <MudText Typo="Typo.body2">@Ui["Start / Stop / Reset subcommands"]</MudText>
                                         @if (!string.IsNullOrEmpty(category.StopSubCmd) || !string.IsNullOrEmpty(category.StartSubCmd))
                                         {
-                                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">Configurado</MudChip>
+                                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Class="ml-2">@Ui["Configured"]</MudChip>
                                         }
                                     </div>
                                 </TitleContent>
                                 <ChildContent>
                                     <div class="pa-2">
                                         <MudText Typo="Typo.caption" Class="mb-2 d-block" Style="opacity: 0.6">
-                                            Configura los subcomandos SEPSA para arrancar/parar/resetear este converter. Valores en hexadecimal (ej: 0x0005).
+                                            @Ui["Configure the SEPSA subcommands to start, stop, and reset this converter. Use hexadecimal values (e.g. 0x0005)."]
                                         </MudText>
                                         <div class="d-flex gap-2 mb-2">
                                             <MudTextField @bind-Value="category.CmdFrameType" Label="FrameType Cmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
                                                          Placeholder="0x7A" Style="max-width: 120px" />
                                             <MudTextField @bind-Value="category.StopSubCmd" Label="Stop SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                                                         Placeholder="ej: 0x0005" Class="flex-grow-1" />
+                                                         Placeholder="E.g. 0x0005" Class="flex-grow-1" />
                                             <MudTextField @bind-Value="category.StartSubCmd" Label="Start SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                                                         Placeholder="ej: 0x0006" Class="flex-grow-1" />
+                                                         Placeholder="E.g. 0x0006" Class="flex-grow-1" />
                                         </div>
                                         <div class="d-flex gap-2">
                                             <MudTextField @bind-Value="category.ResetFrameType" Label="FrameType Reset" Variant="Variant.Outlined" Margin="Margin.Dense" 
                                                          Placeholder="0x2A" Style="max-width: 120px" />
                                             <MudTextField @bind-Value="category.ResetSubCmd" Label="Reset SubCmd" Variant="Variant.Outlined" Margin="Margin.Dense" 
-                                                         Placeholder="ej: 0x0004" Class="flex-grow-1" />
+                                                         Placeholder="E.g. 0x0004" Class="flex-grow-1" />
                                         </div>
                                         <div class="d-flex justify-end mt-2">
                                             <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" 
                                                        StartIcon="@Icons.Material.Filled.AutoFixHigh"
                                                        OnClick="@(() => ResetToStandardDefaults(category))">
-                                                Asignar valores estándar (@category.Name)
+                                                @Ui["Assign standard values ({0})", category.Name]
                                             </MudButton>
                                         </div>
                                     </div>
@@ -161,11 +161,11 @@
             }
         </div>
 
-        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" Class="mt-2 w-100" OnClick="AddCategory">Añadir Categoría</MudButton>
+        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" Class="mt-2 w-100" OnClick="AddCategory">@Ui["Add category"]</MudButton>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancelar</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+        <MudButton OnClick="Cancel">@Ui["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">@Ui["Save"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -284,7 +284,7 @@
 
     private void AddCategory()
     {
-        var newCat = new FailureCategoryConfig { Name = "Nueva Categoría" };
+        var newCat = new FailureCategoryConfig { Name = ApsMonitor.Resources.MonitorResources.Text("New category") };
         ApplyDefaultsIfEmpty(newCat);
         _searchTerms[newCat.Id] = "";
         Categories.Add(newCat);

@@ -11,4 +11,5 @@
     <Compile Include="../../Services/InfluxOptions.cs" Link="InfluxOptions.cs" />
     <Compile Include="../../Services/InfluxWriterService.cs" Link="InfluxWriterService.cs" />
   </ItemGroup>
+  <Import Project="../LocalizationResources.props" />
 </Project>

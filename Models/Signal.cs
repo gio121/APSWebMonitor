@@ -6,7 +6,7 @@ public class Signal
     // Keep identity and window bindings when a CMFX is removed.
     public bool IsDeleted { get; set; }
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public string BindingLabel => $"{Tag} (Nodo {NodoNumero})" + (IsDeleted ? " · CMFX no cargado" : "");
+    public string BindingLabel => $"{Tag} (Node {NodoNumero})" + (IsDeleted ? " · CMFX not loaded" : "");
     
     // General Tab
     public string Nombre { get; set; } = string.Empty;

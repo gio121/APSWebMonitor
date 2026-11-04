@@ -122,7 +122,7 @@ public static class ApsDatabaseInitializer
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException("No se pudo actualizar el esquema del proyecto.", ex);
+            throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Unable to update the project schema."), ex);
         }
     }
 
@@ -146,7 +146,7 @@ public static class ApsDatabaseInitializer
         AddParameter(command, "$role", role);
         command.ExecuteNonQuery();
 
-        Console.WriteLine($"Usuario por defecto creado: {username}");
+        Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("Default user created: {0}", username));
     }
 
     static void AddParameter(System.Data.Common.DbCommand command, string name, object value)

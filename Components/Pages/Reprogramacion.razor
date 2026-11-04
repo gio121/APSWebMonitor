@@ -9,23 +9,23 @@
 @inject DhcpServerService DhcpService
 @inject IDialogService Dialogs
 
-<PageTitle>Reprogramación</PageTitle>
-<MudText Typo="Typo.h5" Class="mb-4">Reprogramación del Sistema</MudText>
+<PageTitle>@Ui["Firmware update"]</PageTitle>
+<MudText Typo="Typo.h5" Class="mb-4">@Ui["System firmware update"]</MudText>
 
 <MudPaper Class="pa-4 mb-4" Outlined="true">
-    <MudText Typo="Typo.h6" Class="mb-3">Destino y Conectividad</MudText>
+    <MudText Typo="Typo.h6" Class="mb-3">@Ui["Destination and connectivity"]</MudText>
     <MudGrid Spacing="2" Class="align-center">
         <MudItem xs="12" sm="5">
-            <MudTextField @bind-Value="TargetIp" Label="Dirección IP destino"
+            <MudTextField @bind-Value="TargetIp" Label="@Ui["Destination IP address"]"
                           Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
                           Placeholder="192.168.1.10"
-                          HelperText="IP del equipo donde se aplicará la reprogramación"
+                          HelperText="@Ui["IP address of the device to update"]"
                           Disabled="Busy" />
         </MudItem>
         <MudItem xs="12" sm="4">
-            <MudSelect T="string" Label="Seleccionar IP detectada" Margin="Margin.Dense" Dense="true"
+            <MudSelect T="string" Label="@Ui["Select detected IP address"]" Margin="Margin.Dense" Dense="true"
                        Variant="Variant.Outlined" ValueChanged="OnDetectedIpSelected"
-                       Placeholder="Elegir IP detectada..." Disabled="Busy">
+                       Placeholder="@Ui["Choose detected IP..."]" Disabled="Busy">
                 @foreach (var opt in GetDetectedIps())
                 {
                     <MudSelectItem Value="@opt.Ip">@opt.Description</MudSelectItem>
@@ -33,16 +33,16 @@
             </MudSelect>
         </MudItem>
         <MudItem xs="12" sm="3">
-            @if (_selected?.Kind == "Comunicaciones")
+            @if (_selected?.Kind == "Communications")
             {
                 <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Medium" Icon="@Icons.Material.Filled.Security">
-                    SFTP: Puerto 22 (SSH)
+                    @Ui["SFTP: Port 22 (SSH)"]
                 </MudChip>
             }
             else
             {
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Medium" Icon="@Icons.Material.Filled.Router">
-                    SEPSA UDP: Puerto 50001
+                    @Ui["SEPSA UDP: Port 50001"]
                 </MudChip>
             }
         </MudItem>
@@ -52,23 +52,23 @@
 
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap">
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Monitorización previa:</MudText>
+            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@Ui["Pre-update monitoring:"]</MudText>
             @if (Monitor.IsMonitoring)
             {
                 <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircle">
-                    Activa (Enlace verificado)
+                    @Ui["Active (link verified)"]
                 </MudChip>
             }
             else
             {
                 <MudChip T="string" Color="Color.Default" Variant="Variant.Outlined" Size="Size.Small" Icon="@Icons.Material.Filled.PauseCircle">
-                    Detenida
+                    @Ui["Stopped"]
                 </MudChip>
             }
             <MudText Typo="Typo.caption" Class="mud-text-secondary">
                 @(Monitor.IsMonitoring 
-                    ? "El canal con el equipo está activo. Al reprogramar, se pausará para transferir las tramas." 
-                    : "Recomendado iniciar monitorización para comprobar que la tarjeta de control responde.")
+                    ? Ui["The device channel is active. It will pause during the firmware update to transfer frames."]
+                    : Ui["Start monitoring to check that the control board responds."])
             </MudText>
         </MudStack>
         <MudStack Row="true" Spacing="2">
@@ -76,14 +76,14 @@
             {
                 <MudButton Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Stop" OnClick="StopMonitoring" Disabled="Busy">
-                    Detener monitorización
+                    @Ui["Stop monitoring"]
                 </MudButton>
             }
             else
             {
                 <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartMonitoring" Disabled="Busy">
-                    Iniciar monitorización previa
+                    @Ui["Start pre-update monitoring"]
                 </MudButton>
             }
         </MudStack>
@@ -91,23 +91,23 @@
 </MudPaper>
 
 <MudPaper Class="pa-6 mb-4" Outlined="true">
-    <MudText Typo="Typo.h6" Class="mb-4">Software del sistema</MudText>
+    <MudText Typo="Typo.h6" Class="mb-4">@Ui["System software"]</MudText>
     <MudTable T="ReprogrammingSoftware" Items="_software" Hover="true" Bordered="true" Striped="true"
               SelectedItem="_selected" SelectedItemChanged="SelectSoftware" SelectOnRowClick="true" RowClassFunc="RowClass">
         <HeaderContent>
-            <MudTh>Elemento de software</MudTh>
-            <MudTh>Tipo / Protocolo</MudTh>
-            <MudTh>Descripción / Notas</MudTh>
-            <MudTh>IP Destino</MudTh>
-            <MudTh>Fichero seleccionado</MudTh>
+            <MudTh>@Ui["Software component"]</MudTh>
+            <MudTh>@Ui["Type / protocol"]</MudTh>
+            <MudTh>@Ui["Description / notes"]</MudTh>
+            <MudTh>@Ui["Destination IP"]</MudTh>
+            <MudTh>@Ui["Selected file"]</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Elemento de software">
+            <MudTd DataLabel="@Ui["Software component"]">
                 <MudButton Variant="Variant.Text" Color="@(_selected == context ? Color.Primary : Color.Default)"
                            OnClick="@(() => SelectSoftware(context))" Disabled="Busy">@context.Id</MudButton>
             </MudTd>
-            <MudTd DataLabel="Tipo / Protocolo">
-                @if (context.Kind == "Comunicaciones")
+            <MudTd DataLabel="@Ui["Type / protocol"]">
+                @if (context.Kind == "Communications")
                 {
                     <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">SFTP / SSH (p:22)</MudChip>
                 }
@@ -116,52 +116,52 @@
                     <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">SEPSA UDP (p:50001)</MudChip>
                 }
             </MudTd>
-            <MudTd DataLabel="Descripción / Notas">@context.Description</MudTd>
-            <MudTd DataLabel="IP Destino">
+            <MudTd DataLabel="@Ui["Description / notes"]">@context.Description</MudTd>
+            <MudTd DataLabel="@Ui["Destination IP"]">
                 @(_selections.TryGetValue(context.Id, out var sel) ? sel.Target.Address : TargetIp)
             </MudTd>
-            <MudTd DataLabel="Fichero seleccionado">
+            <MudTd DataLabel="@Ui["Selected file"]">
                 @if (_selections.TryGetValue(context.Id, out var selection))
                 {
                     <span>@selection.FileSummary</span>
-                    @if (context.Kind == "Comunicaciones")
+                    @if (context.Kind == "Communications")
                     {
                         <span class="mud-text-secondary d-block" style="font-size:0.8rem;">
-                            Ruta remota: <b>@selection.RemotePath</b> · Usuario: <b>@selection.SftpUser</b>
+                            @Ui["Remote path:"] <b>@selection.RemotePath</b> @Ui["· User:"] <b>@selection.SftpUser</b>
                         </span>
                     }
                     else
                     {
                         <span class="mud-text-secondary d-block" style="font-size:0.8rem;">
-                            Firma: <b>@selection.Signature</b> · Bloque: <b>@selection.BlockSize B</b> · Puerto UDP: <b>@selection.Target.UdpPort</b>
+                            @Ui["Signature:"] <b>@selection.Signature</b> @Ui["· Block:"] <b>@selection.BlockSize B</b> @Ui["· UDP port:"] <b>@selection.Target.UdpPort</b>
                         </span>
                     }
                 }
                 else
                 {
-                    <span class="mud-text-secondary">Sin seleccionar</span>
+                    <span class="mud-text-secondary">@Ui["Not selected"]</span>
                 }
             </MudTd>
         </RowTemplate>
     </MudTable>
-    <MudText Typo="Typo.body2" Class="mt-4 mb-3">Seleccione un elemento de software y pulse «Cambiar fichero» para elegir el archivo que desea cargar.</MudText>
+    <MudText Typo="Typo.body2" Class="mt-4 mb-3">@Ui["Select a software component and press «Change file» to choose the file to upload."]</MudText>
     <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-        <MudButton OnClick="ChangeFile" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" Disabled="@(_selected is null || Busy)">Cambiar fichero…</MudButton>
-        <MudButton OnClick="Start" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SystemUpdateAlt" Disabled="@(CurrentSelection is null || Busy)">Reprogramar</MudButton>
-        <MudButton OnClick="Send8ACommand" Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Terminal" Disabled="Busy">Mandar comando 8A</MudButton>
-        <MudButton OnClick="ClearSelection" Disabled="@(_selected is null || Busy)">Cancelar selección</MudButton>
+        <MudButton OnClick="ChangeFile" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" Disabled="@(_selected is null || Busy)">@Ui["Change file…"]</MudButton>
+        <MudButton OnClick="Start" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.SystemUpdateAlt" Disabled="@(CurrentSelection is null || Busy)">@Ui["Update firmware"]</MudButton>
+        <MudButton OnClick="Send8ACommand" Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Terminal" Disabled="Busy">@Ui["Send 8A command"]</MudButton>
+        <MudButton OnClick="ClearSelection" Disabled="@(_selected is null || Busy)">@Ui["Cancel selection"]</MudButton>
     </MudStack>
     @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-4">@_error</MudAlert> }
 </MudPaper>
 
 <MudPaper Class="pa-6" Outlined="true" aria-live="polite">
-    <MudText Typo="Typo.h6">Estado de la Reprogramación</MudText>
+    <MudText Typo="Typo.h6">@Ui["Firmware update status"]</MudText>
     <MudText Class="my-3">@Programmer.State.Message</MudText>
     <MudProgressLinear Value="Programmer.State.Percent" Color="@(Programmer.State.Success ? Color.Success : Color.Primary)" />
     <MudText Typo="Typo.caption" Class="mt-2">@Programmer.State.Percent.ToString("F0") %</MudText>
     @if (Programmer.State.Running)
     {
-        <MudAlert Severity="Severity.Warning" Class="mt-3">Mantenga el equipo alimentado y el servidor en ejecución hasta finalizar. La monitorización queda detenida durante la reprogramación.</MudAlert>
+        <MudAlert Severity="Severity.Warning" Class="mt-3">@Ui["Keep the device powered and the server running until the update finishes. Monitoring is stopped during the firmware update."]</MudAlert>
     }
 </MudPaper>
 
@@ -172,10 +172,10 @@
 
 @code {
     private readonly ReprogrammingSoftware[] _software = [
-        new("SELCONT0001", "C135KI · Unidad de control", "Control", "C135KI"),
-        new("SELFPGA0001", "C135KF · FPGA de control", "FPGA", "F22044"),
-        new("SELCOMM0001", "C135KX · ECN / Comunicaciones", "Comunicaciones", ""),
-        new("SELCOMM0002", "C135KD · Configuración ECN / Comunicaciones", "Comunicaciones", "")
+        new("SELCONT0001", ApsMonitor.Resources.MonitorResources.Text("C135KI · Control unit"), "Control", "C135KI"),
+        new("SELFPGA0001", ApsMonitor.Resources.MonitorResources.Text("C135KF · Control FPGA"), "FPGA", "F22044"),
+        new("SELCOMM0001", "C135KX · ECN / Communications", ApsMonitor.Resources.MonitorResources.Text("Communications"), ""),
+        new("SELCOMM0002", ApsMonitor.Resources.MonitorResources.Text("C135KD · ECN / communications configuration"), ApsMonitor.Resources.MonitorResources.Text("Communications"), "")
     ];
     private readonly Dictionary<string, ReprogrammingSelection> _selections = new();
     private ReprogrammingSoftware? _selected;
@@ -297,7 +297,7 @@
                 { x => x.Selection, CurrentSelection },
                 { x => x.Address, initialAddress }
             };
-            var dialog = await Dialogs.ShowAsync<ReprogrammingFileDialog>("Cambiar fichero", parameters,
+            var dialog = await Dialogs.ShowAsync<ReprogrammingFileDialog>(ApsMonitor.Resources.MonitorResources.Text("Change file"), parameters,
                 new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Small, BackdropClick = false, CloseOnEscapeKey = false });
             var result = await dialog.Result;
             if (result is { Canceled: false, Data: ReprogrammingSelection selection })
@@ -319,10 +319,10 @@
             ? TargetIp.Trim()
             : (!string.IsNullOrWhiteSpace(Monitor.IpAddress) ? Monitor.IpAddress : "192.168.1.10");
 
-        bool? confirmed = await Dialogs.ShowMessageBoxAsync("Confirmar comando 8A",
-            $"¿Desea enviar el comando de reprogramación 0x8A al equipo en {targetAddress}?\n" +
-            "El equipo verificará si existen archivos en /mnt/artifacts/update e iniciará la reprogramación.",
-            yesText: "Mandar comando 8A", cancelText: "Cancelar");
+        bool? confirmed = await Dialogs.ShowMessageBoxAsync(ApsMonitor.Resources.MonitorResources.Text("Confirm 8A command"),
+            ApsMonitor.Resources.MonitorResources.Format("Confirm8ACommandMessage",targetAddress) +
+            ApsMonitor.Resources.MonitorResources.Text("The device will check for files in /mnt/artifacts/update and begin the firmware update."),
+            yesText: ApsMonitor.Resources.MonitorResources.Text("Send 8A command"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
         if (confirmed != true) return;
 
         _error = null;
@@ -332,16 +332,16 @@
             var result = await Programmer.SendReprogramming8ACommandAsync(targetAddress);
             if (result.Success)
             {
-                await Dialogs.ShowMessageBoxAsync("Respuesta comando 8A (Éxito)",
-                    $"Respuesta del equipo: {result.Message}",
-                    yesText: "Aceptar");
+                await Dialogs.ShowMessageBoxAsync(ApsMonitor.Resources.MonitorResources.Text("8A command response (success)"),
+                    ApsMonitor.Resources.MonitorResources.Format("Device response: {0}",result.Message),
+                    yesText: ApsMonitor.Resources.MonitorResources.Text("OK"));
             }
             else
             {
-                _error = $"Fallo en comando 8A: {result.Message}";
-                await Dialogs.ShowMessageBoxAsync("Respuesta comando 8A (Fallo)",
-                    $"Respuesta del equipo: {result.Message}",
-                    yesText: "Aceptar");
+                _error = ApsMonitor.Resources.MonitorResources.Format("8A command failed: {0}",result.Message);
+                await Dialogs.ShowMessageBoxAsync(ApsMonitor.Resources.MonitorResources.Text("8A command response (failure)"),
+                    ApsMonitor.Resources.MonitorResources.Format("Device response: {0}",result.Message),
+                    yesText: ApsMonitor.Resources.MonitorResources.Text("OK"));
             }
         }
         catch (Exception ex)
@@ -368,23 +368,23 @@
                 ? selection.FileSummary
                 : $"{selection.FileName}; firma {selection.Signature}; {selection.Image.Length} bytes; CRC32 {ReprogrammingProtocol.Crc32(selection.Image):X8}; bloque {selection.BlockSize} B.";
             
-            string portInfo = software.Kind == "Comunicaciones"
-                ? $"SFTP puerto 22, usuario '{selection.SftpUser}', ruta remota '{selection.RemotePath}'"
-                : $"SEPSA UDP puerto {target.UdpPort} (Nodo 2 - Tarjeta de Control)";
+            string portInfo = software.Kind == "Communications"
+                ? ApsMonitor.Resources.MonitorResources.Format("SFTP port 22, user '{0}', remote path '{1}'",selection.SftpUser,selection.RemotePath)
+                : ApsMonitor.Resources.MonitorResources.Format("SEPSA UDP port {0} (Node 2 - Control board)",target.UdpPort);
 
             string monitorWarning = Monitor.IsMonitoring
-                ? "\nLa monitorización continua activa se detendrá temporalmente durante la transferencia."
+                ? ApsMonitor.Resources.MonitorResources.Text("MonitoringPauseNotice")
                 : "";
 
-            bool? confirmed = await Dialogs.ShowMessageBoxAsync("Confirmar reprogramación",
-                $"Destino: {software.Id} ({software.Description}) en {target.Address}.\n" +
+            bool? confirmed = await Dialogs.ShowMessageBoxAsync(ApsMonitor.Resources.MonitorResources.Text("Confirm firmware update"),
+                ApsMonitor.Resources.MonitorResources.Format("FirmwareDestinationMessage",software.Id,software.Description,target.Address) +
                 $"Canal: {portInfo}.\n" +
                 $"{details}\n" +
-                $"Verifique equipo, versión y archivos.{monitorWarning}\n¿Iniciar la reprogramación?",
-                yesText: "Iniciar", cancelText: "Cancelar");
+                ApsMonitor.Resources.MonitorResources.Format("ConfirmFirmwareUpdateMessage",monitorWarning),
+                yesText: ApsMonitor.Resources.MonitorResources.Text("Start"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
             if (confirmed != true) return;
 
-            if (software.Kind == "Comunicaciones")
+            if (software.Kind == "Communications")
                 await Programmer.UploadCommunicationsAsync(target, 22, selection.HostKey, selection.Files,
                     selection.SftpUser, selection.SftpPassword, selection.RemotePath, trigger8ACommand: true);
             else

@@ -16,7 +16,7 @@
                     <MudItem xs="12" sm="4">
                         <MudNumericField Value="Signal.NodoNumero"
                                          ValueChanged="@((int v) => OnNodeNumberChanged(v))"
-                                         Label="Nº Nodo *"
+                                         Label="@Ui["Node number *"]"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
                                          FullWidth="true"
@@ -25,20 +25,20 @@
                     </MudItem>
                     <MudItem xs="12" sm="8">
                         <MudTextField @bind-Value="Signal.NodoDescripcion"
-                                      Label="Nombre del Nodo *"
+                                      Label="@Ui["Node name *"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true"
-                                      Required="true"
-                                      Placeholder="Ej: Control, Potencia..." />
+                                      Required="true" RequiredError="@Ui["Required"]"
+                                      Placeholder="@Ui["E.g. Control, Power..."]" />
                     </MudItem>
                     <MudItem xs="12">
                         <MudDivider Class="my-2" />
                     </MudItem>
                     <MudItem xs="12">
                         <MudTextField @bind-Value="Signal.Nombre"
-                                      Label="Nombre Señal *"
-                                      Required="true"
+                                      Label="@Ui["Signal name *"]"
+                                      Required="true" RequiredError="@Ui["Required"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true" />
@@ -46,14 +46,14 @@
                     <MudItem xs="12">
                         <MudTextField @bind-Value="Signal.Tag"
                                       Label="Tag *"
-                                      Required="true"
+                                      Required="true" RequiredError="@Ui["Required"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="Signal.DescripcionEs"
-                                      Label="Descripción (ES)"
+                                      Label="@Ui["Description (ES)"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true" />
@@ -67,14 +67,14 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="Signal.Unidad"
-                                      Label="Unidad"
+                                      Label="@Ui["Unit"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="Signal.Formato"
-                                      Label="Formato"
+                                      Label="@Ui["Format"]"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
                                       FullWidth="true"
@@ -82,7 +82,7 @@
                     </MudItem>
                     <MudItem xs="12">
                         <MudNumericField @bind-Value="Signal.ValorInicial"
-                                         Label="Valor inicial"
+                                         Label="@Ui["Initial value"]"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
                                          FullWidth="true" />
@@ -91,11 +91,11 @@
             </MudTabPanel>
 
             
-            <MudTabPanel Text="Protocolo">
+            <MudTabPanel Text="@Ui["Protocol"]">
                 <MudGrid Spacing="3">
                     <MudItem xs="12">
                         <MudSelect T="string" Value="@Signal.TipoVariable"
-                                   Label="Tipo de variable"
+                                   Label="@Ui["Variable type"]"
                                    Variant="Variant.Outlined"
                                    Margin="Margin.Dense"
                                    FullWidth="true"
@@ -108,7 +108,7 @@
                     </MudItem>
                     <MudItem xs="12">
                         <MudNumericField @bind-Value="Signal.BytePosicion"
-                                         Label="Byte en la trama (posición)"
+                                         Label="@Ui["Byte in frame (position)"]"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
                                          FullWidth="true"
@@ -116,20 +116,20 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudNumericField @bind-Value="Signal.Escala"
-                                         Label="Escala (multiplicador)"
+                                         Label="@Ui["Scale (multiplier)"]"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
                                          FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudNumericField @bind-Value="Signal.Offset"
-                                         Label="Offset (sumado)"
+                                         Label="@Ui["Offset (added)"]"
                                          Variant="Variant.Outlined"
                                          Margin="Margin.Dense"
                                          FullWidth="true" />
                     </MudItem>
                     <MudItem xs="12">
-                        <MudCheckBox @bind-Value="Signal.IsAscii" Label="Lectura ASCII" Color="Color.Info" Dense="true" />
+                        <MudCheckBox @bind-Value="Signal.IsAscii" Label="@Ui["ASCII reading"]" Color="Color.Info" Dense="true" />
                     </MudItem>
                 </MudGrid>
             </MudTabPanel>
@@ -137,9 +137,9 @@
             
             <MudTabPanel Text="@($"Bits ({Signal.BitCount})")">
                 <MudText Typo="Typo.body2" Class="text-muted mb-4">
-                    Configure descripciones para cada bit activo/inactivo. Solo aplica si la señal se usa
-                    como variable digital de estado. Tipo actual: <strong>@Signal.TipoVariable</strong>
-                    = @Signal.BitCount bits configurables.
+                    Configure descriptions for each active/inactive bit. Only applies when the signal is used
+                    as a digital status variable. Current type: <strong>@Signal.TipoVariable</strong>
+                    @Ui["= {0} configurable bits.", Signal.BitCount]
                 </MudText>
 
                 <div style="overflow-y:auto; max-height:340px;">
@@ -150,13 +150,13 @@
                             <MudText Typo="Typo.body2" Class="bit-label text-muted">Bit @bitIndex</MudText>
                             <MudTextField Value="@Signal.BitTextoActivo[bitIndex]"
                                           ValueChanged="@((string v) => Signal.BitTextoActivo[bitIndex] = v)"
-                                          Placeholder="Texto bit activo (1)"
+                                          Placeholder="@Ui["Active bit text (1)"]"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           Class="mx-2 flex-1" />
                             <MudTextField Value="@Signal.BitTextoInactivo[bitIndex]"
                                           ValueChanged="@((string v) => Signal.BitTextoInactivo[bitIndex] = v)"
-                                          Placeholder="Texto bit inactivo (0)"
+                                          Placeholder="@Ui["Inactive bit text (0)"]"
                                           Variant="Variant.Outlined"
                                           Margin="Margin.Dense"
                                           Class="flex-1" />
@@ -165,7 +165,7 @@
                                          Color="Color.Error"
                                          Dense="true"
                                          Class="ml-2"
-                                         Label="Alarma" />
+                                         Label="@Ui["Alarm"]" />
                         </div>
                     }
                 </div>
@@ -173,8 +173,8 @@
         </MudTabs>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="mr-2">Cancelar</MudButton>
-        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit">Guardar</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="mr-2">@Ui["Cancel"]</MudButton>
+        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit">@Ui["Save"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -274,7 +274,7 @@
 
     private async Task Cancel()
     {
-        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", "¿Descartar los cambios sin guardar del formulario?")) return;
+        if (_originalForm != FormSnapshot() && !await JS.InvokeAsync<bool>("confirm", ApsMonitor.Resources.MonitorResources.Text("Discard unsaved form changes?"))) return;
         MudDialog.Cancel();
     }
 }

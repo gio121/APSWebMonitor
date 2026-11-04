@@ -18,6 +18,9 @@ using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Services;
 
+System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+
 var root = Path.Combine(Path.GetTempPath(), $"aps-projects-{Guid.NewGuid():N}");
 Directory.CreateDirectory(root);
 int checks = 0;
@@ -387,6 +390,7 @@ try
     Directory.CreateDirectory(Path.Combine(uiRoot, "MediaDistancia"));
     var renderServices = new ServiceCollection();
     renderServices.AddLogging();
+    renderServices.AddLocalization();
     renderServices.AddMudServices();
     renderServices.AddSingleton<IJSRuntime, PreviewJs>();
     renderServices.AddSingleton<NavigationManager, PreviewNavigation>();
@@ -414,35 +418,35 @@ try
         bool CanLoad(string html)
         {
             var button = System.Text.RegularExpressions.Regex.Match(html,
-                "<button\\b(?<attributes>[^>]*)>(?:(?!</button>).)*?Cargar proyecto", System.Text.RegularExpressions.RegexOptions.Singleline);
+                "<button\\b(?<attributes>[^>]*)>(?:(?!</button>).)*?Load project", System.Text.RegularExpressions.RegexOptions.Singleline);
             if (!button.Success) throw new Exception("Project load button was not rendered");
             return !button.Groups["attributes"].Value.Contains("disabled", StringComparison.OrdinalIgnoreCase);
         }
         var initialHtml = await Html();
-        Check(initialHtml.Contains("MediaDistancia") && initialHtml.Contains("todavía no tiene revisiones"),
+        Check(initialHtml.Contains("MediaDistancia") && initialHtml.Contains("has no revisions yet"),
             "Razor selector displays an empty project folder with a useful status");
         Check(!CanLoad(initialHtml), "Razor selector cannot load an empty project");
         var uiRevision = Path.Combine(uiRoot, "MediaDistancia", "Revisions", "0.1");
         Directory.CreateDirectory(uiRevision);
-        var revisionHtml = await Until(html => html.Contains("La revisión 0.1 todavía no tiene una base de datos"));
+        var revisionHtml = await Until(html => html.Contains("Revision 0.1 has no database yet"));
         Check(!CanLoad(revisionHtml), "Open Razor selector detects a newly created empty revision without reloading");
         await File.WriteAllBytesAsync(Path.Combine(uiRevision, "aps.db"), sourceBytes);
         var readyHtml = await Until(CanLoad);
-        Check(!readyHtml.Contains("todavía no tiene una base de datos"), "Adding the database enables loading through the automatic refresh");
+        Check(!readyHtml.Contains("has no database yet"), "Adding the database enables loading through the automatic refresh");
         File.Delete(Path.Combine(uiRevision, "aps.db"));
         await Until(html => !CanLoad(html));
         Check(uiProjects.Current is null, "Automatic catalog refresh never activates a project on its own");
         await File.WriteAllBytesAsync(Path.Combine(uiRevision, "aps.db"), sourceBytes);
         await renderProvider.GetRequiredService<ProjectLoadingService>().LoadAsync(uiProjects.GetProjects().Single().Id);
-        await Until(html => html.Contains("copia temporal persistente"));
+        await Until(html => html.Contains("persistent temporary copy"));
         await new ApsDataService(uiProjects.CaptureFactory()).AddSignalAsync(new() { Tag = "UI_PENDING" });
-        var dirtyHtml = await Until(html => html.Contains("Hay cambios pendientes en esta versión"));
-        Check(dirtyHtml.Contains("Crear nueva revisión") && dirtyHtml.Contains("Descartar borrador"),
+        var dirtyHtml = await Until(html => html.Contains("This version has pending changes"));
+        Check(dirtyHtml.Contains("Create new revision") && dirtyHtml.Contains("Discard draft"),
             "The actual Razor page exposes pending changes and revision actions");
         var identity = await renderer.Dispatcher.InvokeAsync(() => renderer.BeginRenderingComponent(typeof(ProjectIdentity), ParameterView.Empty));
         await identity.QuiescenceTask;
         var identityHtml = System.Net.WebUtility.HtmlDecode(await renderer.Dispatcher.InvokeAsync(identity.ToHtmlString));
-        Check(identityHtml.Contains("Cambios pendientes"), "The project header shows pending revision changes");
+        Check(identityHtml.Contains("Pending changes"), "The project header shows pending revision changes");
         var redirect = await renderer.Dispatcher.InvokeAsync(() => renderer.BeginRenderingComponent(typeof(RedirectToProject), ParameterView.Empty));
         await redirect.QuiescenceTask;
         var redirectHtml = await renderer.Dispatcher.InvokeAsync(redirect.ToHtmlString);

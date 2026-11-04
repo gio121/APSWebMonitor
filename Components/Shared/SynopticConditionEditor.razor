@@ -1,0 +1,24 @@
+@using ApsMonitor.Models
+@if (IncludeSignal)
+{
+    <MudAutocomplete T="Signal" Label="@Ui["Signal"]" Value="@(Signals.FirstOrDefault(s => s.Id == Condition.SignalId))"
+                     SearchFunc="Search" ToStringFunc="@(s => s?.BindingLabel)" ValueChanged="@(s => Condition.SignalId = s?.Id)"
+                     Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudNumericField T="int?" Label="@Ui["Bit (blank: full value)"]" @bind-Value="Condition.SignalBit" Min="0" Max="63" Margin="Margin.Dense" />
+}
+<MudNumericField T="double?" Label="@Ui["Equals (blank: non-zero)"]" @bind-Value="Condition.ExpectedValue" Margin="Margin.Dense" />
+<MudCheckBox T="bool" Label="@Ui["Invert condition"]" @bind-Value="Condition.Invert" />
+<MudAutocomplete T="Signal" Label="@Ui["Compare with another signal (optional)"]" Value="@(Signals.FirstOrDefault(s => s.Id == Condition.CompareSignalId))"
+                 SearchFunc="Search" ToStringFunc="@(s => s?.BindingLabel)" ValueChanged="@(s => Condition.CompareSignalId = s?.Id)"
+                 Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+@if (Condition.CompareSignalId.HasValue)
+{
+    <MudNumericField T="int?" Label="@Ui["Comparison bit"]" @bind-Value="Condition.CompareSignalBit" Min="0" Max="63" Margin="Margin.Dense" />
+}
+@code {
+    [Parameter, EditorRequired] public SynopticCondition Condition { get; set; } = new();
+    [Parameter] public IEnumerable<Signal> Signals { get; set; } = Array.Empty<Signal>();
+    [Parameter] public bool IncludeSignal { get; set; } = true;
+    private Task<IEnumerable<Signal>> Search(string value, CancellationToken token) => Task.FromResult(
+        Signals.Where(s => string.IsNullOrEmpty(value) || s.BindingLabel.Contains(value, StringComparison.OrdinalIgnoreCase)));
+}

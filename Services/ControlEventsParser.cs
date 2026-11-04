@@ -34,7 +34,7 @@ public static class ControlEventsParser
             if (header?.Element("tracevars")?.Elements("valuereference_element_t").Any(r => Text(r, "keyname") == "failReg") != true) continue;
             var signature = Text(node.Element("sw"), "signature");
             if (signature.Length != 6 || signature.Any(c => c > 127))
-                throw new InvalidDataException("La firma del nodo debe contener seis caracteres ASCII.");
+                throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The node signature must contain six ASCII characters."));
             var values = new Dictionary<string, ControlEventValue>(StringComparer.Ordinal);
             foreach (var element in node.Element("value_elements")?.Elements("value_element_t") ?? [])
             {
@@ -72,9 +72,9 @@ public static class ControlEventsParser
             ValidateConfig(config);
             configs.Add(config);
         }
-        if (configs.Count == 0 && !allowEmpty) throw new InvalidDataException("El CMFX no contiene nodos con eventos de control configurados.");
+        if (configs.Count == 0 && !allowEmpty) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The CMFX contains no nodes with configured control events."));
         if (configs.Select(c => c.Signature).Distinct().Count() != configs.Count)
-            throw new InvalidDataException("Hay nodos de eventos con la misma firma de equipo.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Multiple event nodes have the same device signature."));
         return configs;
     }
 
@@ -120,35 +120,35 @@ public static class ControlEventsParser
         long end = (long)c.EventStart + (long)c.EventSize * c.EventCount;
         if (c.EventStart < 6 || c.EventSize < 1 || c.EventCount is < 1 or > 10000 || end > MaxFileBytes ||
             c.DownloadStart < 0 || c.DownloadEnd < c.DownloadStart || c.DownloadEnd - c.DownloadStart > MaxFileBytes)
-            throw new InvalidDataException("Tamaños o direcciones de eventos no válidos en el CMFX.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Invalid event sizes or addresses in the CMFX."));
         if (!c.Blocks.Any(b => b.Offset == 0 && b.References.Any(r => r.Key == "failReg")))
-            throw new InvalidDataException("Falta failReg en la cabecera de eventos del CMFX.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The CMFX event header is missing failReg."));
         if (c.DownloadEnd > c.DownloadStart && end > c.DownloadEnd - c.DownloadStart)
-            throw new InvalidDataException("Los registros exceden el tamaño de descarga del CMFX.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Records exceed the CMFX download size."));
         foreach (var b in c.Blocks)
         {
             if (b.Offset < 0 || b.RegisterSize < 1 || b.RegisterCount < 1 || (long)b.Offset + (long)b.RegisterSize * b.RegisterCount > c.EventSize)
-                throw new InvalidDataException($"El bloque {b.Name} excede los límites del evento.");
-            if (IsFpga(b) && b.RegisterSize < 4) throw new InvalidDataException("Los registros FPGA deben ocupar al menos cuatro bytes.");
+                throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Block {0} exceeds the event boundaries.", b.Name));
+            if (IsFpga(b) && b.RegisterSize < 4) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("FPGA records must occupy at least four bytes."));
             foreach (var r in b.References)
             {
-                if (!c.Values.TryGetValue(r.Key, out var v)) throw new InvalidDataException($"Falta la definición de {r.Key} en value_elements.");
+                if (!c.Values.TryGetValue(r.Key, out var v)) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Missing definition for {0} in value_elements.", r.Key));
                 if (r.Position < 0 || (long)r.Position + Size(v.Type) > b.RegisterSize)
-                    throw new InvalidDataException($"La señal {r.Key} excede los límites de su bloque.");
+                    throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Signal {0} exceeds its block boundaries.", r.Key));
             }
         }
     }
 
     public static ControlEventConfig MatchConfig(byte[] dat, IEnumerable<ControlEventConfig> configs)
     {
-        if (dat.Length < 6) throw new InvalidDataException("El DAT está vacío o no contiene una cabecera completa.");
+        if (dat.Length < 6) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The DAT is empty or has an incomplete header."));
         var signature = Encoding.ASCII.GetString(dat, 0, 6);
         var config = configs.FirstOrDefault(c => c.Signature == signature)
-            ?? throw new InvalidDataException($"Firma de equipo «{signature}» no encontrada en la configuración de las señales importadas.");
+            ?? throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Device signature «{0}» not found in the imported signal configuration.", signature));
         var minimum = (long)config.EventStart + (long)config.EventSize * config.EventCount;
         int expected = config.DownloadEnd - config.DownloadStart;
         if (dat.Length > MaxFileBytes || dat.Length < minimum || (expected > 0 && dat.Length != expected))
-            throw new InvalidDataException($"Tamaño de DAT incorrecto: {dat.Length} bytes; se esperaban {(expected > 0 ? expected : minimum)}.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Incorrect DAT size: {0} bytes; expected {1}.", dat.Length, (expected > 0 ? expected : minimum)));
         return config;
     }
 
@@ -227,7 +227,7 @@ public static class ControlEventsParser
             int index = kind == "STATUS" ? (int)((raw >> 28) & 7) : kind == "DIGITAL" ? (int)((raw >> 29) & 3) : (int)(((raw >> 29) & 3) * 8 + ((raw >> 25) & 7));
             int time = (int)((raw >> 16) & 255);
             if (prior >= 0 && time - prior is not (0 or 1 or -255))
-                throw new InvalidDataException("Marca de tiempo FPGA inválida: se esperaban incrementos de 0 o 1 µs.");
+                throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Invalid FPGA timestamp: expected increments of 0 or 1 µs."));
             if (prior > time) epoch += 256;
             prior = time;
             samples.Add(new(kind, index, time + epoch, (ushort)raw, (raw & 0x01000000) != 0));
@@ -269,7 +269,7 @@ public static class ControlEventsParser
         catch (ArgumentOutOfRangeException) { return null; }
         catch (InvalidDataException) { return null; }
     }
-    private static int Bcd(byte b) => (b & 15) > 9 || (b >> 4) > 9 ? throw new InvalidDataException("Valor BCD inválido.") : (b >> 4) * 10 + (b & 15);
+    private static int Bcd(byte b) => (b & 15) > 9 || (b >> 4) > 9 ? throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Invalid BCD value.")) : (b >> 4) * 10 + (b & 15);
     private static string Decode(byte[] dat, int pos, ControlEventValue v)
     {
         if (v.IsBitfield)
@@ -302,16 +302,10 @@ public static class ControlEventsParser
     {
         "ASCII_BYTE" or "BCD_BYTE" or "BYTE" or "SBYTE" => 1, "UINT" or "INT" => 2,
         "ULONG" or "LONG" or "FLOAT32" => 4, "UINT64" or "INT64" or "FLOAT64" => 8,
-        _ => throw new InvalidDataException($"Tipo de señal no soportado: {type}.")
+        _ => throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Unsupported signal type: {0}.", type))
     };
     private static string Text(XElement? e, string name) => e?.Element(name)?.Value.Trim() ?? "";
-    private static int Int(XElement? e, string name, int? fallback = null) => int.TryParse(Text(e, name), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : fallback ?? throw new InvalidDataException($"Campo CMFX no válido: {name}.");
+    private static int Int(XElement? e, string name, int? fallback = null) => int.TryParse(Text(e, name), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : fallback ?? throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Invalid CMFX field: {0}.", name));
     private static double Number(XElement? e, string name, double fallback) => double.TryParse(Text(e, name), NumberStyles.Float, CultureInfo.InvariantCulture, out var n) && double.IsFinite(n) ? n : fallback;
-    private static string Localized(XElement? e, string fallback = "")
-    {
-        var strings = e?.Elements("localized_string_t").ToList() ?? [];
-        return (strings.FirstOrDefault(s => Text(s, "langid").StartsWith("es", StringComparison.OrdinalIgnoreCase))
-            ?? strings.FirstOrDefault(s => Text(s, "langid").StartsWith("en", StringComparison.OrdinalIgnoreCase))
-            ?? strings.FirstOrDefault())?.Element("stringvalue")?.Value.Trim() ?? fallback;
-    }
+    private static string Localized(XElement? e, string fallback = "") => MonitorLocalization.EnglishDescription(e, fallback);
 }

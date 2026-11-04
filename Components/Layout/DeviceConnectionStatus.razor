@@ -3,7 +3,7 @@
 @inject TlsSecurityService TlsSecurity
 @inject IDialogService DialogService
 
-<footer class="device-connection-status" aria-label="Conexión en tiempo real con los equipos" role="status" aria-live="polite">
+<footer class="device-connection-status" aria-label="@Ui["Live device connection status"]" role="status" aria-live="polite">
     <button type="button"
             class="device-tls-badge @(TlsSecurity.UseTls ? "tls-active" : "tls-traditional")"
             @onclick="OpenTlsSettingsAsync"
@@ -13,13 +13,13 @@
     </button>
     <span class="device-status-item" title="@Description(_state.Communications)">
         <span class="device-status-dot @(_state.Communications ? "online" : "offline")" aria-hidden="true"></span>
-        <span>Comunicaciones</span>
-        <span class="device-status-accessible">: @(_state.Communications ? "con conexión" : "sin conexión")</span>
+        <span>@Ui["Communications"]</span>
+        <span class="device-status-accessible">: @(_state.Communications ? Ui["connected"] : Ui["disconnected"])</span>
     </span>
     <span class="device-status-item" title="@Description(_state.Control)">
         <span class="device-status-dot @(_state.Control ? "online" : "offline")" aria-hidden="true"></span>
         <span>Control</span>
-        <span class="device-status-accessible">: @(_state.Control ? "con conexión" : "sin conexión")</span>
+        <span class="device-status-accessible">: @(_state.Control ? Ui["connected"] : Ui["disconnected"])</span>
     </span>
 </footer>
 
@@ -49,8 +49,8 @@
     }
 
     private static string Description(bool connected) => connected
-        ? "Con conexión: respuesta SEPSA recibida en los últimos 3 segundos."
-        : "Sin conexión confirmada: no se han recibido respuestas SEPSA recientes.";
+        ? ApsMonitor.Resources.MonitorResources.Text("Connected: SEPSA response received within the last 3 seconds.")
+        : ApsMonitor.Resources.MonitorResources.Text("Connection unconfirmed: no recent SEPSA responses received.");
 
     private async Task RefreshAsync()
     {

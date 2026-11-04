@@ -1,0 +1,21 @@
+@inject NavigationManager Navigation
+
+<span class="language-toggle-host">
+<MudButton Class="language-toggle" Variant="Variant.Text" Color="Color.Inherit" Size="Size.Small"
+           StartIcon="@Icons.Material.Outlined.Language" OnClick="SwitchLanguage"
+           title="@Label" aria-label="@Label" data-language-switch="true">
+    @(IsSpanish ? "EN" : "ES")
+</MudButton>
+</span>
+
+@code {
+    private bool IsSpanish => MonitorLocalization.HtmlLanguage == "es";
+    private string Label => ApsMonitor.Resources.MonitorResources.Text(IsSpanish ? "Switch to English" : "Switch to Spanish");
+    private void SwitchLanguage()
+    {
+        var current = new Uri(Navigation.Uri);
+        var returnUrl = Uri.EscapeDataString(current.PathAndQuery + current.Fragment);
+        var culture = IsSpanish ? "en-GB" : "es-ES";
+        Navigation.NavigateTo($"culture?culture={culture}&returnUrl={returnUrl}", forceLoad: true);
+    }
+}

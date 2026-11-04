@@ -1,9 +1,9 @@
 window.controlEvents = {
     observers: new Map(),
-    draw: async (id, series, xTitle) => {
+    draw: async (id, series, xTitle, labels = {}) => {
         const chart = document.getElementById(id);
         if (!chart) return;
-        if (!window.Plotly) throw new Error('Plotly no está disponible.');
+        if (!window.Plotly) throw new Error(labels.unavailable || 'Plotly is unavailable.');
         const units = [...new Set(series.map(s => s.units))];
         const traces = series.map(s => {
             const axis = units.indexOf(s.units) + 1;
@@ -21,9 +21,9 @@ window.controlEvents = {
         units.forEach((unit, i) => {
             const suffix = i === 0 ? '' : `${i + 1}`;
             layout[`xaxis${suffix}`] = { title: { text: xTitle }, gridcolor: lines, matches: i ? 'x' : undefined };
-            layout[`yaxis${suffix}`] = { title: { text: unit || 'Valor' }, gridcolor: lines };
+            layout[`yaxis${suffix}`] = { title: { text: unit || labels.value || 'Value' }, gridcolor: lines };
         });
-        if (!series.length) layout.annotations = [{ text: 'Selecciona señales para mostrar la traza', xref: 'paper', yref: 'paper', x: 0.5, y: 0.5, showarrow: false }];
+        if (!series.length) layout.annotations = [{ text: labels.empty || 'Select signals to display the trace', xref: 'paper', yref: 'paper', x: 0.5, y: 0.5, showarrow: false }];
         await Plotly.react(chart, traces, layout, { responsive: true, scrollZoom: true, displaylogo: false });
         const existing = window.controlEvents.observers.get(id);
         if (existing?.element !== chart) {

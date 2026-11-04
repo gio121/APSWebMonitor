@@ -25,9 +25,12 @@ vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../wwwroot/js/contro
     assert.equal(drawing[2].yaxis2.title.text, 'A');
     assert.equal(drawing[2].xaxis2.matches, 'x');
     assert.equal(drawing[3].scrollZoom, true);
+    await api.draw('chart', [{ key: 'raw', name: 'Raw', units: '', x: [0], y: [1] }], 'Sample');
+    assert.equal(drawing[2].yaxis.title.text, 'Value', 'Unitless chart labels use English.');
     await api.draw('chart', [], 'Tiempo FPGA (µs)');
     assert.equal(drawing[1].length, 0);
     assert.equal(drawing[2].annotations.length, 1);
+    assert.equal(drawing[2].annotations[0].text, 'Select signals to display the trace');
     chart = { isConnected: true, data: [] };
     await api.draw('chart', [], 'Muestra');
     assert.equal(disconnected, 1, 'Replace observer when loading another DAT creates a new chart element.');

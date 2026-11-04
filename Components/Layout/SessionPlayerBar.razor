@@ -9,7 +9,7 @@
     {
         <div class="session-player-minimized" style="bottom: calc(@(_barBottomPx + 20)px + var(--device-status-height));">
             <MudIconButton Icon="@Icons.Material.Filled.PlayCircle" Color="Color.Primary" Size="Size.Large" 
-                           OnClick="@(() => _minimized = false)" Title="Mostrar reproductor" />
+                           OnClick="@(() => _minimized = false)" Title="@Ui["Show player"]" />
         </div>
     }
     else
@@ -20,20 +20,20 @@
 
                 <!-- Info y Controles -->
                 <div class="d-flex align-center gap-2" style="min-width: 320px;">
-                    <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" OnClick="SessionState.GoToStart" Title="Ir al inicio" />
-                    <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" OnClick="SessionState.PreviousFrame" Title="Trama anterior" />
+                    <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" OnClick="SessionState.GoToStart" Title="@Ui["Go to start"]" />
+                    <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" OnClick="SessionState.PreviousFrame" Title="@Ui["Previous frame"]" />
                     
                     @if (SessionState.IsPlaying)
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.Pause" Color="Color.Warning" Size="Size.Medium" OnClick="SessionState.Pause" Title="Pausar" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Pause" Color="Color.Warning" Size="Size.Medium" OnClick="SessionState.Pause" Title="@Ui["Pause"]" />
                     }
                     else
                     {
-                        <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Medium" OnClick="SessionState.Play" Title="Reproducir" />
+                        <MudIconButton Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Success" Size="Size.Medium" OnClick="SessionState.Play" Title="@Ui["Play"]" />
                     }
                     
-                    <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" OnClick="SessionState.NextFrame" Title="Siguiente trama" />
-                    <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" OnClick="SessionState.GoToEnd" Title="Ir al final" />
+                    <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" OnClick="SessionState.NextFrame" Title="@Ui["Next frame"]" />
+                    <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" OnClick="SessionState.GoToEnd" Title="@Ui["Go to end"]" />
                     
                     <MudDivider Vertical="true" Class="mx-2" Style="height:24px;" />
                     
@@ -64,10 +64,10 @@
 
                 <!-- Minimizar -->
                 <MudIconButton Icon="@Icons.Material.Filled.Minimize" Size="Size.Small" Color="Color.Default" 
-                               OnClick="@(() => _minimized = true)" Title="Minimizar reproductor" />
+                               OnClick="@(() => _minimized = true)" Title="@Ui["Minimise player"]" />
 
                 <!-- Botón Cerrar Sesión -->
-                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="CloseSession" Title="Cerrar sesión" />
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Error" OnClick="CloseSession" Title="@Ui["Close session"]" />
             </MudPaper>
         </div>
     }

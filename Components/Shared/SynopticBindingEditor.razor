@@ -1,0 +1,50 @@
+@using ApsMonitor.Models
+<MudExpansionPanels>
+    <MudExpansionPanel Text="@Ui["Value, text and visibility"]">
+        @if (Element.Type == "Etiqueta")
+        {
+            <MudCheckBox T="bool" Label="@Ui["Show signal value"]" @bind-Value="Element.ShowValue" />
+            <MudNumericField T="int?" Label="@Ui["Value bit (optional)"]" @bind-Value="Element.ValueBit" Min="0" Max="63" />
+            <MudTextField T="string" Label="@Ui["Number format (e.g. 0.0)"]" @bind-Value="Element.ValueFormat" />
+            <MudTextField T="string" Label="@Ui["Unit"]" @bind-Value="Element.ValueUnit" />
+            <MudTextField T="string" Label="@Ui["Prefix (e.g. R:)"]" @bind-Value="Element.ValuePrefix" />
+            @foreach (var key in Element.ValueTexts.Keys.ToList())
+            {
+                <MudTextField T="string" Label="@(Ui["Text for value {0}", key])" Value="@Element.ValueTexts[key]" ValueChanged="@(text => Element.ValueTexts[key] = text)" />
+            }
+        }
+        @if (Element.Type is "Contactor" or "Contactor V")
+        {
+            <MudCheckBox T="bool" Label="@Ui["Invert state"]" @bind-Value="Element.InvertState" />
+            <MudCheckBox T="bool" Label="@Ui["Invert command"]" @bind-Value="Element.InvertCommand" />
+        }
+        @if (Element.Type == "Barra")
+        {
+            <MudCheckBox T="bool" Label="@Ui["Count down (maximum minus value)"]" @bind-Value="Element.ProgressCountDown" />
+        }
+        <MudText Typo="Typo.subtitle2">@Ui["Visibility"]</MudText>
+        <MudCheckBox T="bool" Label="@Ui["All conditions must match"]" @bind-Value="Element.VisibilityMatchAll" />
+        @foreach (var rule in Element.VisibilityRules.ToList())
+        {
+            <MudPaper Class="pa-2 my-2" Outlined="true">
+                <SynopticConditionEditor Condition="rule" Signals="Signals" />
+                <MudButton OnClick="@(() => Element.VisibilityRules.Remove(rule))">@Ui["Delete condition"]</MudButton>
+            </MudPaper>
+        }
+        <MudButton OnClick="@(() => Element.VisibilityRules.Add(new()))">@Ui["Add condition"]</MudButton>
+        <MudText Typo="Typo.subtitle2">@Ui["State text (first match)"]</MudText>
+        @foreach (var rule in Element.TextRules.ToList())
+        {
+            <MudPaper Class="pa-2 my-2" Outlined="true">
+                <SynopticConditionEditor Condition="rule" Signals="Signals" />
+                <MudTextField T="string" Label="@Ui["Text"]" @bind-Value="rule.Text" />
+                <MudButton OnClick="@(() => Element.TextRules.Remove(rule))">@Ui["Delete rule"]</MudButton>
+            </MudPaper>
+        }
+        <MudButton OnClick="@(() => Element.TextRules.Add(new()))">@Ui["Add state text"]</MudButton>
+    </MudExpansionPanel>
+</MudExpansionPanels>
+@code {
+    [Parameter, EditorRequired] public SinopticoElement Element { get; set; } = new();
+    [Parameter] public IEnumerable<Signal> Signals { get; set; } = Array.Empty<Signal>();
+}

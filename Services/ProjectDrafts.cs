@@ -17,12 +17,12 @@ public sealed partial class ProjectDatabaseService
     internal static FileStream AcquireFileLock(string path)
     {
         try { return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
-        catch (IOException ex) { throw new InvalidOperationException("Otro proceso está trabajando en este borrador. Espera a que termine y vuelve a intentarlo.", ex); }
+        catch (IOException ex) { throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Another process is working on this draft. Wait for it to finish and try again."), ex); }
     }
     public event Action? DraftChanged;
     public IDbContextFactory<ApsDbContext> CaptureEventFactory()
     {
-        var project = Current ?? throw new InvalidOperationException("No hay proyecto activo.");
+        var project = Current ?? throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("No active project."));
         return new ProjectDbContextFactory(RuntimeConnection(project));
     }
     private string RuntimeConnection(ProjectDatabase project) => new SqliteConnectionStringBuilder
@@ -61,7 +61,7 @@ public sealed partial class ProjectDatabaseService
     internal static string ManifestPath(ProjectDatabase draft) => Path.Combine(Path.GetDirectoryName(draft.DatabasePath)!, "estado.json");
     internal static DraftManifest Manifest(ProjectDatabase draft) =>
         JsonSerializer.Deserialize<DraftManifest>(File.ReadAllText(ManifestPath(draft)))
-        ?? throw new InvalidDataException("El estado del borrador no es válido. Se conserva para su recuperación.");
+        ?? throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The draft state is invalid. It is preserved for recovery."));
     private static void WriteManifest(ProjectDatabase draft, DraftManifest manifest)
     {
         var path = ManifestPath(draft);
@@ -104,7 +104,7 @@ public sealed partial class ProjectDatabaseService
                 using var candidateLock = AcquireFileLock(candidate.DatabasePath + ".edit.lock");
                 var manifest = RecoverPublication(candidate);
                 if (manifest.SourceId != source.Id || manifest.PublishedId is not null || manifest.Discarded) continue;
-                if (!File.Exists(candidate.DatabasePath)) throw new IOException("Falta la base de datos del borrador. Revisa la carpeta .Working antes de continuar.");
+                if (!File.Exists(candidate.DatabasePath)) throw new IOException(ApsMonitor.Resources.MonitorResources.Text("The draft database is missing. Check the .Working folder before continuing."));
                 return candidate;
             }
             var path = Path.Combine(working, Guid.NewGuid().ToString("N"), "aps.db");
@@ -214,24 +214,24 @@ public sealed partial class ProjectDatabaseService
     internal async Task<ProjectDatabase> PublishDraftAsync(string revision, string description, string author)
     {
         revision = ValidateFolder(revision);
-        if (!Version.TryParse(revision, out var version)) throw new ArgumentException("Indica una revisión válida, por ejemplo 0.2.");
+        if (!Version.TryParse(revision, out var version)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Enter a valid revision, for example 0.2."));
         await DraftGate.WaitAsync();
         try
         {
-            var draft = Current ?? throw new InvalidOperationException("No hay un proyecto activo.");
+            var draft = Current ?? throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("There is no active project."));
             using var draftLock = AcquireFileLock(draft.DatabasePath + ".edit.lock");
             var manifest = Manifest(draft);
             if (manifest.PublishedId is not null) return Find(manifest.PublishedId);
-            if (manifest.Discarded) throw new InvalidOperationException("Este borrador está descartado. Vuelve a cargar la revisión.");
+            if (manifest.Discarded) throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("This draft has been discarded. Reload the revision."));
             if (ConfigurationHash(Find(draft.Id).ConnectionString) != manifest.SourceHash)
-                throw new InvalidOperationException("La revisión de origen ha cambiado fuera de la aplicación. El borrador se conserva; restaura el origen antes de publicar.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("The source revision has changed outside the application. The draft is preserved; restore the source before publishing."));
             if (ConfigurationHash(draft.ConnectionString) == manifest.BaselineHash)
-                throw new InvalidOperationException("No hay cambios de configuración para publicar.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("There are no configuration changes to publish."));
             if (Version.TryParse(draft.Revision, out var original) && version <= original)
-                throw new ArgumentException("La nueva revisión debe ser posterior a la revisión de origen.");
+                throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The new revision must be later than the source revision."));
             var destination = Path.Combine(_directory, draft.ProjectFolder, "Revisions", revision);
             EnsureLocalDirectory(destination);
-            if (Directory.Exists(destination)) throw new ArgumentException("Esa revisión ya existe. Elige otra versión; nunca se sobrescribe.");
+            if (Directory.Exists(destination)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("That revision already exists. Choose another version; existing revisions are never overwritten."));
             var staging = Path.Combine(_directory, draft.ProjectFolder, ".Working", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(staging);
             var staged = AsDraft(draft, Path.Combine(staging, "aps.db"));
@@ -265,12 +265,12 @@ public sealed partial class ProjectDatabaseService
         var pending = Path.Combine(Path.GetDirectoryName(draft.DatabasePath)!, "publication.json");
         if (!File.Exists(pending)) return false;
         // A pending publication is deliberately frozen until recovery resolves it.
-        throw new InvalidOperationException("Hay una publicación pendiente de recuperar. Vuelve a cargar el proyecto.");
+        throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("A pending publication needs recovery. Reload the project."));
     }
 
     internal async Task<ProjectDatabase> DiscardDraftAsync()
     {
-        var draft = Current ?? throw new InvalidOperationException("No hay proyecto activo.");
+        var draft = Current ?? throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("No active project."));
         await DraftGate.WaitAsync();
         try
         {

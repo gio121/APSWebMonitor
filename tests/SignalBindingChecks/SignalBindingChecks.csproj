@@ -7,11 +7,14 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Compile Include="../../Models/*.cs" Link="Models/%(Filename)%(Extension)" Exclude="../../Models/ReprogrammingSelection.cs" />
     <Compile Include="../../Data/ApsDbContext.cs" Link="ApsDbContext.cs" />
     <Compile Include="../../Data/SignalSchema.cs" Link="SignalSchema.cs" />
     <Compile Include="../../Data/ControlEventsSchema.cs" Link="ControlEventsSchema.cs" />
     <Compile Include="../../Services/ControlEventsParser.cs" Link="ControlEventsParser.cs" />
+    <Compile Include="../../Services/MonitorLocalization.cs" Link="MonitorLocalization.cs" />
     <Compile Include="../../Services/ApsDataService.cs" Link="ApsDataService.cs" />
   </ItemGroup>
+  <Import Project="../LocalizationResources.props" />
 </Project>

@@ -13,7 +13,7 @@
 @inject ISnackbar Snackbar
 @implements IDisposable
 
-<PageTitle>Visualizador TRDP en Tiempo Real y Reproductor PCAP</PageTitle>
+<PageTitle>@Ui["Live TRDP viewer and PCAP player"]</PageTitle>
 
 <!-- ══════════════════════════════════════════════════════════
      HEADER DE ESTADO & CONTROLES DE MODO
@@ -24,38 +24,38 @@
         <div>
             <div class="d-flex align-center gap-2">
                 <MudText Typo="Typo.h5" Class="fw-bold">
-                    @(IsPcapMode ? "Reproductor Wireshark PCAP (Offline)" : "Sniffer TRDP (Captura de Red)")
+                    @(IsPcapMode ? "Wireshark PCAP player (Offline)" : Ui["TRDP sniffer (network capture)"])
                 </MudText>
                 @if (IsSnifferMode)
                 {
                     @if (SnifferService.IsCapturing)
                     {
                         <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Wifi">
-                            Capturando en @(SnifferService.ActiveDeviceName ?? "interfaz")
+                            Capturing on @(SnifferService.ActiveDeviceName ?? Ui["interface_Text"])
                         </MudChip>
                     }
                     else
                     {
                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.WifiOff">
-                            Sniffer Detenido
+                            @Ui["Sniffer stopped"]
                         </MudChip>
                     }
                 }
                 else
                 {
                     <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.FolderZip">
-                        Modo Captura PCAP (Filtrado ComID)
+                        @Ui["PCAP capture mode (ComID filter)"]
                     </MudChip>
                 }
             </div>
             <MudText Typo="Typo.caption" Class="trdp-muted">
                 @if (IsPcapMode)
                 {
-                    @:Reproducción local paginada con filtrado automático por ComID (.pcap, .pcapng, .json)
+                    @:Paged local playback with automatic ComID filtering (.pcap, .pcapng, .json)
                 }
                 else
                 {
-                    @:Captura directa desde interfaz de red física (Npcap/WinPcap) — todas las tramas TRDP en tiempo real
+                    @:Capture directly from a physical network interface (Npcap/WinPcap) — all TRDP frames in real time
                 }
             </MudText>
         </div>
@@ -64,8 +64,8 @@
     <!-- Toggle Selector Modo (Sniffer vs Reproductor PCAP) + Toggle BitOrder/Endianness -->
     <div class="d-flex align-center gap-3 flex-wrap">
         <MudToggleGroup T="string" Value="_activeMode" ValueChanged="OnModeChanged" Color="Color.Primary" Size="Size.Small">
-            <MudToggleItem Value="@("sniffer")" Text="Sniffer (Red)" Icon="@Icons.Material.Filled.Router" />
-            <MudToggleItem Value="@("pcap")" Text="Reproductor Wireshark" Icon="@Icons.Material.Filled.PlayCircle" />
+            <MudToggleItem Value="@("sniffer")" Text="@Ui["Sniffer (network)"]" Icon="@Icons.Material.Filled.Router" />
+            <MudToggleItem Value="@("pcap")" Text="@Ui["Wireshark player"]" Icon="@Icons.Material.Filled.PlayCircle" />
         </MudToggleGroup>
 
         <MudButton Variant="@(_enableEndianSwap ? Variant.Filled : Variant.Outlined)"
@@ -73,15 +73,15 @@
                    Size="Size.Small"
                    StartIcon="@Icons.Material.Filled.SwapHoriz"
                    OnClick="ToggleEndianSwap"
-                   Title="Alternar orden de bytes de datos (Big-Endian estándar TRDP IEC 61375 vs Little-Endian)">
-            ByteOrder: @(_enableEndianSwap ? "Little-Endian (Invertido)" : "Big-Endian (Estándar TRDP)")
+                   Title="@Ui["Toggle data byte order (standard TRDP IEC 61375 big-endian vs little-endian)"]">
+            Byte order: @(_enableEndianSwap ? Ui["Little-Endian (swapped)"] : Ui["Big-Endian (TRDP standard)"])
         </MudButton>
 
         <!-- Quick Stats (Sniffer) -->
         @if (IsSnifferMode)
         {
             <div class="trdp-stat-box">
-                <span class="stat-label">FRECUENCIA</span>
+                <span class="stat-label">@Ui["FREQUENCY"]</span>
                 <span class="stat-value">@SnifferService.RefreshRateHz.ToString("F1") Hz</span>
             </div>
             <div class="trdp-stat-box">
@@ -107,8 +107,8 @@
             <MudItem xs="12" sm="5" md="4">
                 <MudSelect T="TrdpSnifferDevice" Value="_selectedSnifferDevice"
                            ValueChanged="OnSnifferDeviceChanged"
-                           Label="Interfaz de Red (Npcap)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           ToStringFunc="@(d => d?.DisplayText ?? "Seleccionar interfaz...")"
+                           Label="@Ui["Network interface (Npcap)"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           ToStringFunc="@(d => d?.DisplayText ?? "Select interface...")"
                            Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Router">
                     @foreach (var dev in _snifferDevices)
                     {
@@ -121,8 +121,8 @@
             <MudItem xs="12" sm="4" md="3">
                 <MudSelect T="TrdpConfiguredFrameOption" Value="_selectedFrameOption"
                            ValueChanged="OnFrameOptionChanged"
-                           Label="Dataset / Trama" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           ToStringFunc="@(f => f?.DisplayText ?? "Seleccionar trama...")">
+                           Label="@Ui["Dataset / frame"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           ToStringFunc="@(f => f?.DisplayText ?? "Select frame...")">
                     @foreach (var opt in _frameOptions)
                     {
                         <MudSelectItem Value="@opt">@opt.DisplayText</MudSelectItem>
@@ -138,9 +138,9 @@
                         ComID: @_selectedFrameOption.ComId
                     </MudChip>
                 }
-                <MudCheckBox @bind-Value="_snifferFilterByComId" Label="Filtrar" Color="Color.Info"
+                <MudCheckBox @bind-Value="_snifferFilterByComId" Label="@Ui["Filter"]" Color="Color.Info"
                              Size="Size.Small" Dense="true"
-                             Title="Si está activo, solo se muestran tramas que coincidan con el ComID seleccionado" />
+                             Title="@Ui["When enabled, only frames matching the selected ComID are shown"]" />
             </MudItem>
 
             <!-- Action Buttons -->
@@ -149,17 +149,17 @@
                 {
                     <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.PlayArrow"
                                OnClick="StartSnifferCapture" Disabled="@(_selectedSnifferDevice == null)">
-                        Capturar
+                        @Ui["Capture"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Refresh"
-                               OnClick="RefreshSnifferDevices" Title="Reescanear interfaces de red Npcap">
+                               OnClick="RefreshSnifferDevices" Title="@Ui["Rescan Npcap network interfaces"]">
                         <MudIcon Icon="@Icons.Material.Filled.Refresh" />
                     </MudButton>
                 }
                 else
                 {
                     <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Stop" OnClick="StopSnifferCapture">
-                        Detener
+                        @Ui["Stop"]
                     </MudButton>
                 }
             </MudItem>
@@ -194,11 +194,11 @@ else
                         @if (_isLoadingFile)
                         {
                             <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="width:16px; height:16px;" />
-                            <span>Cargando (@_uploadProgressPercent%)...</span>
+                            <span>@Ui["Loading ({0}%)...", _uploadProgressPercent]</span>
                         }
                         else
                         {
-                            <span>Abrir Captura Wireshark</span>
+                            <span>@Ui["Open Wireshark capture"]</span>
                         }
                     </MudButton>
                 </label>
@@ -215,8 +215,8 @@ else
             <MudItem xs="12" sm="7" md="4">
                 <MudSelect T="TrdpConfiguredFrameOption" Value="_selectedFrameOption"
                            ValueChanged="OnFrameOptionChanged"
-                           Label="Filtrar y Decodificar con Dataset" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           ToStringFunc="@(f => f?.DisplayText ?? "Seleccionar trama...")">
+                           Label="@Ui["Filter and decode with dataset"]" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           ToStringFunc="@(f => f?.DisplayText ?? "Select frame...")">
                     @foreach (var opt in _frameOptions)
                     {
                         <MudSelectItem Value="@opt">@opt.DisplayText</MudSelectItem>
@@ -233,20 +233,20 @@ else
                         <div class="d-flex align-center gap-1">
                             <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Color="Color.Info"
                                            Disabled="@(_chunkResult.CurrentChunkIndex == 0 || _isLoadingChunk)"
-                                           OnClick="PrevChunk" Title="Bloque anterior" />
+                                           OnClick="PrevChunk" Title="@Ui["Previous block"]" />
 
                             <span class="text-caption fw-bold" style="color:#a78bfa;">
-                                Bloque @(_chunkResult.CurrentChunkIndex + 1)/@_chunkResult.TotalChunks
+                                Block @(_chunkResult.CurrentChunkIndex + 1)/@_chunkResult.TotalChunks
                             </span>
 
                             <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Color="Color.Info"
                                            Disabled="@(_chunkResult.CurrentChunkIndex >= _chunkResult.TotalChunks - 1 || _isLoadingChunk)"
-                                           OnClick="NextChunk" Title="Bloque siguiente" />
+                                           OnClick="NextChunk" Title="@Ui["Next block"]" />
                         </div>
 
                         <!-- Número de trama filtrada -->
-                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Title="Posición dentro de las tramas filtradas">
-                            Trama @(GlobalFrameNumber) / @_chunkResult.TotalFrames
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Title="@Ui["Position within filtered frames"]">
+                            Frame @(GlobalFrameNumber) / @_chunkResult.TotalFrames
                         </MudChip>
 
                         <!-- Número de Trama Real de Wireshark -->
@@ -254,15 +254,15 @@ else
                         {
                             <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled"
                                      Icon="@Icons.Material.Filled.Search" Class="fw-bold" 
-                                     Title="Número de trama real en el archivo Wireshark original (frame.number)">
-                                Trama Wireshark #@CurrentCapturedFrame.WiresharkFrameNumber
+                                     Title="@Ui["Actual frame number in the original Wireshark file (frame.number)"]">
+                                @Ui["Wireshark frame #{0}", CurrentCapturedFrame.WiresharkFrameNumber]
                             </MudChip>
                         }
                     }
                     else
                     {
                         <MudChip T="string" Color="Color.Warning" Size="Size.Small">
-                            Sin tramas para ComID @_selectedComId
+                            @Ui["No frames for ComID {0}", _selectedComId]
                         </MudChip>
                     }
                 }
@@ -276,10 +276,10 @@ else
                 <div class="d-flex justify-space-between align-center mb-1">
                     <span class="text-caption fw-bold" style="color:#38bdf8;">
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" Style="width:14px; height:14px;" />
-                        Cargando captura a disco: @_uploadProgressPercent%
+                        @Ui["Loading capture to disk: {0}%", _uploadProgressPercent]
                     </span>
                     <span class="text-caption trdp-muted">
-                        @FormatFileSize(_uploadBytesRead) de @FormatFileSize(_totalFileBytes)
+                        @FormatFileSize(_uploadBytesRead) of @FormatFileSize(_totalFileBytes)
                     </span>
                 </div>
                 <MudProgressLinear Color="Color.Info" Value="@_uploadProgressPercent" Size="Size.Small" Rounded="true" Stripe="true" />
@@ -293,24 +293,24 @@ else
                 <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2">
                     <!-- Botones de Control del Reproductor -->
                     <div class="d-flex align-center gap-1">
-                        <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Color="Color.Inherit" Title="Ir al inicio del bloque" OnClick="FirstFrame" />
-                        <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" Color="Color.Inherit" Title="Trama anterior" OnClick="PrevFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.FirstPage" Size="Size.Small" Color="Color.Inherit" Title="@Ui["Go to start of block"]" OnClick="FirstFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.NavigateBefore" Size="Size.Small" Color="Color.Inherit" Title="@Ui["Previous frame"]" OnClick="PrevFrame" />
 
                         @if (_isPlaying)
                         {
                             <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Small" StartIcon="@Icons.Material.Filled.Pause" OnClick="TogglePlay">
-                                Pausa
+                                @Ui["Pause"]
                             </MudButton>
                         }
                         else
                         {
                             <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="TogglePlay">
-                                Reproducir
+                                @Ui["Play"]
                             </MudButton>
                         }
 
-                        <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" Color="Color.Inherit" Title="Trama siguiente" OnClick="NextFrame" />
-                        <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" Color="Color.Inherit" Title="Ir al final del bloque" OnClick="LastFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" Size="Size.Small" Color="Color.Inherit" Title="@Ui["Next frame"]" OnClick="NextFrame" />
+                        <MudIconButton Icon="@Icons.Material.Filled.LastPage" Size="Size.Small" Color="Color.Inherit" Title="@Ui["Go to end of block"]" OnClick="LastFrame" />
                     </div>
 
                     <!-- Timestamps -->
@@ -319,13 +319,13 @@ else
                             REL: <span class="player-time-val">+@CurrentCapturedFrame?.RelativeTime.ToString(@"hh\:mm\:ss\.fff")</span>
                         </span>
                         <span class="player-time-label">
-                            HORA: <span class="player-time-val">@CurrentCapturedFrame?.Timestamp.ToString("HH:mm:ss.fff")</span>
+                            @Ui["TIME:"] <span class="player-time-val">@CurrentCapturedFrame?.Timestamp.ToString("HH:mm:ss.fff")</span>
                         </span>
                     </div>
 
                     <!-- Velocidad de Reproducción -->
                     <div class="d-flex align-center gap-1">
-                        <MudText Typo="Typo.caption" Class="trdp-muted mr-1">Velocidad:</MudText>
+                        <MudText Typo="Typo.caption" Class="trdp-muted mr-1">@Ui["Speed:"]</MudText>
                         <MudSelect T="double" Value="_playbackSpeed" ValueChanged="OnSpeedChanged"
                                    Variant="Variant.Outlined" Margin="Margin.Dense" Class="trdp-speed-select">
                             <MudSelectItem Value="0.5">0.5x</MudSelectItem>
@@ -353,16 +353,16 @@ else
     <MudPaper Elevation="0" Class="pa-8 text-center trdp-empty-card">
         <MudIcon Icon="@(IsPcapMode ? Icons.Material.Filled.UploadFile : Icons.Material.Filled.Inbox)" Style="font-size:64px; opacity:0.15;" />
         <MudText Typo="Typo.h6" Class="mt-3 trdp-muted">
-            @(IsPcapMode ? "No hay tramas para mostrar en este bloque/dataset." : "Esperando datos de trama TRDP...")
+            @(IsPcapMode ? Ui["No frames to display in this block/dataset."] : Ui["Waiting for TRDP frame data..."])
         </MudText>
         <MudText Typo="Typo.body2" Class="trdp-muted mt-1">
             @if (IsPcapMode)
             {
-                <span>Pulsa <b>Abrir Captura Wireshark</b> para cargar un archivo <code>.pcap</code>, <code>.pcapng</code> o <code>.json</code>. Si ya cargaste uno, verifica que el dataset seleccionado coincida con el <code>ComID</code> de la captura.</span>
+                <span>@Ui["Press"] <b>@Ui["Open Wireshark capture"]</b> @Ui["to load a file"] <code>.pcap</code>, <code>.pcapng</code> @Ui["or"] <code>.json</code>@Ui[". If you have already loaded one, check that the selected dataset matches the"] <code>ComID</code> @Ui["of the capture."]</span>
             }
             else
             {
-                <span>Modo Sniffer de red en tiempo real. Selecciona una interfaz física y pulsa <b>Capturar</b> para escuchar el tráfico TRDP de la red.</span>
+                <span>@Ui["Live network sniffer mode. Select a physical interface and press"] <b>@Ui["Capture"]</b> @Ui["to listen for TRDP network traffic."]</span>
             }
         </MudText>
     </MudPaper>
@@ -371,8 +371,8 @@ else
 {
     <MudTabs Rounded="true" ApplyEffectsToContainer="true" Color="Color.Dark" Class="trdp-view-tabs" PanelClass="pt-4">
 
-        <!-- ── Tab 1: Variables Parseadas con Raw Dec y Hex ──────────── -->
-        <MudTabPanel Text="Variables Parseadas" Icon="@Icons.Material.Filled.TableChart">
+        <!-- ── Tab 1: Parsed variables con Raw Dec y Hex ──────────── -->
+        <MudTabPanel Text="@Ui["Parsed variables"]" Icon="@Icons.Material.Filled.TableChart">
 
             <div class="d-flex align-center justify-space-between mb-3 flex-wrap gap-2">
                 <div>
@@ -382,7 +382,7 @@ else
                     @if (_selectedFrameOption != null)
                     {
                         <MudText Typo="Typo.caption" Class="trdp-muted">
-                            Red: @_selectedFrameOption.NetworkName (@_selectedFrameOption.FrameName)
+                            @Ui["Network: {0} ({1})", _selectedFrameOption.NetworkName, _selectedFrameOption.FrameName]
                         </MudText>
                     }
                 </div>
@@ -394,7 +394,7 @@ else
                         </MudText>
                     }
                     <MudText Typo="Typo.caption" Class="trdp-muted">
-                        Tamaño payload: @_latestFrame.Size bytes @(IsPcapMode ? "(Wireshark PCAP - TRDP Header Removido)" : "")
+                        Payload size: @_latestFrame.Size bytes @(IsPcapMode ? Ui["(Wireshark PCAP - TRDP header removed)"] : "")
                     </MudText>
                 </div>
             </div>
@@ -407,7 +407,7 @@ else
             <!-- Barra de búsqueda y filtros rápidos de variables -->
             <div class="d-flex align-center justify-space-between mb-3 flex-wrap gap-2">
                 <div class="d-flex align-center gap-2">
-                    <MudTextField @bind-Value="_filterText" Placeholder="Filtrar variables (ej. volt, cur, temp, sts)..." 
+                    <MudTextField @bind-Value="_filterText" Placeholder="@Ui["Filter variables (e.g. volt, cur, temp, sts)..."]"
                                   Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Clearable="true"
                                   Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Style="max-width:320px;" />
                     <span class="text-caption trdp-muted">
@@ -418,10 +418,10 @@ else
                     <MudToggleIconButton @bind-Toggled="_showSpares"
                                          Icon="@Icons.Material.Filled.VisibilityOff"
                                          ToggledIcon="@Icons.Material.Filled.Visibility"
-                                         Title="Mostrar/ocultar campos spare"
+                                         Title="@Ui["Show/hide spare fields"]"
                                          Color="Color.Default" ToggledColor="Color.Info"
                                          Size="Size.Small" />
-                    <MudText Typo="Typo.caption" Class="trdp-muted">@(_showSpares ? "Spares visibles" : "Spares ocultos")</MudText>
+                    <MudText Typo="Typo.caption" Class="trdp-muted">@(_showSpares ? Ui["Spare fields shown"] : Ui["Spare fields hidden"])</MudText>
                 </div>
             </div>
 
@@ -432,8 +432,8 @@ else
                         <tr>
                             <th style="width:65px;">BYTE</th>
                             <th style="width:220px;">VARIABLE</th>
-                            <th style="width:95px;">TIPO</th>
-                            <th style="width:190px;">VALOR</th>
+                            <th style="width:95px;">@Ui["TYPE"]</th>
+                            <th style="width:190px;">@Ui["VALUE"]</th>
                             <th style="width:125px;">RAW (HEX)</th>
                             <th>BITS (0/1)</th>
                         </tr>
@@ -517,7 +517,7 @@ else
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center trdp-muted py-3">No se detectaron variables para mostrar.</td>
+                                <td colspan="6" class="text-center trdp-muted py-3">@Ui["No variables detected to display."]</td>
                             </tr>
                         }
                     </tbody>
@@ -526,10 +526,10 @@ else
 
         </MudTabPanel>
 
-        <!-- ── Tab 2: Estructura de Trama (Orden de Byte) ────────────── -->
+        <!-- ── Tab 2: Frame structure (Orden de Byte) ────────────── -->
         @if (CurrentDatasetVariables.Count > 0)
         {
-            <MudTabPanel Text="Estructura de Trama" Icon="@Icons.Material.Filled.ViewList">
+            <MudTabPanel Text="@Ui["Frame structure"]" Icon="@Icons.Material.Filled.ViewList">
                 @{
                     var dsVars = CurrentDatasetVariables;
                     var rawPayload = CurrentRawPayload;
@@ -540,7 +540,7 @@ else
                     <div>
                         <MudText Typo="Typo.subtitle1" Class="fw-bold">
                             <MudIcon Icon="@Icons.Material.Filled.ViewList" Size="Size.Small" Class="mr-1" Style="color:#38bdf8;" />
-                            Estructura del dataset <span style="color:#38bdf8;">@_selectedDatasetName</span>
+                            @Ui["Dataset structure"] <span style="color:#38bdf8;">@_selectedDatasetName</span>
                             <span class="trdp-muted" style="font-size:0.8rem;"> &mdash; @rawPayload.Length bytes payload</span>
                         </MudText>
                     </div>
@@ -548,10 +548,10 @@ else
                         <MudToggleIconButton @bind-Toggled="_showSpares"
                                              Icon="@Icons.Material.Filled.VisibilityOff"
                                              ToggledIcon="@Icons.Material.Filled.Visibility"
-                                             Title="Mostrar/ocultar campos spare"
+                                             Title="@Ui["Show/hide spare fields"]"
                                              Color="Color.Default" ToggledColor="Color.Info"
                                              Size="Size.Small" />
-                        <MudText Typo="Typo.caption" Class="trdp-muted">@(_showSpares ? "Spares visibles" : "Spares ocultos")</MudText>
+                        <MudText Typo="Typo.caption" Class="trdp-muted">@(_showSpares ? Ui["Spare fields shown"] : Ui["Spare fields hidden"])</MudText>
                     </div>
                 </div>
 
@@ -562,8 +562,8 @@ else
                             <tr>
                                 <th style="width:60px;">BYTE</th>
                                 <th style="width:180px;">VARIABLE</th>
-                                <th style="width:85px;">TIPO</th>
-                                <th>VALOR / BITS</th>
+                                <th style="width:85px;">@Ui["TYPE"]</th>
+                                <th>@Ui["VALUE / BITS"]</th>
                                 <th style="width:120px;">RAW HEX</th>
                             </tr>
                         </thead>
@@ -641,13 +641,13 @@ else
         }
 
         <!-- ── Tab 3: Visor Hexadecimal / Wireshark HexDump ──────────── -->
-        <MudTabPanel Text="Visor Hexadecimal / Raw" Icon="@Icons.Material.Filled.Code">
+        <MudTabPanel Text="@Ui["Hexadecimal / raw viewer"]" Icon="@Icons.Material.Filled.Code">
             <div class="d-flex justify-space-between align-center mb-3">
                 <MudText Typo="Typo.subtitle1" Class="fw-bold">Raw HexDump</MudText>
 
                 <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
                            StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyHexToClipboard">
-                    Copiar Raw Hex
+                    @Ui["Copy raw hex"]
                 </MudButton>
             </div>
 
@@ -1062,7 +1062,7 @@ else
                         _frameOptions.Add(new TrdpConfiguredFrameOption
                         {
                             Id          = $"sub_{sub.ComId}_{sub.Dataset}",
-                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? "Red Default" : net.Name,
+                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? ApsMonitor.Resources.MonitorResources.Text("Default network") : net.Name,
                             DatasetName = sub.Dataset,
                             ComId       = sub.ComId,
                             FrameName   = string.IsNullOrWhiteSpace(sub.Name) ? sub.Dataset : sub.Name,
@@ -1076,7 +1076,7 @@ else
                         _frameOptions.Add(new TrdpConfiguredFrameOption
                         {
                             Id          = $"pub_{pub.ComId}_{pub.Dataset}",
-                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? "Red Default" : net.Name,
+                            NetworkName = string.IsNullOrWhiteSpace(net.Name) ? ApsMonitor.Resources.MonitorResources.Text("Default network") : net.Name,
                             DatasetName = pub.Dataset,
                             ComId       = pub.ComId,
                             FrameName   = string.IsNullOrWhiteSpace(pub.Name) ? pub.Dataset : pub.Name,
@@ -1094,7 +1094,7 @@ else
                         _frameOptions.Add(new TrdpConfiguredFrameOption
                         {
                             Id          = $"ds_{dsKey}",
-                            NetworkName = "Dataset General",
+                            NetworkName = ApsMonitor.Resources.MonitorResources.Text("General dataset"),
                             DatasetName = dsKey,
                             ComId       = 1048580,
                             FrameName   = dsKey,
@@ -1113,7 +1113,7 @@ else
             _frameOptions.Add(new TrdpConfiguredFrameOption
             {
                 Id          = "default_tcms_plcframe",
-                NetworkName = "Red Ramal 1",
+                NetworkName = ApsMonitor.Resources.MonitorResources.Text("Branch 1 network"),
                 DatasetName = "TCMS_PLCFrame",
                 ComId       = 1048580,
                 FrameName   = "TCMS_PLCFrame",
@@ -1122,7 +1122,7 @@ else
             _frameOptions.Add(new TrdpConfiguredFrameOption
             {
                 Id          = "default_tcms_plcinfo",
-                NetworkName = "Red Ramal 1",
+                NetworkName = ApsMonitor.Resources.MonitorResources.Text("Branch 1 network"),
                 DatasetName = "TCMS_PlcInfo",
                 ComId       = 1048581,
                 FrameName   = "TCMS_PlcInfo",
@@ -1131,7 +1131,7 @@ else
             _frameOptions.Add(new TrdpConfiguredFrameOption
             {
                 Id          = "default_telemetry_aps",
-                NetworkName = "Red Ramal 1",
+                NetworkName = ApsMonitor.Resources.MonitorResources.Text("Branch 1 network"),
                 DatasetName = "TelemetryAPS",
                 ComId       = 73531397,
                 FrameName   = "Telemetria_Principal",
@@ -1163,13 +1163,13 @@ else
                 _selectedDatasetName,
                 dsDef,
                 _enableEndianSwap);
-            Snackbar.Add($"Filtro sniffer actualizado: {_selectedDatasetName} (ComID: {_selectedComId})", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Sniffer filter updated: {0} (ComID: {1})",_selectedDatasetName,_selectedComId), Severity.Info);
         }
         else if (IsPcapMode && !string.IsNullOrEmpty(_tempPcapFilePath))
         {
             // Re-filtrar la captura por el nuevo ComID e IP del dataset seleccionado
             await LoadChunk(0);
-            Snackbar.Add($"Filtrado por {_selectedDatasetName} (ComID: {_selectedComId})", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Filtered by {0} (ComID: {1})",_selectedDatasetName,_selectedComId), Severity.Info);
         }
     }
 
@@ -1193,7 +1193,7 @@ else
         }
         catch (Exception ex)
         {
-            _snifferStatusMessage = $"Error al enumerar interfaces: {ex.Message}";
+            _snifferStatusMessage = ApsMonitor.Resources.MonitorResources.Format("Unable to enumerate interfaces: {0}",ex.Message);
             Snackbar.Add(_snifferStatusMessage, Severity.Error);
         }
         StateHasChanged();
@@ -1208,7 +1208,7 @@ else
     {
         if (_selectedSnifferDevice == null)
         {
-            Snackbar.Add("Seleccione una interfaz de red para iniciar la captura.", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Select a network interface to start capture."), Severity.Warning);
             return;
         }
 
@@ -1256,7 +1256,7 @@ else
         _snifferRefreshTimer = null;
 
         SnifferService.StopCapture();
-        Snackbar.Add("Captura de red detenida.", Severity.Info);
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Network capture stopped."), Severity.Info);
         StateHasChanged();
     }
 
@@ -1326,7 +1326,7 @@ else
             if (_chunkResult.TotalFrames == 0)
             {
                 _latestFrame = null;
-                Snackbar.Add($"No se encontraron tramas en la captura para el ComID {_selectedComId} ({_selectedDatasetName}). Probando sin filtro o cambiando de dataset.", Severity.Warning);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("No frames found in the capture for ComID {0} ({1}). Try without a filter or select another dataset.",_selectedComId,_selectedDatasetName), Severity.Warning);
                 return;
             }
 
@@ -1334,11 +1334,11 @@ else
             DisplayCurrentPcapFrame();
 
             string sizeStr = FormatFileSize(file.Size);
-            Snackbar.Add($"Captura cargada ({sizeStr}): {_chunkResult.TotalFrames} tramas coincidentes con ComID {_selectedComId} ({_chunkResult.TotalChunks} bloques).", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Capture loaded ({0}): {1} frames matching ComID {2} ({3} blocks).",sizeStr,_chunkResult.TotalFrames,_selectedComId,_chunkResult.TotalChunks), Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al leer captura Wireshark: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Unable to read Wireshark capture: {0}",ex.Message), Severity.Error);
         }
         finally
         {
@@ -1373,7 +1373,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al cargar bloque de captura: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Unable to load capture block: {0}",ex.Message), Severity.Error);
         }
         finally
         {
@@ -1575,8 +1575,8 @@ else
             DisplayCurrentPcapFrame();
         }
 
-        var orderDesc = _enableEndianSwap ? "Little-Endian (Invertido)" : "Big-Endian (Estándar TRDP IEC 61375)";
-        Snackbar.Add($"Orden de byte cambiado a: {orderDesc}", Severity.Info);
+        var orderDesc = _enableEndianSwap ? ApsMonitor.Resources.MonitorResources.Text("Little-Endian (swapped)") : ApsMonitor.Resources.MonitorResources.Text("Big-Endian (TRDP IEC 61375 standard)");
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Byte order changed to: {0}",orderDesc), Severity.Info);
         StateHasChanged();
     }
 
@@ -1707,7 +1707,7 @@ else
 
         if (bytes.Length == 0)
         {
-            _hexDumpText = "(Sin datos raw disponibles)";
+            _hexDumpText = ApsMonitor.Resources.MonitorResources.Text("(No raw data available)");
             return;
         }
 
@@ -1760,7 +1760,7 @@ else
     {
         if (_latestFrame != null && !string.IsNullOrWhiteSpace(_latestFrame.RawHex))
         {
-            Snackbar.Add("Raw Hex copiado al portapapeles.", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Raw hex copied to clipboard."), Severity.Info);
         }
     }
 

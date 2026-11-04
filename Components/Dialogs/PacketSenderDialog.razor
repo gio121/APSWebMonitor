@@ -6,7 +6,7 @@
         <div class="d-flex align-center justify-space-between">
             <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
                 <MudIcon Icon="@Icons.Material.Filled.FastForward" />
-                Reproductor de Paquetes Wireshark & Packet Sender
+                @Ui["Wireshark packet player & Packet Sender"]
             </MudText>
             <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="Close" Color="Color.Inherit" />
         </div>
@@ -15,7 +15,7 @@
         <PacketSenderPanel DefaultAdapterIp="@DefaultAdapterIp" DefaultAdapterName="@DefaultAdapterName" />
     </DialogContent>
     <DialogActions>
-        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="Close">Cerrar Ventana</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="Close">@Ui["Close window"]</MudButton>
     </DialogActions>
 </MudDialog>
 

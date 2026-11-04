@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ApsMonitor.Data;
 using ApsMonitor.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Globalization;
 
 // Cerrar instancias previas huerfanas en segundo plano para liberar los puertos (7211, 5005, etc.)
 try
@@ -21,11 +22,18 @@ catch { }
 
 var builder = WebApplication.CreateBuilder(args);
 
+// English is the default; each browser can select its interface culture with a cookie.
+CultureInfo.DefaultThreadCurrentCulture = MonitorLocalization.Culture;
+CultureInfo.DefaultThreadCurrentUICulture = MonitorLocalization.Culture;
+builder.Services.AddLocalization();
+builder.Services.Configure<RequestLocalizationOptions>(MonitorLocalization.Configure);
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
+builder.Services.AddTransient<MudBlazor.MudLocalizer, MonitorMudLocalizer>();
 
 builder.Services.AddSingleton<ApplicationDbContextFactory>();
 builder.Services.AddSingleton<ProjectDatabaseService>();
@@ -81,6 +89,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+app.UseRequestLocalization();
 
 // Keep application accounts and permissions in the original database.
 using (var scope = app.Services.CreateScope())
@@ -104,6 +113,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapGet("/culture", MonitorLocalization.ChangeCulture).AllowAnonymous();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AllowAnonymous();

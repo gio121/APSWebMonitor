@@ -49,14 +49,14 @@ public sealed class DraftDbContextFactory(ProjectDatabase draft, ProjectDatabase
                 .Select(e => e.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
             if (!ChangeTracker.HasChanges()) return;
             if (ProjectDatabaseService.IsSealed(owner._draft))
-                throw new InvalidOperationException("Este borrador ya se publicó. Recarga la página para editar la nueva revisión.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("This draft has already been published. Reload the page to edit the new revision."));
             foreach (var entry in ChangeTracker.Entries().Where(Configuration).Where(e => e.State is EntityState.Modified or EntityState.Deleted))
             {
                 var current = entry.GetDatabaseValues();
                 var key = Key(entry);
                 var expected = _saved.TryGetValue(key, out var saved) ? saved.Snapshot : owner._seen.GetValueOrDefault(key);
                 if (current is null || (expected is not null && Snapshot(current) != expected))
-                    throw new InvalidOperationException("Otro usuario ha cambiado estos datos. Tus cambios no se han guardado. Recarga la página y revisa la versión actual antes de volver a guardar.");
+                    throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Another user has changed this data. Your changes have not been saved. Reload the page and review the current version before saving again."));
             }
         }
         private void Remember()

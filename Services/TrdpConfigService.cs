@@ -63,15 +63,15 @@ public class TrdpConfigService
     /// Parsea el JSON de configuración TRDP (estructura del archivo de config proporcionado)
     /// y crea una nueva entidad <see cref="TrdpSessionConfig"/> lista para guardar.
     /// </summary>
-    public TrdpSessionConfig ImportFromJson(string json, string nombre = "Config importada")
+    public TrdpSessionConfig ImportFromJson(string json, string? nombre = null)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
         var config = new TrdpSessionConfig
         {
-            Nombre      = nombre,
-            Descripcion = "Importada desde JSON",
+            Nombre      = nombre ?? ApsMonitor.Resources.MonitorResources.Text("Imported configuration"),
+            Descripcion = ApsMonitor.Resources.MonitorResources.Text("Imported from JSON"),
             UltimaModificacion = DateTime.UtcNow
         };
 
@@ -140,10 +140,10 @@ public class TrdpConfigService
 
     public async Task<TrdpSessionConfig> DuplicateAsync(int id)
     {
-        var original = await GetByIdAsync(id) ?? throw new InvalidOperationException("Config no encontrada");
+        var original = await GetByIdAsync(id) ?? throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Configuration not found"));
         var copy = new TrdpSessionConfig
         {
-            Nombre             = original.Nombre + " (copia)",
+            Nombre             = original.Nombre + ApsMonitor.Resources.MonitorResources.Text(" (copy)"),
             Descripcion        = original.Descripcion,
             UseDynamicMapping  = original.UseDynamicMapping,
             TcmsOkJson         = original.TcmsOkJson,

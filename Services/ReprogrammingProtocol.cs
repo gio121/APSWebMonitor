@@ -30,7 +30,7 @@ public static class ReprogrammingProtocol
     public static byte[] Block(byte node, bool fpga, string signature, byte[] image, int blockSize, ushort index)
     {
         if (signature.Length != 6 || signature.Any(c => !char.IsAsciiLetterOrDigit(c)))
-            throw new ArgumentException("La firma debe contener seis caracteres alfanuméricos ASCII.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The signature must contain six alphanumeric ASCII characters."));
         if (blockSize is < 1 or > 4096) throw new ArgumentOutOfRangeException(nameof(blockSize));
         var payload = new byte[blockSize + 10];
         Encoding.ASCII.GetBytes(signature).CopyTo(payload, 0);
@@ -108,7 +108,7 @@ public static class ReprogrammingProtocol
 
         if (frameType == 0xF7)
         {
-            message = payload.Length > 0 ? Encoding.ASCII.GetString(payload).Trim('\0', ' ', '\r', '\n') : "Error de reprogramación";
+            message = payload.Length > 0 ? Encoding.ASCII.GetString(payload).Trim('\0', ' ', '\r', '\n') : ApsMonitor.Resources.MonitorResources.Text("Firmware update error");
             isStarting = false;
             return true;
         }
@@ -121,7 +121,7 @@ public static class ReprogrammingProtocol
                 string text = Encoding.ASCII.GetString(payload[1..]).Trim('\0', ' ', '\r', '\n');
                 isStarting = (status == 0) && (text.Contains("Comenzamos", StringComparison.OrdinalIgnoreCase) || !text.Contains("No hay", StringComparison.OrdinalIgnoreCase));
                 message = string.IsNullOrWhiteSpace(text)
-                    ? (isStarting ? "Comenzamos la reprogramación" : "No hay archivos que reprogramar en /mnt/artifacts/update")
+                    ? (isStarting ? ApsMonitor.Resources.MonitorResources.Text("Starting firmware update") : ApsMonitor.Resources.MonitorResources.Text("No files to update in /mnt/artifacts/update"))
                     : text;
                 return true;
             }
@@ -136,7 +136,7 @@ public static class ReprogrammingProtocol
         }
 
         isStarting = true;
-        message = "Comenzamos la reprogramación";
+        message = ApsMonitor.Resources.MonitorResources.Text("Starting firmware update");
         return true;
     }
 

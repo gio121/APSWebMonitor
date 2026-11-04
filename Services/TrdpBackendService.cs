@@ -146,7 +146,7 @@ public sealed class TrdpBackendService
         }
         catch (Exception ex)
         {
-            return TrdpBackendResult<string>.Fail($"Error obteniendo configuración (SFTP/HTTP): {ex.Message}");
+            return TrdpBackendResult<string>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to retrieve configuration (SFTP/HTTP): {0}", ex.Message));
         }
     }
 
@@ -203,7 +203,7 @@ public sealed class TrdpBackendService
                     }
 
                     return TrdpBackendResult<TrdpSaveResponse>.Ok(
-                        new TrdpSaveResponse("ok", "Configuración guardada por SFTP en /mnt/artifacts/ecnmanager.json", restarted));
+                        new TrdpSaveResponse("ok", ApsMonitor.Resources.MonitorResources.Text("Configuration saved through SFTP to /mnt/artifacts/ecnmanager.json"), restarted));
                 }
                 catch
                 {
@@ -237,7 +237,7 @@ public sealed class TrdpBackendService
         }
         catch (Exception ex)
         {
-            return TrdpBackendResult<TrdpSaveResponse>.Fail($"Error al guardar configuración: {ex.Message}");
+            return TrdpBackendResult<TrdpSaveResponse>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to save configuration: {0}", ex.Message));
         }
     }
 
@@ -256,7 +256,7 @@ public sealed class TrdpBackendService
         {
             var cfgRes = await GetConfigAsync(deviceBaseUrl, ct);
             if (!cfgRes.IsSuccess || string.IsNullOrWhiteSpace(cfgRes.Data))
-                return TrdpBackendResult<TrdpSaveResponse>.Fail($"No se pudo leer la configuración actual: {cfgRes.Error}");
+                return TrdpBackendResult<TrdpSaveResponse>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to read the current configuration: {0}", cfgRes.Error));
 
             using var doc = JsonDocument.Parse(cfgRes.Data);
             var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(cfgRes.Data, TrdpJsonOptions.Default)
@@ -292,7 +292,7 @@ public sealed class TrdpBackendService
             if (saved)
             {
                 return TrdpBackendResult<TrdpSaveResponse>.Ok(
-                    new TrdpSaveResponse("ok", $"Modo cambiado a {(useDynamicMapping ? "Dinámico" : "Estático/Legacy")}", restartService));
+                    new TrdpSaveResponse("ok", $"Mode changed to {(useDynamicMapping ? ApsMonitor.Resources.MonitorResources.Text("Dynamic") : ApsMonitor.Resources.MonitorResources.Text("Static/Legacy"))}", restartService));
             }
 
             // Fallback HTTP / HTTPS
@@ -313,11 +313,11 @@ public sealed class TrdpBackendService
                     parsed?.Message ?? $"HTTP {(int)response.StatusCode}: {body}");
 
             return TrdpBackendResult<TrdpSaveResponse>.Ok(
-                parsed ?? new TrdpSaveResponse("ok", "Modo actualizado", restartService));
+                parsed ?? new TrdpSaveResponse("ok", ApsMonitor.Resources.MonitorResources.Text("Mode updated"), restartService));
         }
         catch (Exception ex)
         {
-            return TrdpBackendResult<TrdpSaveResponse>.Fail($"Error de conexión: {ex.Message}");
+            return TrdpBackendResult<TrdpSaveResponse>.Fail(ApsMonitor.Resources.MonitorResources.Format("Connection error: {0}", ex.Message));
         }
     }
 
@@ -340,13 +340,13 @@ public sealed class TrdpBackendService
 
             var frame = JsonSerializer.Deserialize<TrdpFrameMessage>(body, TrdpJsonOptions.Default);
             if (frame is null)
-                return TrdpBackendResult<TrdpFrameMessage>.Fail("No se pudo deserializar la respuesta del snapshot.");
+                return TrdpBackendResult<TrdpFrameMessage>.Fail(ApsMonitor.Resources.MonitorResources.Text("Unable to deserialise the snapshot response."));
 
             return TrdpBackendResult<TrdpFrameMessage>.Ok(frame);
         }
         catch (Exception ex)
         {
-            return TrdpBackendResult<TrdpFrameMessage>.Fail($"Error al consultar snapshot: {ex.Message}");
+            return TrdpBackendResult<TrdpFrameMessage>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to retrieve snapshot: {0}", ex.Message));
         }
     }
 
@@ -390,7 +390,7 @@ public sealed class TrdpBackendService
             var ep = new IPEndPoint(ip, 50001);
             await udp.SendAsync(payload, payload.Length, ep);
 
-            return TrdpBackendResult<string>.Ok("Comando enviado exitosamente por UDP a ControlManager (puerto 50001)");
+            return TrdpBackendResult<string>.Ok(ApsMonitor.Resources.MonitorResources.Text("Command sent successfully over UDP to ControlManager (port 50001)"));
         }
         catch (Exception udpEx)
         {
@@ -403,13 +403,13 @@ public sealed class TrdpBackendService
                 var body = await response.Content.ReadAsStringAsync(ct);
 
                 if (!response.IsSuccessStatusCode)
-                    return TrdpBackendResult<string>.Fail($"UDP fallo ({udpEx.Message}) y HTTP {(int)response.StatusCode}: {body}");
+                    return TrdpBackendResult<string>.Fail(ApsMonitor.Resources.MonitorResources.Format("UDP failed ({0}) and HTTP {1}: {2}", udpEx.Message, (int)response.StatusCode, body));
 
-                return TrdpBackendResult<string>.Ok("Comando enviado a Control (vía HTTP)");
+                return TrdpBackendResult<string>.Ok(ApsMonitor.Resources.MonitorResources.Text("Command sent to Control (through HTTP)"));
             }
             catch (Exception ex)
             {
-                return TrdpBackendResult<string>.Fail($"Error al enviar comando: {udpEx.Message} / {ex.Message}");
+                return TrdpBackendResult<string>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to send command: {0} / {1}", udpEx.Message, ex.Message));
             }
         }
     }
@@ -422,7 +422,7 @@ public sealed class TrdpBackendService
     {
         var host = ExtractHost(deviceUrlOrHost);
         if (string.IsNullOrWhiteSpace(host))
-            return TrdpBackendResult<string>.Fail("IP o host no especificado.");
+            return TrdpBackendResult<string>.Fail(ApsMonitor.Resources.MonitorResources.Text("No IP address or hostname specified."));
 
         bool success = false;
         string detail = "";
@@ -472,7 +472,7 @@ public sealed class TrdpBackendService
 
             success = true;
             if (string.IsNullOrEmpty(detail))
-                detail = "Comando SEPSA transmitido a ControlManager (puerto 50001)";
+            detail = ApsMonitor.Resources.MonitorResources.Text("SEPSA command transmitted to ControlManager (port 50001)");
         }
         catch (Exception ex)
         {
@@ -522,16 +522,16 @@ public sealed class TrdpBackendService
         }
 
         if (success)
-            return TrdpBackendResult<string>.Ok("Comando de reseteo ejecutado correctamente. Los valores en cosmos_data.txt se han restablecido a 0.");
+            return TrdpBackendResult<string>.Ok(ApsMonitor.Resources.MonitorResources.Text("Reset command executed successfully. Values in cosmos_data.txt have been reset to 0."));
 
-        return TrdpBackendResult<string>.Fail($"No se pudo ejecutar el reseteo en {host}: {detail}");
+        return TrdpBackendResult<string>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to execute reset on {0}: {1}", host, detail));
     }
 
     public async Task<TrdpBackendResult<bool>> RestartEcnManagerAsync(string deviceUrlOrHost, CancellationToken ct = default)
     {
         var host = ExtractHost(deviceUrlOrHost);
         if (string.IsNullOrWhiteSpace(host))
-            return TrdpBackendResult<bool>.Fail("IP o host no especificado.");
+            return TrdpBackendResult<bool>.Fail(ApsMonitor.Resources.MonitorResources.Text("No IP address or hostname specified."));
 
         bool restarted = false;
         foreach (var cred in DefaultCredentials)
@@ -550,7 +550,7 @@ public sealed class TrdpBackendService
         if (restarted)
             return TrdpBackendResult<bool>.Ok(true);
 
-        return TrdpBackendResult<bool>.Fail($"No se pudo conectar para reiniciar ecnmanager en {host}.");
+        return TrdpBackendResult<bool>.Fail(ApsMonitor.Resources.MonitorResources.Format("Unable to connect to restart ecnmanager on {0}.", host));
     }
 
     // ── Private helpers ────────────────────────────────────────────────────

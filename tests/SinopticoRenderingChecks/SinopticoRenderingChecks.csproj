@@ -9,5 +9,6 @@
     <PackageReference Include="MudBlazor" Version="9.9.0" />
     <Compile Include="../../Models/SinopticoElement.cs" Link="SinopticoElement.cs" />
     <Compile Include="../../Services/SinopticoIconProvider.cs" Link="SinopticoIconProvider.cs" />
+    <Compile Include="../../Services/SinopticoBindingEvaluator.cs" Link="SinopticoBindingEvaluator.cs" />
   </ItemGroup>
 </Project>

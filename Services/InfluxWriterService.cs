@@ -34,13 +34,13 @@ public sealed class InfluxWriterService : BackgroundService
             if (!Uri.TryCreate(_options.Url, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "http" && uri.Scheme != "https") || !string.IsNullOrEmpty(uri.UserInfo) ||
                 !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
-                _configurationError = "La URL de InfluxDB no es válida.";
+                _configurationError = ApsMonitor.Resources.MonitorResources.Text("The InfluxDB URL is invalid.");
             else if (string.IsNullOrWhiteSpace(_options.Organization) || string.IsNullOrWhiteSpace(_options.Bucket) ||
                      string.IsNullOrWhiteSpace(_options.Token) || _options.Token.Any(char.IsControl))
-                _configurationError = "Falta organización, bucket o un token válido de InfluxDB.";
+                _configurationError = ApsMonitor.Resources.MonitorResources.Text("Missing InfluxDB organisation, bucket or valid token.");
             else if (_options.FlushIntervalSeconds is < 1 or > 60 || _options.BatchSize is < 1 or > 50000 ||
                      _options.QueueCapacity is < 1 or > 1000000)
-                _configurationError = "Los límites de envío de InfluxDB no son válidos.";
+                _configurationError = ApsMonitor.Resources.MonitorResources.Text("The InfluxDB transmission limits are invalid.");
         }
         _error = _configurationError;
     }
@@ -113,7 +113,7 @@ public sealed class InfluxWriterService : BackgroundService
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
                 catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
                 {
-                    lock (_gate) _error = "No se pudo escribir en InfluxDB. Se reintentará el lote pendiente.";
+                    lock (_gate) _error = ApsMonitor.Resources.MonitorResources.Text("Unable to write to InfluxDB. The pending batch will be retried.");
                 }
                 Notify();
             }

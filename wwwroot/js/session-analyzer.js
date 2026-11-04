@@ -14,7 +14,7 @@ window.sessionAnalyzer = {
       if (chart.data) Plotly.relayout(chart, window.sessionAnalyzer.theme(chart));
     });
   },
-  draw: (id, sessions) => {
+  draw: (id, sessions, labels = {}) => {
     const chart = document.getElementById(id);
     if (!chart) return;
     const traces = [];
@@ -28,8 +28,8 @@ window.sessionAnalyzer = {
       paper_bgcolor:'#1a222c', plot_bgcolor:'#1a222c', font:{color:'#dbeafe'},
       width:chart.clientWidth, height:chart.clientHeight, autosize:false,
       margin:{l:70,r:330,t:55,b:80},
-      xaxis:{title:{text:'Tiempo', standoff:14}, gridcolor:'rgba(255,255,255,.1)', zerolinecolor:'rgba(255,255,255,.1)'},
-      yaxis:{title:{text:'Valor', standoff:12}, gridcolor:'rgba(255,255,255,.1)', zerolinecolor:'rgba(255,255,255,.1)'},
+      xaxis:{title:{text:labels.time || 'Time', standoff:14}, gridcolor:'rgba(255,255,255,.1)', zerolinecolor:'rgba(255,255,255,.1)'},
+      yaxis:{title:{text:labels.value || 'Value', standoff:12}, gridcolor:'rgba(255,255,255,.1)', zerolinecolor:'rgba(255,255,255,.1)'},
       legend:{orientation:'v', x:1, xanchor:'left', y:1, yanchor:'top', bgcolor:'rgba(26,34,44,.9)', bordercolor:'rgba(255,255,255,.12)', borderwidth:1, font:{size:11}},
       hovermode:'x unified'
     }, {responsive:false, displayModeBar:true, scrollZoom:true, displaylogo:false})

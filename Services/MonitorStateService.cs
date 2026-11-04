@@ -54,10 +54,10 @@ public class MonitorStateService : IDisposable
         lock (_operationLock)
         {
             if (IsReprogramming || _downloadingControlEvents || _changingProject)
-                throw new InvalidOperationException("Hay otra transferencia en curso en el equipo.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Another transfer is in progress on the device."));
             address = IpAddress;
             if (!int.TryParse(Port, out port) || port is < 1 or > 65535)
-                throw new InvalidOperationException("Puerto UDP de control no válido.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Invalid control UDP port."));
             resume = IsMonitoring;
             _downloadingControlEvents = true;
             StopMonitoring();
@@ -103,7 +103,7 @@ public class MonitorStateService : IDisposable
         await _protocolGate.WaitAsync(token);
         try
         {
-            if (IsReprogramming || IsDownloadingControlEvents || _changingProject) throw new OperationCanceledException("Transferencia en curso.");
+            if (IsReprogramming || IsDownloadingControlEvents || _changingProject) throw new OperationCanceledException(ApsMonitor.Resources.MonitorResources.Text("Transfer in progress."));
 
             // Modo TLS / mTLS: Envío cifrado a través de HTTPS POST /api/send
             if (_tlsSecurity.UseTls)
@@ -145,7 +145,7 @@ public class MonitorStateService : IDisposable
                 }
                 catch (SocketException ex)
                 {
-                    return SepsaExchangeResult.Failed(new Uri($"udp://{targetAddress}:{targetPort}"), System.Net.HttpStatusCode.BadGateway, $"Error socket UDP: {ex.Message}");
+                    return SepsaExchangeResult.Failed(new Uri($"udp://{targetAddress}:{targetPort}"), System.Net.HttpStatusCode.BadGateway, ApsMonitor.Resources.MonitorResources.Format("UDP socket error: {0}", ex.Message));
                 }
             }
 
@@ -275,7 +275,7 @@ public class MonitorStateService : IDisposable
         IsConnected = false;
         try { _udpClient?.Dispose(); } catch { }
         _udpClient = null;
-        AddLog("Sistema", "Desconectado. Monitorización detenida.", false, false);
+        AddLog(ApsMonitor.Resources.MonitorResources.Text("System"), ApsMonitor.Resources.MonitorResources.Text("Disconnected. Monitoring stopped."), false, false);
         NotifyStateChanged();
     }
 
@@ -284,7 +284,7 @@ public class MonitorStateService : IDisposable
         lock (_operationLock)
         {
             if (_changingProject || IsConnecting || IsReprogramming || _downloadingControlEvents)
-                throw new InvalidOperationException("Espera a que termine la conexión o transferencia antes de cambiar de proyecto.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Wait for the connection or transfer to finish before changing projects."));
             _changingProject = true;
             Disconnect();
         }
@@ -360,7 +360,7 @@ public class MonitorStateService : IDisposable
             var payload = SepsaProtocolClient.ParsePayload(PayloadHex);
             var frame = _sepsaClient.BuildFrame(payload);
 
-            AddLog("Trama", $"TX {SepsaProtocolClient.ToHex(frame)}", true, false);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Frame"), $"TX {SepsaProtocolClient.ToHex(frame)}", true, false);
             NotifyStateChanged();
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
@@ -368,17 +368,17 @@ public class MonitorStateService : IDisposable
 
             if (response.IsSuccess)
             {
-                AddLog("Respuesta", $"RX {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
+                AddLog(ApsMonitor.Resources.MonitorResources.Text("Response"), $"RX {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
                 ProcessIncomingFrame(response.Payload);
             }
             else
             {
-                AddLog("Error", $"Fallo en {response.Endpoint}. Código: {response.StatusCode}. {response.Error}", false, true);
+                AddLog(ApsMonitor.Resources.MonitorResources.Text("Error"), ApsMonitor.Resources.MonitorResources.Format("Failure at {0}. Code: {1}. {2}", response.Endpoint, response.StatusCode, response.Error), false, true);
             }
         }
         catch (Exception ex)
         {
-            AddLog("Excepción", ex.Message, false, true);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Exception"), ex.Message, false, true);
         }
 
         NotifyStateChanged();
@@ -395,7 +395,7 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public Task<bool> SendControlCommandAsync(byte frameType, ushort subCmd, CancellationToken token = default)
     {
-        if (frameType == 0x6A) throw new ArgumentException("Los comandos 6A requieren una variable y un valor.");
+        if (frameType == 0x6A) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("6A commands require a variable and a value."));
         byte[] payload = new byte[8];
         System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(payload, subCmd);
         return SendControlFrameAsync(ReprogrammingProtocol.Frame(2, frameType, payload), token);
@@ -418,17 +418,17 @@ public class MonitorStateService : IDisposable
         try
         {
             if (!IsConnected || !IsMonitoring || IsReprogramming || (!_tlsSecurity.UseTls && _udpClient is null))
-                throw new InvalidOperationException("El envío requiere monitorización activa y ninguna reprogramación en curso.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Sending requires active monitoring and no firmware update in progress."));
             string address = IpAddress;
             if (!int.TryParse(Port, out int port) || port is < 1 or > 65535)
-                throw new InvalidOperationException("Puerto UDP de control no válido.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Invalid control UDP port."));
 
             if (_tlsSecurity.UseTls)
             {
                 await _protocolGate.WaitAsync(token);
                 acquired = true;
                 if (!IsConnected || !IsMonitoring || IsReprogramming || address != IpAddress || Port != port.ToString())
-                    throw new InvalidOperationException("La monitorización se detuvo o cambió el destino antes del envío.");
+                    throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Monitoring stopped or the target changed before sending."));
 
                 var tlsRes = await _tlsSecurity.SendSepsaFrameOverTlsAsync(address, frame, token);
                 if (!tlsRes.IsSuccess)
@@ -446,14 +446,14 @@ public class MonitorStateService : IDisposable
             await _protocolGate.WaitAsync(token);
             acquired = true;
             if (!IsConnected || !IsMonitoring || IsReprogramming || _udpClient is null || address != IpAddress || Port != port.ToString())
-                throw new InvalidOperationException("La monitorización se detuvo o cambió el destino antes del envío.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Monitoring stopped or the target changed before sending."));
             await _udpClient.SendAsync(frame, new IPEndPoint(ip, port), token);
-            AddLog("Comando", $"TX CMD {SepsaProtocolClient.ToHex(frame)} · enviado, sin confirmación de ejecución", true, false);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Command"), ApsMonitor.Resources.MonitorResources.Format("TX CMD {0} · sent, execution not confirmed", SepsaProtocolClient.ToHex(frame)), true, false);
             return true;
         }
         catch (Exception ex)
         {
-            AddLog("Error", $"No se pudo enviar el comando: {ex.Message}", false, true);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Error"), ApsMonitor.Resources.MonitorResources.Format("Unable to send command: {0}", ex.Message), false, true);
             return false;
         }
         finally
@@ -509,7 +509,7 @@ public class MonitorStateService : IDisposable
                     var payload = SepsaProtocolClient.ParsePayload(PayloadHex);
                     var frame = _sepsaClient.BuildFrame(payload, messageType: currentFrameType);
 
-                    AddLog("Trama", $"TX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(frame)}", true, false);
+                    AddLog(ApsMonitor.Resources.MonitorResources.Text("Frame"), $"TX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(frame)}", true, false);
 
                     using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     reqCts.CancelAfter(_tlsSecurity.UseTls ? 1500 : 500);
@@ -517,13 +517,13 @@ public class MonitorStateService : IDisposable
                     var response = await SendFrameAsync(IpAddress, targetPort, frame, reqCts.Token);
                     if (response.IsSuccess)
                     {
-                        AddLog("Respuesta", $"RX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
+                        AddLog(ApsMonitor.Resources.MonitorResources.Text("Response"), $"RX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(response.Payload)}", false, false);
                         if (!cancellationToken.IsCancellationRequested)
                             ProcessIncomingFrame(response.Payload, sessionId);
                     }
                     else
                     {
-                        AddLog("Error", $"Fallo en {response.Endpoint}. Código: {response.StatusCode}. {response.Error}", false, true);
+                        AddLog(ApsMonitor.Resources.MonitorResources.Text("Error"), ApsMonitor.Resources.MonitorResources.Format("Failure at {0}. Code: {1}. {2}", response.Endpoint, response.StatusCode, response.Error), false, true);
                     }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -536,7 +536,7 @@ public class MonitorStateService : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    AddLog("Excepción", $"Error enviando trama [{currentFrameType:X2}]: {ex.Message}", false, true);
+                    AddLog(ApsMonitor.Resources.MonitorResources.Text("Exception"), ApsMonitor.Resources.MonitorResources.Format("Unable to send frame [{0:X2}]: {1}", currentFrameType, ex.Message), false, true);
                 }
 
                 // Alternar tipo de trama: 1A → 1D → 1A …
@@ -558,7 +558,7 @@ public class MonitorStateService : IDisposable
         }
         catch (Exception ex)
         {
-            AddLog("Excepción", $"Error en bucle de monitorización: {ex.Message}", false, true);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Exception"), ApsMonitor.Resources.MonitorResources.Format("Monitoring loop error: {0}", ex.Message), false, true);
         }
         finally
         {
@@ -641,7 +641,7 @@ public class MonitorStateService : IDisposable
         }
         catch (Exception ex)
         {
-            AddLog("Error", $"No se pudieron cargar las señales: {ex.Message}", false, true);
+            AddLog(ApsMonitor.Resources.MonitorResources.Text("Error"), ApsMonitor.Resources.MonitorResources.Format("Unable to load signals: {0}", ex.Message), false, true);
         }
     }
 
@@ -655,7 +655,7 @@ public class MonitorStateService : IDisposable
                 TotalTxCount++;
             else if (isError)
                 TotalErCount++;
-            else if (prefix != "Sistema")
+            else if (prefix != "System")
                 TotalRxCount++;
 
             _logs.Add(new MonitorLogEntry

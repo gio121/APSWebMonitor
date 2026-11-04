@@ -11,7 +11,7 @@
 <div class="d-flex justify-space-between align-center mb-6">
     <div>
         <MudText Typo="Typo.h5" Class="fw-bold">Logs</MudText>
-        <MudText Typo="Typo.body2" Class="text-muted">Registros del sistema APS desde un fichero de logs</MudText>
+        <MudText Typo="Typo.body2" Class="text-muted">@Ui["APS system records from a log file"]</MudText>
     </div>
     <div class="d-flex gap-2 align-center">
         <MudButton Variant="Variant.Outlined"
@@ -20,52 +20,52 @@
                    OnClick="OpenTlsSettingsDialogAsync">
             @MonitorState.TlsSecurity.ModeDisplayName
         </MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RetrieveAsync" Disabled="@(_isLoading || string.IsNullOrWhiteSpace(MonitorState.IpAddress))">Descargar del APS</MudButton>
-        <label class="log-file-button">Abrir fichero<InputFile OnChange="OpenLogsAsync" disabled="@_isLoading" aria-label="Abrir fichero de logs" /></label>
-        <MudButton OnClick="ExportCsvAsync" Disabled="@(_isLoading || _filteredEvents.Count == 0)">Exportar CSV</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadAsync" Disabled="@(_originalBytes is null || _isLoading)">Descargar original</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RetrieveAsync" Disabled="@(_isLoading || string.IsNullOrWhiteSpace(MonitorState.IpAddress))">@Ui["Download from APS"]</MudButton>
+        <label class="log-file-button">@Ui["Open file"]<InputFile OnChange="OpenLogsAsync" disabled="@_isLoading" aria-label="@Ui["Open log file"]" /></label>
+        <MudButton OnClick="ExportCsvAsync" Disabled="@(_isLoading || _filteredEvents.Count == 0)">@Ui["Export CSV"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadAsync" Disabled="@(_originalBytes is null || _isLoading)">@Ui["Download original"]</MudButton>
     </div>
 </div>
 <MudText Typo="Typo.caption" Class="mb-3">
     Equipo monitorizado: @MonitorState.IpAddress · @(MonitorState.UseTls ? $"HTTPS mTLS {MonitorState.TlsSecurity.LogGatewayTlsPort} / TLS {ApsLogClient.Port}" : $"TCP {ApsLogClient.Port}")
 </MudText>
 <MudPaper Class="filter-panel pa-4 mb-5" Elevation="0">
-    <MudText Typo="Typo.subtitle2" Class="filter-heading mb-3">FILTROS DE REGISTRO</MudText>
+    <MudText Typo="Typo.subtitle2" Class="filter-heading mb-3">@Ui["RECORD FILTERS"]</MudText>
     <MudGrid>
-        <MudItem xs="12" md="8"><MudTextField @bind-Value="_searchText" @bind-Value:after="ApplyFilters" Immediate="true" Label="Buscar en los registros" Placeholder="Fecha, equipo, proceso, PID o mensaje..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" /></MudItem>
-        <MudItem xs="12" md="4"><MudSelect T="string" @bind-Value="_process" @bind-Value:after="ApplyFilters" Label="Proceso" Variant="Variant.Outlined" Margin="Margin.Dense"><MudSelectItem T="string" Value="@string.Empty">Todos</MudSelectItem>@foreach (var process in _processes) { <MudSelectItem T="string" Value="@process">@process</MudSelectItem> }</MudSelect></MudItem>
+        <MudItem xs="12" md="8"><MudTextField @bind-Value="_searchText" @bind-Value:after="ApplyFilters" Immediate="true" Label="@Ui["Search records"]" Placeholder="@Ui["Date, device, process, PID or message..."]" Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" /></MudItem>
+        <MudItem xs="12" md="4"><MudSelect T="string" @bind-Value="_process" @bind-Value:after="ApplyFilters" Label="@Ui["Process"]" Variant="Variant.Outlined" Margin="Margin.Dense"><MudSelectItem T="string" Value="@string.Empty">@Ui["All"]</MudSelectItem>@foreach (var process in _processes) { <MudSelectItem T="string" Value="@process">@process</MudSelectItem> }</MudSelect></MudItem>
     </MudGrid>
     <MudGrid>
-        <MudItem xs="12" md="6"><MudDatePicker @bind-Date="_startDate" @bind-Date:after="ApplyFilters" Label="Fecha de inicio" Clearable="true" /></MudItem>
-        <MudItem xs="12" md="6"><MudDatePicker @bind-Date="_endDate" @bind-Date:after="ApplyFilters" Label="Fecha de fin" Clearable="true" /></MudItem>
+        <MudItem xs="12" md="6"><MudDatePicker @bind-Date="_startDate" @bind-Date:after="ApplyFilters" Label="@Ui["Start date"]" Clearable="true" /></MudItem>
+        <MudItem xs="12" md="6"><MudDatePicker @bind-Date="_endDate" @bind-Date:after="ApplyFilters" Label="@Ui["End date"]" Clearable="true" /></MudItem>
     </MudGrid>
     @if (_startDate.HasValue || _endDate.HasValue)
     {
-        <MudText Typo="Typo.caption">Los registros sin fecha completa se conservan en los resultados.</MudText>
+        <MudText Typo="Typo.caption">@Ui["Records without a complete date remain in the results."]</MudText>
     }
-    @if (HasActiveFilters) { <MudButton OnClick="ClearFilters">Limpiar filtros</MudButton> }
+    @if (HasActiveFilters) { <MudButton OnClick="ClearFilters">@Ui["Clear filters"]</MudButton> }
 </MudPaper>
 <MudPaper Class="event-log-panel" Elevation="0">
     <div class="event-log-header px-4 py-3 d-flex justify-space-between align-center">
         <MudText Typo="Typo.subtitle2">@_fileName</MudText>
-        <MudText Typo="Typo.caption">@_filteredEvents.Count de @_events.Count registros</MudText>
+        <MudText Typo="Typo.caption">@Ui["{0} of {1} records", _filteredEvents.Count, _events.Count]</MudText>
     </div>
     @if (_isLoading)
     { <div class="pa-8 d-flex justify-center"><MudProgressCircular Indeterminate="true" /></div> }
     else if (_filteredEvents.Count == 0)
-    { <div class="event-empty"><MudText>No hay registros para mostrar</MudText><MudText>Abre un fichero de logs del APS o modifica los filtros.</MudText></div> }
+    { <div class="event-empty"><MudText>@Ui["No records to display"]</MudText><MudText>@Ui["Open an APS log file or change the filters."]</MudText></div> }
     else
     {
         <MudTable @ref="_table" Items="_filteredEvents" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Class="event-table" RowsPerPage="50">
-            <HeaderContent><MudTh>FECHA Y HORA</MudTh><MudTh>EQUIPO</MudTh><MudTh>PROCESO</MudTh><MudTh>PID</MudTh><MudTh>MENSAJE</MudTh></HeaderContent>
+            <HeaderContent><MudTh>@Ui["DATE AND TIME_Text"]</MudTh><MudTh>@Ui["DEVICE_Text"]</MudTh><MudTh>@Ui["PROCESS_Text"]</MudTh><MudTh>PID</MudTh><MudTh>@Ui["MESSAGE_Text"]</MudTh></HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Fecha y hora" Class="event-date">@context.Timestamp</MudTd>
-                <MudTd DataLabel="Equipo">@context.Host</MudTd>
-                <MudTd DataLabel="Proceso">@if (context.Process.Length > 0) { <span class="process-tag">@context.Process</span> }</MudTd>
+                <MudTd DataLabel="@Ui["Date and time"]" Class="event-date">@context.Timestamp</MudTd>
+                <MudTd DataLabel="@Ui["Device"]">@context.Host</MudTd>
+                <MudTd DataLabel="@Ui["Process"]">@if (context.Process.Length > 0) { <span class="process-tag">@context.Process</span> }</MudTd>
                 <MudTd DataLabel="PID">@context.Pid</MudTd>
-                <MudTd DataLabel="Mensaje" Class="event-description">@context.Message</MudTd>
+                <MudTd DataLabel="@Ui["Message"]" Class="event-description">@context.Message</MudTd>
             </RowTemplate>
-            <PagerContent><MudTablePager PageSizeOptions="@(new[] { 25, 50, 100 })" RowsPerPageString="Registros por página" /></PagerContent>
+            <PagerContent><MudTablePager InfoFormat="@Ui["{first_item}-{last_item} of {all_items}"]" PageSizeOptions="@(new[] { 25, 50, 100 })" RowsPerPageString="Records per page" /></PagerContent>
         </MudTable>
     }
 </MudPaper>
@@ -97,7 +97,7 @@
     private List<string> _processes = new();
     private string _searchText = string.Empty;
     private string _process = string.Empty;
-    private string _fileName = "Sin fichero";
+    private string _fileName = ApsMonitor.Resources.MonitorResources.Text("No file");
     private byte[]? _originalBytes;
     private bool _isLoading;
     private DateTime? _startDate;
@@ -128,7 +128,7 @@
         {
             var bytes = await ApsLogClient.DownloadAsync(ip, _lifetime.Token, MonitorState.TlsSecurity);
             await LoadBytesAsync(bytes, $"LOG_unknown_carNum_APS_L1_{DateTime.Now:MM-dd-yyyy_HH-mm-ss}.log");
-            Snackbar.Add("Log descargado del APS.", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Log downloaded from APS."), Severity.Success);
         }
         catch (OperationCanceledException) when (!_lifetime.IsCancellationRequested)
         { Snackbar.Add($"Tiempo de espera agotado al descargar de {ip}.", Severity.Error); }
@@ -160,11 +160,11 @@
             await stream.CopyToAsync(buffer);
             var bytes = buffer.ToArray();
             await LoadBytesAsync(bytes, args.File.Name);
-            Snackbar.Add($"Fichero cargado: {_events.Count} registros.", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("File loaded: {0} records.",_events.Count), Severity.Success);
         }
         catch (Exception)
         {
-            Snackbar.Add("No se pudo abrir el fichero. Comprueba que sea un fichero de texto de hasta 50 MB.", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Unable to open the file. Check that it is a text file no larger than 50 MB."), Severity.Error);
         }
         finally { _isLoading = false; }
     }
@@ -184,7 +184,7 @@
 
     private async Task ExportCsvAsync()
     {
-        var csv = new StringBuilder("Fecha y hora,Equipo,Proceso,PID,Mensaje\r\n");
+        var csv = new StringBuilder("Date and time,Equipo,Proceso,PID,Mensaje\r\n");
         foreach (var entry in _filteredEvents)
             csv.AppendLine(string.Join(",", new[] { entry.Timestamp, entry.Host, entry.Process, entry.Pid, entry.Message }.Select(Csv)));
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray();

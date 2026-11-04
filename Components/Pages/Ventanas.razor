@@ -10,14 +10,14 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="d-flex justify-space-between align-center mb-6">
-    <MudText Typo="Typo.h5" Class="fw-bold">Ventanas</MudText>
+    <MudText Typo="Typo.h5" Class="fw-bold">@Ui["Windows"]</MudText>
     @if (_isAdmin)
     {
-        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">Nueva Ventana</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="CrearNuevaVentana">@Ui["New window"]</MudButton>
     }
 </div>
 
-<MudTextField @bind-Value="searchString" Immediate="true" Placeholder="Buscar ventanas..." Adornment="Adornment.Start" 
+<MudTextField @bind-Value="searchString" Immediate="true" Placeholder="@Ui["Search windows..."]" Adornment="Adornment.Start"
               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
               Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: var(--mud-palette-surface);" />
 
@@ -42,15 +42,15 @@ else
                                 }
                             </div>
                             <MudText Typo="Typo.body2" Class="text-muted mb-1">@window.Descripcion</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">Categoría: @window.Categoria</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@Ui["Category: {0}", window.Categoria]</MudText>
                         </div>
                         <div class="d-flex gap-2">
                             <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
-                                @window.Tipo
+                                @MonitorLocalization.ElementName(window.Tipo)
                             </MudChip>
                             @if (window.IsActive)
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Activa</MudChip>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">@Ui["Active"]</MudChip>
                             }
                         </div>
                     </div>
@@ -64,7 +64,7 @@ else
                                        Size="Size.Small"
                                        StartIcon="@Icons.Material.Filled.ManageAccounts"
                                        OnClick="@(() => ToggleAccessPanel(window.Id))">
-                                Accesos
+                                @Ui["Access"]
                             </MudButton>
 
                             @if (IsAccessPanelOpen(window.Id))
@@ -73,7 +73,7 @@ else
                                     @foreach (var role in _availableRoles)
                                     {
                                         <MudCheckBox T="bool"
-                                                     Label="@role"
+                                                     Label="@MonitorLocalization.RoleName(role)"
                                                      Dense="true"
                                                      Color="Color.Info"
                                                      Value="@window.IsRoleAllowed(role)"
@@ -87,27 +87,27 @@ else
                     <div class="mt-auto pt-4 d-flex gap-2 flex-wrap action-buttons">
                         @if (window.Tipo == "Sinóptico")
                         {
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">Ver</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small" Href="@($"/sinoptico/ver/{window.Id}")">@Ui["View"]</MudButton>
                             @if (_isAdmin)
                             {
-                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">Editar</MudButton>
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Href="@($"/sinoptico/{window.Id}")">@Ui["Edit"]</MudButton>
                             }
                         }
                         else
                         {
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">Ver</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Visibility" Size="Size.Small">@Ui["View"]</MudButton>
                             @if (_isAdmin)
                             {
-                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">Editar</MudButton>
+                                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small">@Ui["Edit"]</MudButton>
                             }
                         }
                         @if (_isAdmin)
                         {
                             <MudButton Variant="Variant.Outlined" StartIcon="@(window.IsActive ? Icons.Material.Filled.PowerOff : Icons.Material.Filled.PowerSettingsNew)" Size="Size.Small" OnClick="@(() => ToggleActivarVentana(window))">
-                                @(window.IsActive ? "Desactivar" : "Activar")
+                                @(window.IsActive ? Ui["Disable"] : Ui["Enable"])
                             </MudButton>
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => DuplicarVentana(window))">Duplicar</MudButton>
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto" OnClick="@(() => EliminarVentana(window))">Eliminar</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" OnClick="@(() => DuplicarVentana(window))">@Ui["Duplicate"]</MudButton>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" Class="ml-auto" OnClick="@(() => EliminarVentana(window))">@Ui["Delete"]</MudButton>
                         }
                     </div>
                 </MudPaper>
@@ -215,7 +215,7 @@ else
         {
             window.SetRoleAllowed(role, value);
             await DataService.UpdateWindowAsync(window);
-            Snackbar.Add($"Acceso de {role} {(value ? "habilitado" : "deshabilitado")} para '{window.Nombre}'", Severity.Info);
+            Snackbar.Add($"Access for {MonitorLocalization.RoleName(role)} {(value ? "enabled" : "disabled")} for '{window.Nombre}'", Severity.Info);
             StateHasChanged();
         }
         catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
@@ -224,7 +224,7 @@ else
     private async Task CrearNuevaVentana()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Nueva Ventana", options);
+        var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>(ApsMonitor.Resources.MonitorResources.Text("New window"), options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
@@ -232,7 +232,7 @@ else
             var nuevaVentana = new Window
             {
                 Nombre = windowData.Name,
-                Descripcion = string.IsNullOrWhiteSpace(windowData.Description) ? "Sin descripción" : windowData.Description,
+                Descripcion = string.IsNullOrWhiteSpace(windowData.Description) ? ApsMonitor.Resources.MonitorResources.Text("No description") : windowData.Description,
                 Categoria = "General",
                 Tipo = "Sinóptico",
                 IsActive = false,
@@ -257,11 +257,11 @@ else
             {
                 { x => x.WindowName, window.Nombre },
                 { x => x.WindowDescription, window.Descripcion },
-                { x => x.SubmitButtonText, "Guardar" }
+                { x => x.SubmitButtonText, ApsMonitor.Resources.MonitorResources.Text("Save") }
             };
 
             var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-            var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>("Editar Detalles", parameters, options);
+            var dialog = await DialogService.ShowAsync<ApsMonitor.Components.Dialogs.NewWindowDialog>(ApsMonitor.Resources.MonitorResources.Text("Edit details"), parameters, options);
             var result = await dialog.Result;
 
             if (result != null && !result.Canceled && result.Data is ApsMonitor.Components.Dialogs.NewWindowDialog.WindowResult windowData)
@@ -270,7 +270,7 @@ else
                 window.Descripcion = windowData.Description;
 
                 await DataService.UpdateWindowAsync(window);
-                Snackbar.Add("Ventana actualizada correctamente", Severity.Success);
+                Snackbar.Add("Window updated successfully", Severity.Success);
                 StateHasChanged();
             }
         }
@@ -282,9 +282,9 @@ else
         try
         {
             bool? result = await DialogService.ShowMessageBoxAsync(
-                "Confirmar Eliminación",
-                $"¿Estás seguro de que quieres eliminar la ventana '{window.Nombre}' permanentemente?",
-                yesText: "Eliminar", cancelText: "Cancelar");
+                ApsMonitor.Resources.MonitorResources.Text("Confirm deletion"),
+                ApsMonitor.Resources.MonitorResources.Format("Are you sure you want to permanently delete window '{0}'?",window.Nombre),
+                yesText: ApsMonitor.Resources.MonitorResources.Text("Delete"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
             if (result == true)
             {
@@ -303,7 +303,7 @@ else
         {
             window.IsActive = !window.IsActive;
             await DataService.UpdateWindowAsync(window);
-            Snackbar.Add($"Ventana '{window.Nombre}' {(window.IsActive ? "activada" : "desactivada")} correctamente", Severity.Success);
+            Snackbar.Add($"Window '{window.Nombre}' {(window.IsActive ? "enabled" : "disabled")} successfully", Severity.Success);
             StateHasChanged();
         }
         catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
@@ -313,7 +313,7 @@ else
     {
         var nuevaVentana = new Window
         {
-            Nombre = window.Nombre + " (copia)",
+            Nombre = window.Nombre + ApsMonitor.Resources.MonitorResources.Text(" (copy)"),
             Descripcion = window.Descripcion,
             Categoria = window.Categoria,
             Tipo = window.Tipo,
@@ -328,7 +328,7 @@ else
             // La añadimos a la lista local para verla instantáneamente
             _windows.Add(creada);
             _filteredWindows = _isAdmin ? _windows : _windows.Where(CanCurrentRoleSeeWindow).ToList();
-            Snackbar.Add($"Ventana '{window.Nombre}' duplicada correctamente", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Window '{0}' duplicated successfully",window.Nombre), Severity.Success);
             StateHasChanged();
         }
     }

@@ -87,15 +87,15 @@ public class NetworkAdapterService
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return (false, "La configuración de red automática está implementada para Windows.");
+            return (false, ApsMonitor.Resources.MonitorResources.Text("Automatic network configuration is implemented for Windows."));
         }
 
         try
         {
             if (!IPAddress.TryParse(ipAddress, out var parsedIp))
-                return (false, "Dirección IP inválida.");
+                return (false, ApsMonitor.Resources.MonitorResources.Text("Invalid IP address."));
             if (!IPAddress.TryParse(subnetMask, out var parsedMask))
-                return (false, "Máscara de subred inválida.");
+                return (false, ApsMonitor.Resources.MonitorResources.Text("Invalid subnet mask."));
 
             // Validar que la puerta de enlace pertenezca a la misma subred si se especificó
             string gwArg = "";
@@ -120,7 +120,7 @@ public class NetworkAdapterService
                 }
                 else
                 {
-                    Console.WriteLine($"[NetworkAdapterService] Gateway {gateway} no coincide con subred {ipAddress}/{subnetMask}. Omitiendo gateway.");
+                    Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[NetworkAdapterService] Gateway {0} does not match subnet {1}/{2}. Omitting gateway.", gateway, ipAddress, subnetMask));
                 }
             }
 
@@ -140,18 +140,18 @@ public class NetworkAdapterService
 
             if (process != null && process.ExitCode == 0)
             {
-                return (true, $"IP {ipAddress} y máscara {subnetMask} configuradas con éxito en '{adapterName}'.");
+                return (true, ApsMonitor.Resources.MonitorResources.Format("IP {0} and subnet mask {1} configured successfully on '{2}'.", ipAddress, subnetMask, adapterName));
             }
 
-            return (false, $"netsh finalizó con código {process?.ExitCode}. Compruebe permisos de Administrador.");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("netsh exited with code {0}. Check administrator permissions.", process?.ExitCode));
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            return (false, "Operación cancelada por el usuario (se canceló la elevación de Administrador UAC).");
+            return (false, ApsMonitor.Resources.MonitorResources.Text("Operation cancelled by the user (administrator UAC elevation was cancelled)."));
         }
         catch (Exception ex)
         {
-            return (false, $"Error al configurar IP: {ex.Message}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to configure IP: {0}", ex.Message));
         }
     }
 
@@ -159,7 +159,7 @@ public class NetworkAdapterService
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return (false, "Implementado para Windows.");
+            return (false, ApsMonitor.Resources.MonitorResources.Text("Implemented for Windows."));
         }
 
         try
@@ -178,18 +178,18 @@ public class NetworkAdapterService
 
             if (process != null && process.ExitCode == 0)
             {
-                return (true, $"Interfaz '{adapterName}' configurada en cliente DHCP.");
+                return (true, ApsMonitor.Resources.MonitorResources.Format("Interface '{0}' configured as a DHCP client.", adapterName));
             }
 
-            return (false, $"netsh finalizó con código {process?.ExitCode}.");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("netsh exited with code {0}.", process?.ExitCode));
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            return (false, "Operación cancelada por el usuario (se canceló la elevación de Administrador UAC).");
+            return (false, ApsMonitor.Resources.MonitorResources.Text("Operation cancelled by the user (administrator UAC elevation was cancelled)."));
         }
         catch (Exception ex)
         {
-            return (false, $"Error al configurar DHCP: {ex.Message}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to configure DHCP: {0}", ex.Message));
         }
     }
 }

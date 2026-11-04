@@ -150,7 +150,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
         }
         else
         {
-            OnStatusMessage?.Invoke($"Filtro UDP activo: '{datasetName}' (ComID: {comId})");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("UDP filter active: '{0}' (ComID: {1})", datasetName, comId));
         }
     }
 
@@ -169,11 +169,11 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
             var payload = new { action = "unsubscribe" };
             var json = JsonSerializer.Serialize(payload, TrdpJsonOptions.Default);
             await SendWsTextAsync(json, ct);
-            OnStatusMessage?.Invoke("Desuscrito de dataset TRDP.");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("Unsubscribed from TRDP dataset."));
         }
         else
         {
-            OnStatusMessage?.Invoke("Filtro UDP TRDP restablecido (mostrando todas las tramas).");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("TRDP UDP filter reset (showing all frames)."));
         }
     }
 
@@ -200,7 +200,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
             {
                 try
                 {
-                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Desconectado por usuario", CancellationToken.None);
+                    await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, ApsMonitor.Resources.MonitorResources.Text("Disconnected by user"), CancellationToken.None);
                 }
                 catch { }
             }
@@ -233,16 +233,16 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
             await TrdpUdpHub.RegisterAsync(this, host);
 
             OnConnectionStateChanged?.Invoke(true);
-            OnStatusMessage?.Invoke($"Conectado a Streaming TRDP por UDP ({host}:50002)");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("Connected to TRDP streaming over UDP ({0}:50002)", host));
 
             if (!string.IsNullOrEmpty(ActiveDataset) && ActiveComId.HasValue)
             {
-                OnStatusMessage?.Invoke($"Filtro UDP activo: '{ActiveDataset}' (ComID: {ActiveComId})");
+                OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("UDP filter active: '{0}' (ComID: {1})", ActiveDataset, ActiveComId));
             }
         }
         catch (Exception ex)
         {
-            LastError = $"Error al iniciar streaming UDP TRDP: {ex.Message}";
+            LastError = ApsMonitor.Resources.MonitorResources.Format("Unable to start TRDP UDP streaming: {0}", ex.Message);
             IsUdpStreaming = false;
             OnConnectionStateChanged?.Invoke(false);
             OnStatusMessage?.Invoke(LastError);
@@ -315,7 +315,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
             await _webSocket.ConnectAsync(uri, ct);
 
             OnConnectionStateChanged?.Invoke(true);
-            OnStatusMessage?.Invoke($"Conectado a WebSocket TRDP ({uri})");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("Connected to TRDP WebSocket ({0})", uri));
 
             _wsReceiveTask = Task.Run(() => ReceiveWsLoopAsync(_sessionCts.Token), _sessionCts.Token);
 
@@ -326,7 +326,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            LastError = $"Error al conectar WebSocket: {ex.Message}";
+            LastError = ApsMonitor.Resources.MonitorResources.Format("WebSocket connection failed: {0}", ex.Message);
             OnConnectionStateChanged?.Invoke(false);
             OnStatusMessage?.Invoke(LastError);
         }
@@ -343,7 +343,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
 
         var json = JsonSerializer.Serialize(payload, TrdpJsonOptions.Default);
         await SendWsTextAsync(json, ct);
-        OnStatusMessage?.Invoke($"Enviada suscripción WS a dataset '{datasetName}' (ComID: {comId})");
+        OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("WS subscription sent for dataset '{0}' (ComID: {1})", datasetName, comId));
     }
 
     private async Task SendWsTextAsync(string message, CancellationToken ct)
@@ -396,7 +396,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
             catch (Exception ex)
             {
                 LastError = ex.Message;
-                OnStatusMessage?.Invoke($"Error lect. WS: {ex.Message}");
+                OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("WS read error: {0}", ex.Message));
                 await Task.Delay(1000, ct);
             }
         }
@@ -437,7 +437,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            OnStatusMessage?.Invoke($"Error deserializando trama WS: {ex.Message}");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("Unable to deserialise WS frame: {0}", ex.Message));
         }
     }
 

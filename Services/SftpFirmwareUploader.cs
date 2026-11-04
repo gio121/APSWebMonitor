@@ -52,7 +52,7 @@ public sealed class SftpFirmwareUploader : ISftpFirmwareUploader
             {
                 if (i > 0)
                 {
-                    progress($"Reintentando subida SFTP con usuario '{cred.User}'…", 5);
+                    progress(ApsMonitor.Resources.MonitorResources.Format("Retrying SFTP upload as user '{0}'…", cred.User), 5);
                 }
 
                 using var sftp = new SftpClient(address, sftpPort, cred.User, cred.Password);
@@ -123,7 +123,7 @@ public sealed class SftpFirmwareUploader : ISftpFirmwareUploader
         foreach (var file in files)
         {
             string destination = targetDir is "." or "" ? file.Name : $"{targetDir}/{file.Name}";
-            progress($"Subiendo {file.Name} a {destination} por SFTP…", 90.0 * completed / total);
+            progress(ApsMonitor.Resources.MonitorResources.Format("Uploading {0} to {1} through SFTP…", file.Name, destination), 90.0 * completed / total);
             using var stream = new MemoryStream(file.Content, writable: false);
             
             // Si el archivo ya existía, intentar borrarlo antes para evitar conflictos de sobreescritura

@@ -13,7 +13,7 @@
         <div class="login-logo-section">
             <img src="SepsaMedha.jpg" alt="Logo" class="login-logo" />
             <MudText Typo="Typo.h5" Class="fw-bold login-title">APS Monitor</MudText>
-            <MudText Typo="Typo.caption" Class="login-subtitle">SISTEMA SCADA</MudText>
+            <MudText Typo="Typo.caption" Class="login-subtitle">@Ui["SCADA SYSTEM"]</MudText>
         </div>
 
         <!-- Divider -->
@@ -21,11 +21,11 @@
 
         <!-- Form Section -->
         <div class="login-form-section">
-            <MudText Typo="Typo.h6" Class="fw-bold mb-1">Iniciar Sesión</MudText>
-            <MudText Typo="Typo.body2" Class="text-muted mb-6">Introduce tus credenciales para acceder</MudText>
+            <MudText Typo="Typo.h6" Class="fw-bold mb-1">@Ui["Sign in"]</MudText>
+            <MudText Typo="Typo.body2" Class="text-muted mb-6">@Ui["Enter your credentials to sign in"]</MudText>
 
             <MudTextField @bind-Value="_username"
-                          Label="Usuario"
+                          Label="@Ui["User"]"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           Class="mb-4 login-input"
@@ -37,7 +37,7 @@
                           Error="@_hasError" />
 
             <MudTextField @bind-Value="_password"
-                          Label="Contraseña"
+                          Label="@Ui["Password"]"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           Class="mb-6 login-input"
@@ -59,12 +59,12 @@
                 @if (_isLoading)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>Verificando...</span>
+                    <span>Verifying...</span>
                 }
                 else
                 {
                     <MudIcon Icon="@Icons.Material.Filled.Login" Class="mr-2" />
-                    <span>Acceder</span>
+                    <span>@Ui["Sign in"]</span>
                 }
             </MudButton>
         </div>
@@ -194,7 +194,7 @@
         if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
         {
             _hasError = true;
-            _errorMessage = "Introduce usuario y contraseña";
+            _errorMessage = ApsMonitor.Resources.MonitorResources.Text("Enter your username and password");
             return;
         }
 
@@ -206,14 +206,14 @@
         var user = await AuthProvider.LoginAsync(_username.Trim(), _password);
         if (user != null)
         {
-            Snackbar.Add($"Bienvenido, {user.Nombre}", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Welcome, {0}",user.Nombre), Severity.Success);
             NavigationManager.NavigateTo("/");
         }
         else
         {
             _hasError = true;
-            _errorMessage = "Usuario o contraseña incorrectos";
-            Snackbar.Add("Credenciales incorrectas", Severity.Error);
+            _errorMessage = ApsMonitor.Resources.MonitorResources.Text("Incorrect username or password");
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Incorrect credentials"), Severity.Error);
         }
 
         _isLoading = false;

@@ -13,7 +13,7 @@
         if (!Dirty) return;
         try
         {
-            if (!await JS.InvokeAsync<bool>("confirm", "Hay cambios en el formulario sin guardar en el borrador. ¿Quieres salir y perder esos cambios?"))
+            if (!await JS.InvokeAsync<bool>("confirm", ApsMonitor.Resources.MonitorResources.Text("The form has changes that have not been saved to the draft. Leave and lose these changes?")))
                 context.PreventNavigation();
         }
         catch (JSDisconnectedException) { context.PreventNavigation(); }

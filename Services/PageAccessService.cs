@@ -5,25 +5,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ApsMonitor.Services;
 
-public sealed record MonitorPage(string Key, string Name, string Path, bool DefaultAllowed);
+public sealed record MonitorPage(string Key, string NameKey, string Path, bool DefaultAllowed)
+{
+    public string Name => MonitorLocalization.Text(NameKey);
+}
 
 public sealed class PageAccessService(IDbContextFactory<ApsDbContext> factory)
 {
     public static readonly MonitorPage[] Pages =
     [
-        new("inicio", "Inicio", "/", true),
-        new("ventanas", "Ventanas", "/ventanas", true),
-        new("sesiones", "Sesiones", "/sesiones", true),
-        new("senales", "Señales", "/senales", true),
+        new("inicio", "Home", "/", true),
+        new("ventanas", "Windows", "/ventanas", true),
+        new("sesiones", "Sessions", "/sesiones", true),
+        new("senales", "Signals", "/senales", true),
         new("monitor", "Monitor", "/monitor", false),
-        new("reprogramacion", "Reprogramación", "/reprogramacion", false),
+        new("reprogramacion", "Firmware update", "/reprogramacion", false),
         new("logs", "Logs", "/logs", false),
-        new("eventos-control", "Eventos de control", "/eventos-control", false),
-        new("analizador-sesiones", "Analizador de sesiones", "/analizador-sesiones", false),
-        new("comandos", "Comandos", "/comandos", false),
+        new("eventos-control", "Control events", "/eventos-control", false),
+        new("analizador-sesiones", "Session analyser", "/analizador-sesiones", false),
+        new("comandos", "Commands", "/comandos", false),
         new("trdp", "TRDP Config", "/trdp", false),
         new("trdp-live", "TRDP Live", "/trdp-live", false),
-        new("configuracion-red", "Red y DHCP", "/configuracion-red", false)
+        new("configuracion-red", "Network and DHCP", "/configuracion-red", false)
     ];
     public event Action? Changed;
     public static void EnsureSchema(ApsDbContext db)
@@ -47,11 +50,11 @@ public sealed class PageAccessService(IDbContextFactory<ApsDbContext> factory)
     {
         name = name.Trim();
         if (name.Length is < 1 or > 40 || name.Any(c => !char.IsLetterOrDigit(c) && c != ' ' && c != '-' && c != '_'))
-            throw new ArgumentException("El rol debe tener entre 1 y 40 caracteres: letras, números, espacios, guiones o guiones bajos.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The role must contain 1 to 40 characters: letters, numbers, spaces, hyphens or underscores."));
         await using var db = await factory.CreateDbContextAsync();
         var roles = await db.Roles.ToListAsync();
         if (roles.Any(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new ArgumentException("Ya existe un rol con ese nombre.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("A role with that name already exists."));
         db.Roles.Add(new() { Name = name });
         await db.SaveChangesAsync();
         return name;
@@ -69,10 +72,10 @@ public sealed class PageAccessService(IDbContextFactory<ApsDbContext> factory)
 
     public async Task SetAsync(string role, string key, bool allowed)
     {
-        if (!Pages.Any(x => x.Key == key)) throw new ArgumentException("Página no configurable.");
+        if (!Pages.Any(x => x.Key == key)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Page cannot be configured."));
         await using var db = await factory.CreateDbContextAsync();
-        if (string.Equals(role, "Administrador", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("El administrador conserva acceso completo.");
-        if (!await db.Roles.AnyAsync(x => x.Name == role)) throw new ArgumentException("El rol no existe.");
+        if (string.Equals(role, "Administrador", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The administrator retains full access."));
+        if (!await db.Roles.AnyAsync(x => x.Name == role)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The role does not exist."));
         var row = await db.RolePagePermissions.FindAsync(role, key);
         if (row is null) { row = new() { RoleName = role, PageKey = key }; db.Add(row); }
         row.Allowed = allowed;

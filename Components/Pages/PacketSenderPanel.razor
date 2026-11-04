@@ -18,10 +18,10 @@
                 <div>
                     <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
                         <MudIcon Icon="@Icons.Material.Filled.FastForward" Color="Color.Info" Size="Size.Medium" />
-                        Reproductor de Paquetes Wireshark & Packet Sender
+                        @Ui["Wireshark packet player & Packet Sender"]
                     </MudText>
                     <MudText Typo="Typo.caption" Class="text-muted">
-                        Inyecte y reproduzca capturas <code>.pcap</code>, <code>.pcapng</code> o <code>.json</code> en la red física a diferentes velocidades o en tiempo real según el timestamp de captura.
+                        @Ui["Inject and replay captures"] <code>.pcap</code>, <code>.pcapng</code> @Ui["or"] <code>.json</code> @Ui["on the physical network at different speeds or in real time using capture timestamps."]
                     </MudText>
                 </div>
                 <div class="d-flex align-center gap-2 flex-wrap">
@@ -35,7 +35,7 @@
                         </MudChip>
                     }
                     <MudChip T="string" Color="Color.Dark" Variant="Variant.Outlined" Size="Size.Small">
-                        Interfaz: @(string.IsNullOrEmpty(_config.BindAdapterIp) ? "Todas (0.0.0.0)" : _config.BindAdapterIp)
+                        Interface: @(string.IsNullOrEmpty(_config.BindAdapterIp) ? Ui["All (0.0.0.0)"] : _config.BindAdapterIp)
                     </MudChip>
                 </div>
             </div>
@@ -48,7 +48,7 @@
             <!-- ══════════════════════════════════════════════════════════
                  TAB 1: REPRODUCTOR DE CAPTURAS WIRESHARK
             ══════════════════════════════════════════════════════════ -->
-            <MudTabPanel Text="Reproductor Wireshark PCAP" Icon="@Icons.Material.Filled.PlayCircle">
+            <MudTabPanel Text="@Ui["Wireshark PCAP player"]" Icon="@Icons.Material.Filled.PlayCircle">
                 
                 <!-- SECCIÓN 1: CARGA DE ARCHIVO -->
                 <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
@@ -62,7 +62,7 @@
                                        Size="Size.Small"
                                        StartIcon="@Icons.Material.Filled.UploadFile"
                                        Disabled="@(_isLoadingFile || ReplayService.IsPlaying)">
-                                @(_isLoadingFile ? "Procesando archivo..." : "Cargar Captura Wireshark (.pcap, .pcapng, .json)")
+                                @(_isLoadingFile ? Ui["Processing file..."] : Ui["Load Wireshark capture (.pcap, .pcapng, .json)"])
                             </MudButton>
 
                             @if (ReplayService.FileInfo != null)
@@ -70,7 +70,7 @@
                                 <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Small"
                                            StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearLoadedFile"
                                            Disabled="@ReplayService.IsPlaying">
-                                    Quitar Fichero
+                                    @Ui["Remove file"]
                                 </MudButton>
                             }
                         </div>
@@ -78,9 +78,9 @@
                         @if (ReplayService.FileInfo != null)
                         {
                             <div class="d-flex align-center gap-2">
-                                <span class="text-caption text-muted">Formato:</span>
+                                <span class="text-caption text-muted">@Ui["Format:"]</span>
                                 <span class="text-caption fw-bold" style="color:#a78bfa;">@ReplayService.FileInfo.Format</span>
-                                <span class="text-caption text-muted ml-2">Tamaño:</span>
+                                <span class="text-caption text-muted ml-2">@Ui["Size:"]</span>
                                 <span class="text-caption fw-bold" style="color:#38bdf8;">@FormatFileSize(ReplayService.FileInfo.FileSizeBytes)</span>
                             </div>
                         }
@@ -91,8 +91,8 @@
                     {
                         <div class="mt-2">
                             <div class="d-flex justify-space-between text-caption mb-1">
-                                <span style="color:#38bdf8;">Leyendo paquetes y cabeceras de red... @_uploadProgress%</span>
-                                <span class="text-muted">@FormatFileSize(_uploadBytesRead) de @FormatFileSize(_totalFileBytes)</span>
+                                <span style="color:#38bdf8;">@Ui["Reading packets and network headers... {0}%", _uploadProgress]</span>
+                                <span class="text-muted">@FormatFileSize(_uploadBytesRead) of @FormatFileSize(_totalFileBytes)</span>
                             </div>
                             <MudProgressLinear Color="Color.Info" Value="@_uploadProgress" Size="Size.Small" Rounded="true" />
                         </div>
@@ -104,7 +104,7 @@
                         <div class="mt-3 pt-2 d-flex flex-wrap gap-3 align-center" style="border-top:1px solid var(--mud-palette-lines-default);">
                             <div class="d-flex align-center gap-1">
                                 <MudIcon Icon="@Icons.Material.Filled.Layers" Size="Size.Small" Color="Color.Info" />
-                                <span class="text-caption text-muted">Total Tramas:</span>
+                                <span class="text-caption text-muted">@Ui["Total frames:"]</span>
                                 <span class="text-caption fw-bold" style="color:#38bdf8;">@ReplayService.FileInfo.TotalPackets</span>
                             </div>
                             <div class="d-flex align-center gap-1">
@@ -117,17 +117,17 @@
                                 @if (ReplayService.FileInfo.OtherPackets > 0)
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
-                                        Otros: @ReplayService.FileInfo.OtherPackets
+                                        @Ui["Other: {0}", ReplayService.FileInfo.OtherPackets]
                                     </MudChip>
                                 }
                             </div>
                             <div class="d-flex align-center gap-1">
                                 <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" Color="Color.Warning" />
-                                <span class="text-caption text-muted">Duración Captura:</span>
+                                <span class="text-caption text-muted">@Ui["Capture duration:"]</span>
                                 <span class="text-caption fw-bold" style="color:#f59e0b;">@ReplayService.FileInfo.TotalDuration.ToString(@"hh\:mm\:ss\.fff")</span>
                             </div>
                             <div class="d-flex align-center gap-1">
-                                <span class="text-caption text-muted">Rango:</span>
+                                <span class="text-caption text-muted">@Ui["Range:"]</span>
                                 <span class="text-caption" style="color:var(--mud-palette-text-primary);">@ReplayService.FileInfo.FirstPacketTime.ToString("HH:mm:ss.fff") &rarr; @ReplayService.FileInfo.LastPacketTime.ToString("HH:mm:ss.fff")</span>
                             </div>
                         </div>
@@ -138,15 +138,15 @@
                 <div class="pa-3 mb-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2 d-flex align-center gap-2" Style="color:#38bdf8;">
                         <MudIcon Icon="@Icons.Material.Filled.SettingsEthernet" Size="Size.Small" />
-                        Destino de Transmisión y Tarjeta de Salida
+                        @Ui["Transmission destination and output adapter"]
                     </MudText>
                     <MudGrid Spacing="2">
                         <!-- Interfaz de salida -->
                         <MudItem xs="12" md="4">
                             <MudSelect T="string" Value="_config.BindAdapterIp" ValueChanged="OnAdapterChanged"
-                                       Label="Interfaz de Red de Salida" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       Label="@Ui["Output network interface"]" Variant="Variant.Outlined" Margin="Margin.Dense"
                                        Disabled="@ReplayService.IsPlaying">
-                                <MudSelectItem Value="@("")">0.0.0.0 (Cualquier interfaz / Enrutamiento estándar)</MudSelectItem>
+                                <MudSelectItem Value="@("")">@Ui["0.0.0.0 (Any interface / standard routing)"]</MudSelectItem>
                                 @foreach (var ad in _adapters)
                                 {
                                     if (!string.IsNullOrEmpty(ad.IpAddress))
@@ -163,7 +163,7 @@
                         <MudItem xs="12" md="4">
                             <div class="d-flex align-center h-100">
                                 <MudCheckBox @bind-Value="_config.OverrideDestination"
-                                             Label="Sobrescribir IP/Puerto destino"
+                                             Label="@Ui["Override destination IP/port"]"
                                              Color="Color.Info" Dense="true"
                                              Disabled="@ReplayService.IsPlaying" />
                             </div>
@@ -172,11 +172,11 @@
                         <MudItem xs="12" md="4">
                             <div class="d-flex align-center gap-2 h-100">
                                 <MudCheckBox @bind-Value="_config.EnableBroadcast"
-                                             Label="Habilitar Broadcast"
+                                             Label="@Ui["Enable broadcast"]"
                                              Color="Color.Warning" Dense="true"
                                              Disabled="@ReplayService.IsPlaying" />
                                 <MudCheckBox @bind-Value="_config.LoopPlayback"
-                                             Label="Repetir en bucle (Loop)"
+                                             Label="@Ui["Loop playback"]"
                                              Color="Color.Success" Dense="true" />
                             </div>
                         </MudItem>
@@ -185,11 +185,11 @@
                         <MudItem xs="12">
                             <div class="d-flex align-center gap-2 flex-wrap pt-1" style="border-top:1px dashed var(--mud-palette-lines-default);">
                                 <MudCheckBox @bind-Value="_config.AutoFixTrdpCrc"
-                                             Label="Auto-corregir CRC TRDP IEEE 802.3 (Header FCS y Data FCS)"
+                                             Label="@Ui["Automatically correct TRDP IEEE 802.3 CRC (Header FCS and Data FCS)"]"
                                              Color="Color.Success" Dense="true"
                                              Disabled="@ReplayService.IsPlaying" />
                                 <span class="text-caption text-muted">
-                                    (Recalcula automáticamente el CRC32 Little-Endian para evitar error TRDP_CRC_ERR -35 en ecnmanager)
+                                    @Ui["(Automatically recalculates little-endian CRC32 to prevent TRDP_CRC_ERR -35 in ecnmanager)"]
                                 </span>
                             </div>
                         </MudItem>
@@ -198,22 +198,22 @@
                         {
                             <MudItem xs="12" sm="6" md="4">
                                 <MudTextField @bind-Value="_config.TargetIp"
-                                              Label="IP Destino Sobrescrita"
+                                              Label="@Ui["Destination IP override"]"
                                               Variant="Variant.Outlined" Margin="Margin.Dense"
                                               Placeholder="255.255.255.255"
                                               Disabled="@ReplayService.IsPlaying" />
                             </MudItem>
                             <MudItem xs="12" sm="6" md="3">
                                 <MudNumericField @bind-Value="_config.TargetPort"
-                                                 Label="Puerto Destino (vacío=mantener original)"
+                                                 Label="@Ui["Destination port (blank = keep original)"]"
                                                  Variant="Variant.Outlined" Margin="Margin.Dense"
-                                                 Placeholder="Ej: 17224" Min="1" Max="65535"
+                                                 Placeholder="E.g. 17224" Min="1" Max="65535"
                                                  Disabled="@ReplayService.IsPlaying" />
                             </MudItem>
                             <MudItem xs="12" sm="12" md="5" Class="d-flex align-center gap-1 flex-wrap">
-                                <MudText Typo="Typo.caption" Class="text-muted mr-1">Rápidos:</MudText>
+                                <MudText Typo="Typo.caption" Class="text-muted mr-1">@Ui["Quick select:"]</MudText>
                                 <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => SetTargetPreset("255.255.255.255", null))" Disabled="@ReplayService.IsPlaying">
-                                    Broadcast Global
+                                    @Ui["Global broadcast"]
                                 </MudButton>
                                 @if (!string.IsNullOrEmpty(DefaultAdapterIp))
                                 {
@@ -222,7 +222,7 @@
                                     {
                                         string subBcast = $"{subnetParts[0]}.{subnetParts[1]}.{subnetParts[2]}.255";
                                         <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => SetTargetPreset(subBcast, null))" Disabled="@ReplayService.IsPlaying">
-                                            Subred (@subBcast)
+                                            @Ui["Subnet ({0})", subBcast]
                                         </MudButton>
                                     }
                                 }
@@ -239,11 +239,11 @@
                     <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold d-flex align-center gap-2" Style="color:#4ade80;">
                             <MudIcon Icon="@Icons.Material.Filled.Speed" Size="Size.Small" />
-                            Velocidad y Sincronización Temporal
+                            @Ui["Speed and timing"]
                         </MudText>
                         <div class="d-flex align-center gap-1">
                             <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
-                                Modo: @GetSpeedModeLabel()
+                                Mode: @GetSpeedModeLabel()
                             </MudChip>
                         </div>
                     </div>
@@ -251,10 +251,10 @@
                     <MudGrid Spacing="2" Class="align-center">
                         <MudItem xs="12" md="4">
                             <MudSelect T="PlaybackSpeedMode" Value="_config.SpeedMode" ValueChanged="OnSpeedModeChanged"
-                                       Label="Modo de Velocidad" Variant="Variant.Outlined" Margin="Margin.Dense">
-                                <MudSelectItem Value="PlaybackSpeedMode.RealTime">Tiempo Real (según Timestamps Wireshark)</MudSelectItem>
-                                <MudSelectItem Value="PlaybackSpeedMode.Burst">Ráfaga Máxima (Sin esperas / Burst)</MudSelectItem>
-                                <MudSelectItem Value="PlaybackSpeedMode.FixedInterval">Intervalo Fijo entre Tramas</MudSelectItem>
+                                       Label="@Ui["Speed mode"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="PlaybackSpeedMode.RealTime">@Ui["Real time (Wireshark timestamps)"]</MudSelectItem>
+                                <MudSelectItem Value="PlaybackSpeedMode.Burst">@Ui["Maximum burst (no delays)"]</MudSelectItem>
+                                <MudSelectItem Value="PlaybackSpeedMode.FixedInterval">@Ui["Fixed interval between frames"]</MudSelectItem>
                             </MudSelect>
                         </MudItem>
 
@@ -262,7 +262,7 @@
                         {
                             <MudItem xs="12" md="8">
                                 <div class="d-flex align-center gap-2 flex-wrap">
-                                    <MudText Typo="Typo.caption" Class="text-muted">Multiplicador de Velocidad:</MudText>
+                                    <MudText Typo="Typo.caption" Class="text-muted">@Ui["Speed multiplier:"]</MudText>
                                     @foreach (var speed in _speedOptions)
                                     {
                                         <MudChip T="double"
@@ -280,7 +280,7 @@
                         {
                             <MudItem xs="12" md="4">
                                 <MudNumericField @bind-Value="_config.FixedIntervalMs"
-                                                 Label="Milisegundos entre paquetes"
+                                                 Label="@Ui["Milliseconds between packets"]"
                                                  Variant="Variant.Outlined" Margin="Margin.Dense"
                                                  Min="1" Max="10000" Step="10" />
                             </MudItem>
@@ -298,41 +298,41 @@
                                 <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Medium"
                                            StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartReplay"
                                            Disabled="@(_playlistCount == 0)">
-                                    @(ReplayService.IsPaused ? "Reanudar" : "Reproducir en Red")
+                                    @(ReplayService.IsPaused ? Ui["Resume"] : Ui["Play on network"])
                                 </MudButton>
                             }
                             else
                             {
                                 <MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Medium"
                                            StartIcon="@Icons.Material.Filled.Pause" OnClick="PauseReplay">
-                                    Pausar
+                                    @Ui["Pause"]
                                 </MudButton>
                             }
 
                             <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Medium"
                                        StartIcon="@Icons.Material.Filled.Stop" OnClick="StopReplay"
                                        Disabled="@(!ReplayService.IsPlaying && !ReplayService.IsPaused)">
-                                Detener
+                                @Ui["Stop"]
                             </MudButton>
 
                             <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Medium"
                                        StartIcon="@Icons.Material.Filled.SkipNext" OnClick="StepReplay"
                                        Disabled="@(ReplayService.IsPlaying || _playlistCount == 0)">
-                                Paso a Paso (1 Trama)
+                                @Ui["Step (1 frame)"]
                             </MudButton>
                         </div>
 
                         <!-- Indicadores de tiempo y posición -->
                         <div class="d-flex align-center gap-3">
                             <div>
-                                <span class="text-caption text-muted">TIEMPO CAPTURA: </span>
+                                <span class="text-caption text-muted">@Ui["CAPTURE TIME:"] </span>
                                 <span class="text-caption fw-bold" style="font-family:monospace; color:#38bdf8;">
                                     +@_currentStats.CurrentCaptureRelativeTime.ToString(@"hh\:mm\:ss\.fff")
                                     / @_currentStats.TotalCaptureDuration.ToString(@"hh\:mm\:ss\.fff")
                                 </span>
                             </div>
                             <div>
-                                <span class="text-caption text-muted">TIEMPO REAL: </span>
+                                <span class="text-caption text-muted">@Ui["ELAPSED TIME:"] </span>
                                 <span class="text-caption fw-bold" style="font-family:monospace; color:#a78bfa;">
                                     @_currentStats.ElapsedRealTime.ToString(@"mm\:ss\.f")
                                 </span>
@@ -344,7 +344,7 @@
                     <div class="mb-2">
                         <div class="d-flex justify-space-between text-caption mb-1">
                             <span style="color:var(--mud-palette-text-primary);">
-                                Trama <b>@(_currentStats.CurrentIndex)</b> de <b>@(_currentStats.TotalPackets)</b> (@_currentStats.ProgressPercent.ToString("F1")%)
+                                @Ui["Frame"] <b>@(_currentStats.CurrentIndex)</b> @Ui["of"] <b>@(_currentStats.TotalPackets)</b> (@_currentStats.ProgressPercent.ToString("F1")%)
                             </span>
                             <span class="text-muted text-truncate" style="max-width: 400px;">
                                 @_currentStats.CurrentPacketDescription
@@ -356,23 +356,23 @@
                     <!-- Cuadros de métricas en tiempo real -->
                     <div class="d-flex gap-2 flex-wrap pt-2" style="border-top:1px solid var(--mud-palette-lines-default);">
                         <div class="stat-card">
-                            <span class="stat-title">ENVIADAS</span>
+                            <span class="stat-title">@Ui["SENT"]</span>
                             <span class="stat-num text-success">@_currentStats.PacketsSent</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-title">FALLIDAS</span>
+                            <span class="stat-title">@Ui["FAILED"]</span>
                             <span class="stat-num @(_currentStats.PacketsFailed > 0 ? "text-error" : "text-muted")">@_currentStats.PacketsFailed</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-title">VOLUMEN</span>
+                            <span class="stat-title">@Ui["VOLUME"]</span>
                             <span class="stat-num" style="color:#38bdf8;">@FormatFileSize(_currentStats.TotalBytesSent)</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-title">TASA ACTUAL</span>
+                            <span class="stat-title">@Ui["CURRENT RATE"]</span>
                             <span class="stat-num" style="color:#a78bfa;">@_currentStats.CurrentPps.ToString("F1") PPS</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-title">ANCHO DE BANDA</span>
+                            <span class="stat-title">@Ui["BANDWIDTH"]</span>
                             <span class="stat-num" style="color:#f59e0b;">@FormatBitrate(_currentStats.CurrentBitrateKbps)</span>
                         </div>
                     </div>
@@ -383,20 +383,20 @@
                     <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-2">
                         <MudText Typo="Typo.subtitle2" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
                             <MudIcon Icon="@Icons.Material.Filled.TableRows" Size="Size.Small" />
-                            Tramas de la Captura (@_playlistCount)
+                            @Ui["Capture frames ({0})", _playlistCount]
                         </MudText>
                         
                         <div class="d-flex align-center gap-2 flex-wrap">
-                            <MudTextField @bind-Value="_filterText" Placeholder="Buscar por IP o contenido..."
+                            <MudTextField @bind-Value="_filterText" Placeholder="@Ui["Search by IP or content..."]"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true"
                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                                           Style="width:240px; background:var(--mud-palette-background);" />
 
                             <MudSelect T="string" Value="_filterProtocol" ValueChanged="OnFilterProtocolChanged"
                                        Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:130px; background:var(--mud-palette-background);">
-                                <MudSelectItem Value="@("ALL")">Todos</MudSelectItem>
-                                <MudSelectItem Value="@("UDP")">Solo UDP</MudSelectItem>
-                                <MudSelectItem Value="@("TCP")">Solo TCP</MudSelectItem>
+                                <MudSelectItem Value="@("ALL")">@Ui["All"]</MudSelectItem>
+                                <MudSelectItem Value="@("UDP")">@Ui["UDP only"]</MudSelectItem>
+                                <MudSelectItem Value="@("TCP")">@Ui["TCP only"]</MudSelectItem>
                             </MudSelect>
                         </div>
                     </div>
@@ -405,7 +405,7 @@
                     {
                         <div class="pa-8 text-center text-muted rounded-lg" style="background:var(--mud-palette-background);">
                             <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Class="mb-2" Style="opacity:0.3;" />
-                            <div>No hay tramas cargadas. Pulse <b>Cargar Captura Wireshark</b> para comenzar.</div>
+                            <div>@Ui["No frames loaded. Press"] <b>@Ui["Load Wireshark capture"]</b> @Ui["to begin."]</div>
                         </div>
                     }
                     else
@@ -414,14 +414,14 @@
                                   RowsPerPage="15" Style="background:var(--mud-palette-background); border-radius:8px;">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
-                                <MudTh>Hora Captura</MudTh>
-                                <MudTh>Relativo</MudTh>
-                                <MudTh>Protocolo</MudTh>
-                                <MudTh>Origen</MudTh>
-                                <MudTh>Destino</MudTh>
+                                <MudTh>@Ui["Capture time"]</MudTh>
+                                <MudTh>@Ui["Relative"]</MudTh>
+                                <MudTh>@Ui["Protocol"]</MudTh>
+                                <MudTh>@Ui["Source"]</MudTh>
+                                <MudTh>@Ui["Destination"]</MudTh>
                                 <MudTh>Bytes</MudTh>
-                                <MudTh>Info / Descripción</MudTh>
-                                <MudTh Style="text-align:right;">Acciones</MudTh>
+                                <MudTh>@Ui["Info / description"]</MudTh>
+                                <MudTh Style="text-align:right;">@Ui["Actions"]</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd>
@@ -454,13 +454,13 @@
                                 </MudTd>
                                 <MudTd Style="text-align:right;">
                                     <MudIconButton Icon="@Icons.Material.Filled.Send" Size="Size.Small" Color="Color.Success"
-                                                   Title="Enviar solo esta trama a la red" OnClick="@(() => SendSingle(context))" />
+                                                   Title="@Ui["Send only this frame to the network"]" OnClick="@(() => SendSingle(context))" />
                                     <MudIconButton Icon="@Icons.Material.Filled.Code" Size="Size.Small" Color="Color.Info"
-                                                   Title="Inspeccionar Hex y ASCII" OnClick="@(() => OpenHexDialog(context))" />
+                                                   Title="@Ui["Inspect hex and ASCII"]" OnClick="@(() => OpenHexDialog(context))" />
                                 </MudTd>
                             </RowTemplate>
                             <PagerContent>
-                                <MudTablePager RowsPerPageString="Tramas por página:" InfoFormat="{first_item}-{last_item} de {all_items}" />
+                                <MudTablePager RowsPerPageString="Frames per page:" InfoFormat="{first_item}-{last_item} of {all_items}" />
                             </PagerContent>
                         </MudTable>
                     }
@@ -471,40 +471,40 @@
             <!-- ══════════════════════════════════════════════════════════
                  TAB 2: PACKET SENDER MANUAL
             ══════════════════════════════════════════════════════════ -->
-            <MudTabPanel Text="Packet Sender Manual" Icon="@Icons.Material.Filled.Send">
+            <MudTabPanel Text="@Ui["Manual Packet Sender"]" Icon="@Icons.Material.Filled.Send">
                 <div class="pa-4 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <MudText Typo="Typo.subtitle1" Class="fw-bold mb-3 d-flex align-center gap-2" Style="color:#38bdf8;">
                         <MudIcon Icon="@Icons.Material.Filled.ForwardToInbox" />
-                        Generador de Paquetes Manual (Packet Sender)
+                        @Ui["Manual packet generator (Packet Sender)"]
                     </MudText>
 
                     <MudGrid Spacing="2">
                         <MudItem xs="12" sm="3">
-                            <MudSelect T="string" @bind-Value="_manualReq.Protocol" Label="Protocolo"
+                            <MudSelect T="string" @bind-Value="_manualReq.Protocol" Label="@Ui["Protocol"]"
                                        Variant="Variant.Outlined" Margin="Margin.Dense">
-                                <MudSelectItem Value="@("UDP")">UDP (Datagrama)</MudSelectItem>
-                                <MudSelectItem Value="@("TCP")">TCP (Conexión + Payload)</MudSelectItem>
+                                <MudSelectItem Value="@("UDP")">@Ui["UDP (Datagram)"]</MudSelectItem>
+                                <MudSelectItem Value="@("TCP")">@Ui["TCP (Connection + Payload)"]</MudSelectItem>
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="5">
-                            <MudTextField @bind-Value="_manualReq.DestinationIp" Label="IP Destino"
+                            <MudTextField @bind-Value="_manualReq.DestinationIp" Label="@Ui["Destination IP"]"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="192.168.1.50" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_manualReq.DestinationPort" Label="Puerto Destino"
+                            <MudNumericField @bind-Value="_manualReq.DestinationPort" Label="@Ui["Destination port"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" Max="65535" />
                         </MudItem>
 
                         <MudItem xs="12" sm="3">
-                            <MudSelect T="string" @bind-Value="_manualReq.DataFormat" Label="Formato de Datos"
+                            <MudSelect T="string" @bind-Value="_manualReq.DataFormat" Label="@Ui["Data format"]"
                                        Variant="Variant.Outlined" Margin="Margin.Dense">
-                                <MudSelectItem Value="@("HEX")">HEX (Bytes hexadecimales)</MudSelectItem>
-                                <MudSelectItem Value="@("ASCII")">ASCII / Texto</MudSelectItem>
+                                <MudSelectItem Value="@("HEX")">@Ui["HEX (Hexadecimal bytes)"]</MudSelectItem>
+                                <MudSelectItem Value="@("ASCII")">@Ui["ASCII / Text"]</MudSelectItem>
                             </MudSelect>
                         </MudItem>
                         <MudItem xs="12" sm="9">
                             <div class="d-flex align-center gap-1 flex-wrap h-100">
-                                <span class="text-caption text-muted mr-1">Plantillas Rápidas:</span>
+                                <span class="text-caption text-muted mr-1">@Ui["Quick templates:"]</span>
                                 <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => LoadPreset("TRDP"))">
                                     TRDP Test (ComID 1001)
                                 </MudButton>
@@ -515,35 +515,35 @@
                                     Syslog Ping
                                 </MudButton>
                                 <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => LoadPreset("ASCII_HELLO"))">
-                                    Texto ASCII
+                                    @Ui["ASCII text"]
                                 </MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
                                            StartIcon="@Icons.Material.Filled.Calculate" OnClick="RecalculateManualTrdpCrc"
-                                           Title="Recalcula el CRC32 IEEE 802.3 Little-Endian de la cabecera y datos TRDP">
-                                    Recalcular CRC TRDP
+                                           Title="@Ui["Recalculate IEEE 802.3 little-endian CRC32 for the TRDP header and data"]">
+                                    @Ui["Recalculate TRDP CRC"]
                                 </MudButton>
                             </div>
                         </MudItem>
 
                         <MudItem xs="12">
-                            <MudTextField @bind-Value="_manualReq.Data" Label="Payload / Datos a Transmitir"
+                            <MudTextField @bind-Value="_manualReq.Data" Label="@Ui["Payload / data to transmit"]"
                                           Variant="Variant.Outlined" Lines="4"
                                           Placeholder="00 11 22 33 44 55..." Style="font-family:monospace;" />
                         </MudItem>
 
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_manualReq.RepeatCount" Label="Número de Envíos (Ráfaga)"
+                            <MudNumericField @bind-Value="_manualReq.RepeatCount" Label="@Ui["Number of transmissions (burst)"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" Max="100" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudNumericField @bind-Value="_manualReq.RepeatDelayMs" Label="Retardo entre envíos (ms)"
+                            <MudNumericField @bind-Value="_manualReq.RepeatDelayMs" Label="@Ui["Delay between transmissions (ms)"]"
                                              Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" Max="5000" />
                         </MudItem>
                         <MudItem xs="12" sm="4" Class="d-flex align-center">
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
                                        StartIcon="@Icons.Material.Filled.Send" OnClick="SendManualPacket"
                                        Disabled="_isSendingManual">
-                                @(_isSendingManual ? "Transmitiendo..." : "Enviar Paquete a la Red")
+                                @(_isSendingManual ? "Transmitiendo..." : Ui["Send packet to network"])
                             </MudButton>
                         </MudItem>
                     </MudGrid>
@@ -552,15 +552,15 @@
                     @if (ReplayService.ManualHistory.Count > 0)
                     {
                         <div class="mt-4 pt-3" style="border-top:1px solid var(--mud-palette-lines-default);">
-                            <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2 text-muted">Historial de Envíos Manuales</MudText>
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2 text-muted">@Ui["Manual transmission history"]</MudText>
                             <MudTable Items="ReplayService.ManualHistory" Dense="true" Hover="true" Elevation="0">
                                 <HeaderContent>
-                                    <MudTh>Hora</MudTh>
-                                    <MudTh>Protocolo</MudTh>
-                                    <MudTh>Destino</MudTh>
+                                    <MudTh>@Ui["Time"]</MudTh>
+                                    <MudTh>@Ui["Protocol"]</MudTh>
+                                    <MudTh>@Ui["Destination"]</MudTh>
                                     <MudTh>Bytes</MudTh>
-                                    <MudTh>Latencia</MudTh>
-                                    <MudTh>Resultado</MudTh>
+                                    <MudTh>@Ui["Latency"]</MudTh>
+                                    <MudTh>@Ui["Result"]</MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
                                     <MudTd>@context.Timestamp.ToString("HH:mm:ss.fff")</MudTd>
@@ -571,7 +571,7 @@
                                     <MudTd>
                                         <MudChip T="string" Size="Size.Small"
                                                  Color="@(context.Success ? Color.Success : Color.Error)" Variant="Variant.Outlined">
-                                            @(context.Success ? "OK" : "Error")
+                                            @(context.Success ? Ui["OK"] : Ui["Error"])
                                         </MudChip>
                                         <span class="text-caption ml-2">@context.Message</span>
                                     </MudTd>
@@ -585,18 +585,18 @@
             <!-- ══════════════════════════════════════════════════════════
                  TAB 3: REGISTRO DE EVENTOS
             ══════════════════════════════════════════════════════════ -->
-            <MudTabPanel Text="Registro de Red" Icon="@Icons.Material.Filled.ReceiptLong">
+            <MudTabPanel Text="@Ui["Network log"]" Icon="@Icons.Material.Filled.ReceiptLong">
                 <div class="pa-3 rounded-lg" style="background:var(--mud-palette-background); border:1px solid var(--mud-palette-lines-default);">
                     <div class="d-flex justify-space-between align-center mb-2">
-                        <MudText Typo="Typo.subtitle2" Class="fw-bold text-muted">Registro de Eventos y Envíos</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold text-muted">@Ui["Event and transmission log"]</MudText>
                         <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Clear" OnClick="ClearLogs">
-                            Limpiar Consola
+                            @Ui["Clear console"]
                         </MudButton>
                     </div>
                     <div class="pa-3 rounded overflow-auto" style="background:var(--mud-palette-background); max-height:300px; font-family:monospace; font-size:0.8rem; border:1px solid var(--mud-palette-lines-default);">
                         @if (_logMessages.Count == 0)
                         {
-                            <span class="text-muted">No hay eventos registrados aún.</span>
+                            <span class="text-muted">@Ui["No events recorded yet."]</span>
                         }
                         else
                         {
@@ -728,11 +728,11 @@
             });
 
             _currentStats = ReplayService.Stats;
-            Snackbar.Add($"Captura cargada: {info.TotalPackets} tramas encontradas ({info.Format}).", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Capture loaded: {0} frames found ({1}).",info.TotalPackets,info.Format), Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al procesar archivo: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Unable to process file: {0}",ex.Message), Severity.Error);
         }
         finally
         {
@@ -748,7 +748,7 @@
         _uploadBytesRead = 0;
         _totalFileBytes = 0;
         _currentStats = ReplayService.Stats;
-        Snackbar.Add("Fichero de captura quitado y lista vaciada.", Severity.Info);
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Capture file removed and list cleared."), Severity.Info);
         StateHasChanged();
     }
 
@@ -784,7 +784,7 @@
     {
         var parameters = new DialogParameters { ["Packet"] = packet };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        await DialogService.ShowAsync<PacketHexDialog>($"Trama #{packet.Index}", parameters, options);
+        await DialogService.ShowAsync<PacketHexDialog>(ApsMonitor.Resources.MonitorResources.Format("Frame #{0}",packet.Index), parameters, options);
     }
 
     private async Task SendManualPacket()
@@ -833,7 +833,7 @@
                 _manualReq.DestinationIp = "192.168.1.10";
                 _manualReq.DestinationPort = 514;
                 _manualReq.DataFormat = "ASCII";
-                _manualReq.Data = "<134>Sep 28 12:00:00 APS-MONITOR TEST_PING: Inyeccion de paquete de prueba";
+                _manualReq.Data = ApsMonitor.Resources.MonitorResources.Text("<134>Sep 28 12:00:00 APS-MONITOR TEST_PING: Test packet injection");
                 break;
             case "ASCII_HELLO":
                 _manualReq.Protocol = "UDP";
@@ -849,7 +849,7 @@
     {
         if (string.IsNullOrWhiteSpace(_manualReq.Data))
         {
-            Snackbar.Add("El campo de payload está vacío.", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The payload field is empty."), Severity.Warning);
             return;
         }
 
@@ -858,12 +858,12 @@
             string recalculated = PacketSenderService.RecalculateTrdpHexCrc(_manualReq.Data);
             _manualReq.Data = recalculated;
             _manualReq.DataFormat = "HEX";
-            Snackbar.Add("CRC32 IEEE 802.3 recalculado con éxito para cabecera/datos TRDP.", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("IEEE 802.3 CRC32 recalculated successfully for the TRDP header/data."), Severity.Success);
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al calcular CRC TRDP: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Unable to calculate TRDP CRC: {0}",ex.Message), Severity.Error);
         }
     }
 
@@ -948,18 +948,18 @@
 
     private string GetStatusText() => ReplayService.Stats.Status switch
     {
-        ReplayStatus.Playing => "REPRODUCIENDO EN RED",
-        ReplayStatus.Paused => "PAUSADO",
-        ReplayStatus.Completed => "COMPLETADO",
-        _ => "DETENIDO"
+        ReplayStatus.Playing => ApsMonitor.Resources.MonitorResources.Text("PLAYING ON NETWORK"),
+        ReplayStatus.Paused => ApsMonitor.Resources.MonitorResources.Text("PAUSED"),
+        ReplayStatus.Completed => ApsMonitor.Resources.MonitorResources.Text("COMPLETED"),
+        _ => ApsMonitor.Resources.MonitorResources.Text("STOPPED_Text")
     };
 
     private string GetSpeedModeLabel() => _config.SpeedMode switch
     {
-        PlaybackSpeedMode.RealTime => $"Tiempo Real ({_config.SpeedMultiplier:G}x)",
-        PlaybackSpeedMode.Burst => "Ráfaga Máxima",
-        PlaybackSpeedMode.FixedInterval => $"Intervalo fijo ({_config.FixedIntervalMs} ms)",
-        _ => "Tiempo Real"
+        PlaybackSpeedMode.RealTime => ApsMonitor.Resources.MonitorResources.Format("Real time ({0:G}x)",_config.SpeedMultiplier),
+        PlaybackSpeedMode.Burst => ApsMonitor.Resources.MonitorResources.Text("Maximum burst"),
+        PlaybackSpeedMode.FixedInterval => ApsMonitor.Resources.MonitorResources.Format("Fixed interval ({0} ms)",_config.FixedIntervalMs),
+        _ => ApsMonitor.Resources.MonitorResources.Text("Real time")
     };
 
     private static string FormatFileSize(long bytes)

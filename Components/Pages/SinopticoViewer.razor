@@ -23,13 +23,13 @@
     <div class="main-view">
         <div class="editor-header d-flex align-center px-4">
             <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo("/ventanas"))" />
-            <MudText Typo="Typo.h6" Class="ml-2 flex-grow-1">@(_window?.Nombre ?? "Cargando...")</MudText>
+            <MudText Typo="Typo.h6" Class="ml-2 flex-grow-1">@(_window?.Nombre ?? Ui["Loading..."])</MudText>
             
             @if (totalFailures > 0)
             {
                 <div class="header-status-badge @(_showFailures ? "active" : "")" @onclick="() => _showFailures = !_showFailures">
                     <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="mr-1" />
-                    <span>AVISO: @totalFailures FALLOS</span>
+                    <span>@Ui["WARNING: {0} FAULTS", totalFailures]</span>
                 </div>
             }
             <MudIconButton Icon="@(_showFailures ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" 
@@ -41,13 +41,13 @@
                                Color="@(_isAdminMode ? Color.Warning : Color.Inherit)" 
                                OnClick="@(() => _isAdminMode = !_isAdminMode)" 
                                Class="ml-2"
-                               Title="@(_isAdminMode ? "Desactivar Modo Admin" : "Activar Modo Admin")" />
+                               Title="@(_isAdminMode ? Ui["Disable admin mode"] : Ui["Enable admin mode"])" />
             </AuthorizeView>
             <MudIconButton Icon="@(SessionState.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
                            Color="Color.Inherit" 
                            OnClick="@SessionState.ToggleDarkMode" 
                            Class="ml-2"
-                           Title="@(SessionState.IsDarkMode ? "Modo Claro" : "Modo Oscuro")" />
+                           Title="@(SessionState.IsDarkMode ? Ui["Light mode"] : Ui["Dark mode"])" />
         </div>
 
         <!-- Panel de Fallos Superior Plegable -->
@@ -73,13 +73,13 @@
                         <div class="ind-card">
                             <!-- Header -->
                             <div class="ind-card-header">
-                                <span class="ind-card-title">@category.Name.ToUpper()</span>
+                                <span class="ind-card-title">@MonitorLocalization.ElementName(category.Name).ToUpperInvariant()</span>
                                 <span class="ind-card-badge">@displayCount</span>
                             </div>
 
                             <!-- Status Row -->
                             <div class="ind-row">
-                                <span class="ind-label">Status</span>
+                                <span class="ind-label">@Ui["Status"]</span>
                                 <div class="ind-field @statusInfo.Css">
                                     @statusInfo.Text
                                 </div>
@@ -90,19 +90,19 @@
 
                             <!-- Last Stop Row -->
                             <div class="ind-row">
-                                <span class="ind-label">Last Stop:</span>
+                                <span class="ind-label">@Ui["Last Stop:"]</span>
                                 <div class="ind-field ind-field-laststop">@(string.IsNullOrEmpty(lastStop) ? "—" : lastStop)</div>
                             </div>
 
                             <!-- Failures Row -->
                             <div class="ind-row">
-                                <span class="ind-label">Failures:</span>
+                                <span class="ind-label">@Ui["Failures:"]</span>
                                 <div class="ind-field">@(string.IsNullOrEmpty(failuresList) ? "" : failuresList)</div>
                             </div>
 
                             <!-- Failures Counter Row -->
                             <div class="ind-row">
-                                <span class="ind-label">Failures Counter:</span>
+                                <span class="ind-label">@Ui["Failures Counter:"]</span>
                                 <div class="ind-counter-box">@displayCount</div>
                                 @if (statusInfo.ShowReset)
                                 {
@@ -134,13 +134,14 @@
                 <div class="canvas mx-auto" style="width: @(_elements.Any() ? _elements.Max(e => e.X + e.Width) + 100 : 800)px; height: @(_elements.Any() ? _elements.Max(e => e.Y + e.Height) + 100 : 600)px;">
                     @foreach (var el in _elements)
                     {
+                        if (!SinopticoBindingEvaluator.Visible(el, currentValues)) continue;
                         if (el.Type == "ACpresence" && !IsElementActive(el, currentValues)) continue;
                         if (el.Type == "Barra" && !IsBarraVisible(el, currentValues)) continue;
 
                         <div class="canvas-element" style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
                             @if (el.Type == "Etiqueta")
                             {
-                                var textColor = el.Color;
+                                var textColor = SinopticoBindingEvaluator.Color(el, currentValues);
                                 if (SessionState.IsDarkMode)
                                 {
                                     if (textColor.ToLower() == "#000000" || textColor.ToLower() == "black" || textColor.ToLower() == "#ff9800")
@@ -153,12 +154,12 @@
                                 }
                                 <div class="element-content label-content d-flex align-center justify-center p-1" 
                                      style="color: @textColor; font-size: @(el.FontSize)px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    @el.Text
+                                    @SinopticoBindingEvaluator.Text(el, currentValues, id => GetSignalValueText(id, currentValues))
                                 </div>
                             }
                             else if (el.Type == "Señal")
                             {
-                                var sigColor = el.Color;
+                                var sigColor = SinopticoBindingEvaluator.Color(el, currentValues);
                                 if (SessionState.IsDarkMode)
                                 {
                                     if (sigColor.ToLower() == "#000000" || sigColor.ToLower() == "black" || sigColor.ToLower() == "#ff9800")
@@ -171,7 +172,7 @@
                                 }
                                 <div class="element-content signal-content d-flex flex-row flex-wrap align-center justify-center p-1" 
                                      style="border-color: @(sigColor + "44"); color: @sigColor; gap: 4px; overflow: hidden;">
-                                    <span class="signal-name text-truncate" style="font-size: @(Math.Round(el.FontSize * 0.7))px; max-width: 100%; line-height: 1;">@el.Text</span>
+                                    <span class="signal-name text-truncate" style="font-size: @(Math.Round(el.FontSize * 0.7))px; max-width: 100%; line-height: 1;">@SinopticoBindingEvaluator.Text(el, currentValues, id => GetSignalValueText(id, currentValues))</span>
                                     <span class="signal-value fw-bold text-truncate" style="font-size: @(el.FontSize)px; font-variant-numeric: tabular-nums; line-height: 1;">
                                         @GetSignalValueText(el.SignalId, currentValues)
                                     </span>
@@ -181,12 +182,12 @@
                             {
                                 <div class="element-content box-content d-flex align-center justify-center shadow-sm" 
                                      style="border-color: @el.Color; color: #111827; background-color: @(GetBoxColor(el, currentValues)) !important; font-weight: 500;">
-                                    @el.Text
+                                    @SinopticoBindingEvaluator.Text(el, currentValues, id => GetSignalValueText(id, currentValues))
                                 </div>
                             }
                             else if (el.Type == "Linea H" || el.Type == "Linea V")
                             {
-                                var lineColor = el.Color;
+                                var lineColor = SinopticoBindingEvaluator.Color(el, currentValues);
                                 if (SessionState.IsDarkMode)
                                 {
                                     if (lineColor.ToLower() == "#000000" || lineColor.ToLower() == "black" || lineColor.ToLower() == "#ff9800")
@@ -201,16 +202,8 @@
                             }
                             else if (el.Type == "Barra")
                             {
-                                var val = 0.0;
-                                if (el.SignalId.HasValue && currentValues.TryGetValue(el.SignalId.Value, out var sigVal))
-                                    val = sigVal;
-                                
-                                var max = el.MaxValue;
-                                if (el.StateSignalId.HasValue && currentValues.TryGetValue(el.StateSignalId.Value, out var maxSigVal))
-                                    max = maxSigVal;
-
-                                var pct = max != 0 ? Math.Clamp((val / max) * 100, 0, 100) : 0;
-                                var barColor = el.Color;
+                                var pct = SinopticoBindingEvaluator.Progress(el, currentValues);
+                                var barColor = SinopticoBindingEvaluator.Color(el, currentValues);
                                 if (SessionState.IsDarkMode && (barColor.ToLower() == "#000000" || barColor.ToLower() == "black"))
                                     barColor = "#3b82f6";
 
@@ -910,7 +903,7 @@
 
         int intStatus = (int)Math.Truncate(statusVal);
 
-        // Buscar señal en ambas fuentes: SessionState (sesiones grabadas) y MonitorState (monitorización en vivo)
+        // Search signal en ambas fuentes: SessionState (sesiones grabadas) y MonitorState (monitorización en vivo)
         var statusSig = SessionState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value)
                      ?? MonitorState.Signals.FirstOrDefault(s => s.Id == category.StatusSignalId.Value);
 
@@ -936,25 +929,25 @@
             switch (intStatus)
             {
                 case 1: // STOP
-                    info.Text = "STOP"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("STOP_Text"); info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
                     break;
                 case 2: // FAILURE
-                    info.Text = "FALLO"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("FAULT"); info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
                     break;
                 case 3: // LOCKOUT
-                    info.Text = "BLOQUEADO"; info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("LOCKED OUT"); info.Css = "status-stop"; info.BtnCss = "btn-stop"; info.Icon = Icons.Material.Filled.Warning;
                     info.ShowReset = true;
                     break;
                 case 5: // WORKING
-                    info.Text = "EN CICLO"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("CYCLING"); info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
                     break;
                 case 6: // PULSES_SIMULATION
-                    info.Text = "SIMULACIÓN"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("SIMULATION"); info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.Stop;
                     break;
                 case 0: // UNKNOWN
                 case 4: // CONFIGURATION
                 default:
-                    info.Text = "OFF"; info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
+                    info.Text = ApsMonitor.Resources.MonitorResources.Text("OFF"); info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
                     break;
             }
         }
@@ -966,11 +959,11 @@
 
             if (IsBitActive(5))
             {
-                info.Text = "En ciclo"; info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
+                info.Text = ApsMonitor.Resources.MonitorResources.Text("Cycling_Text"); info.Css = "status-run"; info.BtnCss = "btn-run"; info.Icon = Icons.Material.Filled.Stop;
             }
             else if (IsBitActive(2) || IsBitActive(3))
             {
-                info.Text = "Stop"; info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
+                info.Text = ApsMonitor.Resources.MonitorResources.Text("Stop"); info.Css = "status-warn"; info.BtnCss = "btn-warn"; info.Icon = Icons.Material.Filled.PlayArrow;
             }
             else if (IsBitActive(1) || IsBitActive(6))
             {
@@ -978,7 +971,7 @@
             }
             else if (IsBitActive(0) || IsBitActive(4))
             {
-                info.Text = "OFF"; info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
+                info.Text = ApsMonitor.Resources.MonitorResources.Text("OFF"); info.Css = "status-off"; info.BtnCss = "btn-off"; info.Icon = Icons.Material.Filled.PowerOff;
             }
         }
 
@@ -993,7 +986,7 @@
     {
         if (!MonitorState.IsConnected || !MonitorState.IsMonitoring) 
         {
-            Snackbar.Add("Debe estar monitorizando para enviar comandos", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Monitoring must be active to send commands"), Severity.Warning);
             return;
         }
 
@@ -1015,26 +1008,26 @@
 
         if (!stopCmd.HasValue || !startCmd.HasValue)
         {
-            Snackbar.Add($"Categoría '{catName}' no tiene subcomandos Start/Stop configurados", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Category '{0}' has no Start/Stop subcommands configured",catName), Severity.Warning);
             return;
         }
 
         bool isRunning = statusInfo.Css == "status-run";
         ushort subCmd = isRunning ? stopCmd.Value : startCmd.Value;
-        string action = isRunning ? "PARAR" : "ARRANCAR";
+        string action = isRunning ? ApsMonitor.Resources.MonitorResources.Text("STOP_Text") : ApsMonitor.Resources.MonitorResources.Text("START_Text");
 
         var confirmed = await DialogService.ShowMessageBoxAsync(
-            $"Confirmar {action}",
-            $"¿Confirmar {action} de {catName} (SubCmd 0x{subCmd:X4}, FT 0x{cmdFrameType:X2})?",
-            yesText: "Confirmar", cancelText: "Cancelar");
+            ApsMonitor.Resources.MonitorResources.Format("Confirm {0}",action),
+            ApsMonitor.Resources.MonitorResources.Format("Confirm {0} for {1} (SubCmd 0x{2:X4}, FT 0x{3:X2})?",action,catName,subCmd,cmdFrameType),
+            yesText: ApsMonitor.Resources.MonitorResources.Text("Confirm"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
         if (confirmed == true)
         {
             var result = await MonitorState.SendControlCommandAsync(cmdFrameType, subCmd);
             if (result)
-                Snackbar.Add($"{catName}: comando {action} (0x{subCmd:X4}) enviado", Severity.Success);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: {1} command (0x{2:X4}) sent",catName,action,subCmd), Severity.Success);
             else
-                Snackbar.Add($"{catName}: error al enviar comando {action}", Severity.Error);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: unable to send {1} command",catName,action), Severity.Error);
         }
     }
 
@@ -1046,7 +1039,7 @@
     {
         if (!MonitorState.IsConnected || !MonitorState.IsMonitoring)
         {
-            Snackbar.Add("Debe estar monitorizando para enviar comandos", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Monitoring must be active to send commands"), Severity.Warning);
             return;
         }
 
@@ -1066,22 +1059,22 @@
 
         if (!resetSubCmd.HasValue)
         {
-            Snackbar.Add($"Categoría '{catName}' no tiene reset configurado", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Category '{0}' has no reset configured",catName), Severity.Warning);
             return;
         }
 
         var confirmed = await DialogService.ShowMessageBoxAsync(
-            "Confirmar RESET",
-            $"¿Confirmar RESET de fallos de {catName} (SubCmd 0x{resetSubCmd.Value:X4})?",
-            yesText: "Confirmar", cancelText: "Cancelar");
+            ApsMonitor.Resources.MonitorResources.Text("Confirm RESET"),
+            ApsMonitor.Resources.MonitorResources.Format("Confirm fault RESET for {0} (SubCmd 0x{1:X4})?",catName,resetSubCmd.Value),
+            yesText: ApsMonitor.Resources.MonitorResources.Text("Confirm"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
         if (confirmed == true)
         {
             var result = await MonitorState.SendControlCommandAsync(resetFrameType, resetSubCmd.Value);
             if (result)
-                Snackbar.Add($"{catName}: reset enviado", Severity.Success);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: reset sent",catName), Severity.Success);
             else
-                Snackbar.Add($"{catName}: error al enviar reset", Severity.Error);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: unable to send reset",catName), Severity.Error);
         }
     }
 
@@ -1129,14 +1122,14 @@
 
         if (_window == null)
         {
-            Snackbar.Add("La ventana no existe", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The window does not exist"), Severity.Error);
             NavigationManager.NavigateTo("/ventanas");
             return;
         }
 
         if (!_window.IsActive && !isAdmin)
         {
-            Snackbar.Add("La ventana no está activa", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The window is inactive"), Severity.Warning);
             NavigationManager.NavigateTo("/ventanas");
             return;
         }
@@ -1144,7 +1137,7 @@
         var currentRole = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
         if (!_window.IsRoleAllowed(currentRole) && !isAdmin)
         {
-            Snackbar.Add("No estás autorizado para ver esta ventana", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("You are not authorised to view this window"), Severity.Warning);
             NavigationManager.NavigateTo("/ventanas");
             return;
         }
@@ -1209,7 +1202,7 @@
         var lvps = new FailureCategoryConfig { Name = "LVPS" };
         var chopper = new FailureCategoryConfig { Name = "Chopper" };
 
-        // Buscar señales en sesión o en monitor
+        // Search signales en sesión o en monitor
         var signalSource = SessionState.Signals.Any()
             ? SessionState.Signals
             : (IReadOnlyList<Signal>)MonitorState.Signals;
@@ -1408,31 +1401,8 @@
 
     private string GetBoxColor(SinopticoElement el, Dictionary<int, double> values)
     {
-        // 1. Dynamic rules priority
-        if (el.BoxColorRules != null && el.BoxColorRules.Count > 0)
-        {
-            foreach (var rule in el.BoxColorRules)
-            {
-                if (rule.SignalId.HasValue && values.TryGetValue(rule.SignalId.Value, out double ruleVal))
-                {
-                    bool isActive;
-                    if (rule.SignalBit.HasValue)
-                    {
-                        long longVal = (long)Math.Truncate(ruleVal);
-                        isActive = (longVal & (1L << rule.SignalBit.Value)) != 0;
-                    }
-                    else
-                    {
-                        isActive = ruleVal != 0;
-                    }
-
-                    if (isActive) return rule.Color;
-                }
-            }
-            return el.Color;
-        }
-
-        // 2. Legacy fallback
+        if (el.BoxColorRules.Count > 0) return SinopticoBindingEvaluator.Color(el, values);
+        // Legacy fallback
         var targetSignalId = el.StateSignalId ?? el.SignalId;
         if (targetSignalId.HasValue && values.TryGetValue(targetSignalId.Value, out double stateVal))
         {
@@ -1452,68 +1422,12 @@
         return el.Color;
     }
 
-    private (string Icon, string Color) GetContactorState(SinopticoElement el, Dictionary<int, double> values)
-    {
-        bool? stateActive = null;
-        bool? commandActive = null;
-
-        // Check State Bit
-        if (el.StateSignalId.HasValue && el.StateSignalBit.HasValue)
-        {
-            if (values.TryGetValue(el.StateSignalId.Value, out double sVal))
-            {
-                long longVal = (long)Math.Truncate(sVal);
-                stateActive = (longVal & (1L << el.StateSignalBit.Value)) != 0;
-            }
-        }
-
-        // Check Command Bit
-        if (el.CommandSignalId.HasValue && el.CommandSignalBit.HasValue)
-        {
-            if (values.TryGetValue(el.CommandSignalId.Value, out double cVal))
-            {
-                long longVal = (long)Math.Truncate(cVal);
-                commandActive = (longVal & (1L << el.CommandSignalBit.Value)) != 0;
-            }
-        }
-
-        // Determine true state and discrepancy
-        bool finalActive = false;
-        bool hasDiscrepancy = false;
-
-        if (stateActive.HasValue && commandActive.HasValue)
-        {
-            finalActive = stateActive.Value;
-            hasDiscrepancy = stateActive.Value != commandActive.Value;
-        }
-        else if (stateActive.HasValue)
-        {
-            finalActive = stateActive.Value;
-        }
-        else if (commandActive.HasValue)
-        {
-            finalActive = commandActive.Value;
-        }
-
-        // Determine Icon (based on finalActive: false = Open, true = Closed)
-        string iconName;
-        if (el.Type == "Contactor V") 
-            iconName = finalActive ? "Contactor V_Closed" : "Contactor V";
-        else
-            iconName = finalActive ? "Contactor_Closed" : "Contactor";
-
-        string icon = SinopticoIconProvider.GetIcon(iconName);
-
-        // Determine Color (based on Discrepancy)
-        string color = hasDiscrepancy ? el.ErrorColor : el.Color;
-
-        return (icon, color);
-    }
+    private (string Icon, string Color) GetContactorState(SinopticoElement el, Dictionary<int, double> values) => SinopticoBindingEvaluator.Contactor(el, values);
 
     private string GetIconMarkup(SinopticoElement el, Dictionary<int, double> currentValues)
     {
         var icon = SinopticoIconProvider.GetIcon(el.Type);
-        var color = el.Color;
+        var color = SinopticoBindingEvaluator.Color(el, currentValues);
         
         // Lógica de tema: si el color es el "por defecto" (blanco/negro/naranja), lo ajustamos al tema
         if (SessionState.IsDarkMode)
@@ -1602,7 +1516,7 @@
                                     {
                                         Tag = sig.Tag,
                                         BitIndex = i,
-                                        Description = $"Bit {i} activo en {sig.Nombre}"
+                                        Description = ApsMonitor.Resources.MonitorResources.Format("Bit {0} active in {1}",i,sig.Nombre)
                                     });
                                     bitAdded = true;
                                 }

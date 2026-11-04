@@ -10,7 +10,7 @@
 @inject ILogger<Home> Logger
 @implements IDisposable
 
-<MudText Typo="Typo.h5" Class="fw-bold mb-4 mt-n2">Panel de Control</MudText>
+<MudText Typo="Typo.h5" Class="fw-bold mb-4 mt-n2">@Ui["Dashboard"]</MudText>
 
 @if (_isLoading)
 {
@@ -24,7 +24,7 @@ else
             <MudPaper Class="pa-4 dashboard-card" Elevation="0">
                 <div class="d-flex align-center mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.FitScreen" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
-                    <MudText Typo="Typo.body2" Class="text-muted">@(_isAdmin ? "Ventanas (Total)" : "Ventanas Activas")</MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">@(_isAdmin ? Ui["Windows (total)"] : Ui["Active windows"])</MudText>
                 </div>
                 <MudText Typo="Typo.h4" Class="fw-bold">@(_isAdmin ? _filteredWindows.Count : _filteredWindows.Count(w => w.IsActive))</MudText>
             </MudPaper>
@@ -33,7 +33,7 @@ else
             <MudPaper Class="pa-4 dashboard-card" Elevation="0">
                 <div class="d-flex align-center mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.Sensors" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
-                    <MudText Typo="Typo.body2" Class="text-muted">Señales</MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">@Ui["Signals"]</MudText>
                 </div>
                 <MudText Typo="Typo.h4" Class="fw-bold">@_signals.Count</MudText>
             </MudPaper>
@@ -42,7 +42,7 @@ else
             <MudPaper Class="pa-4 dashboard-card" Elevation="0">
                 <div class="d-flex align-center mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Color="Color.Default" Class="mr-2 text-muted" />
-                    <MudText Typo="Typo.body2" Class="text-muted">Comandos</MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">@Ui["Commands"]</MudText>
                 </div>
                 <MudText Typo="Typo.h4" Class="fw-bold">@_commandCount</MudText>
             </MudPaper>
@@ -51,7 +51,7 @@ else
             <MudPaper Class="pa-4 dashboard-card border-left-error" Elevation="0" Style="border-left: 3px solid #ef4444;">
                 <div class="d-flex align-center mb-2">
                     <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Color="Color.Error" Class="mr-2" />
-                    <MudText Typo="Typo.body2" Class="text-muted">Alarmas</MudText>
+                    <MudText Typo="Typo.body2" Class="text-muted">@Ui["Alarms"]</MudText>
                 </div>
                 <MudText Typo="Typo.h4" Class="fw-bold text-error">@_activeAlarmCount</MudText>
             </MudPaper>
@@ -62,7 +62,7 @@ else
         <!-- Ventanas -->
         <MudItem xs="12" md="6">
             <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="height: 420px; overflow-y: auto;">
-                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">@(_isAdmin ? "Ventanas" : "Ventanas Activas")</MudText>
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">@(_isAdmin ? Ui["Windows"] : Ui["Active windows"])</MudText>
                 <MudList T="Window" Dense="true" Class="pa-0">
                     @foreach (var window in (_isAdmin ? _filteredWindows : _filteredWindows.Where(w => w.IsActive)))
                     {
@@ -74,10 +74,10 @@ else
                             <div class="d-flex gap-2">
                                 @if (!window.IsActive)
                                 {
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Filled">Inactiva</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Filled">@Ui["Inactive"]</MudChip>
                                 }
                                 <MudChip T="string" Size="Size.Small" Color="@(window.Tipo == "Sinóptico" ? Color.Info : Color.Default)" Variant="Variant.Filled">
-                                    @window.Tipo
+                                    @MonitorLocalization.ElementName(window.Tipo)
                                 </MudChip>
                             </div>
                         </div>
@@ -91,7 +91,7 @@ else
             <MudPaper Class="pa-4 mb-6 dashboard-card" Elevation="0" Style="height: 420px; overflow-y: auto;">
                 <div class="d-flex align-center mb-4">
                     <MudIcon Icon="@Icons.Material.Filled.Insights" Color="Color.Info" Size="Size.Small" Class="mr-2" />
-                    <MudText Typo="Typo.subtitle1" Class="fw-bold">Señales en Tiempo Real</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold">@Ui["Live signals"]</MudText>
                 </div>
                 
                 <MudSimpleTable Dense="true" Hover="true" Class="signals-table" Style="background: transparent;">
@@ -110,7 +110,7 @@ else
                                     @if (!isAsciiSignal && signal.TipoVariable == "UINT8")
                                     {
                                         <MudChip T="string" Size="MudBlazor.Size.Small" Color="@(currentVal == 1 ? MudBlazor.Color.Success : MudBlazor.Color.Dark)" Variant="MudBlazor.Variant.Filled" Class="rounded">
-                                            @(currentVal == 1 ? "ON" : "OFF")
+                                            @(currentVal == 1 ? "ON" : Ui["OFF"])
                                         </MudChip>
                                     }
                                     else
@@ -128,7 +128,7 @@ else
         <!-- Ultimos Eventos -->
         <MudItem xs="12" Class="mt-6">
             <MudPaper Class="pa-4 dashboard-card" Elevation="0" Style="max-height: 250px; overflow-y: auto;">
-                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">Últimos Eventos</MudText>
+                <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4">@Ui["Latest events"]</MudText>
                 <MudList T="EventMessage" Dense="true" Class="pa-0">
                     @foreach (var ev in _events)
                     {
@@ -137,7 +137,7 @@ else
                             <div class="d-flex align-center">
                                 <MudText Typo="Typo.caption" Class="text-muted mr-3">@ev.Fecha.ToString("d/M/yyyy, HH:mm:ss")</MudText>
                                 <MudChip T="string" Size="Size.Small" Color="@(ev.Estado == "OK" ? Color.Success : Color.Error)" Variant="Variant.Filled">
-                                    @ev.Estado
+                                    @MonitorLocalization.EventStatus(ev.Estado)
                                 </MudChip>
                             </div>
                         </div>
@@ -233,7 +233,7 @@ else
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogWarning(ex, "No se pudo actualizar el panel de inicio; se reintentará.");
+                        Logger.LogWarning(ex, ApsMonitor.Resources.MonitorResources.Text("Unable to refresh the home dashboard; retrying."));
                     }
                 });
             }

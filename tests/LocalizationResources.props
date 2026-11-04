@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../Resources/MonitorResources.cs" Link="Resources/MonitorResources.cs" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Resources/MonitorResources.resx" LogicalName="ApsMonitor.Resources.MonitorResources.resources" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../Resources/MonitorResources.es.resx" LogicalName="ApsMonitor.Resources.MonitorResources.resources" />
+  </ItemGroup>
+</Project>

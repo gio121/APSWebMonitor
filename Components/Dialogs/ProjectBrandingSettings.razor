@@ -7,8 +7,8 @@
     <div class="branding-heading">
         <div class="branding-icon"><MudIcon Icon="@Icons.Material.Outlined.Palette" /></div>
         <div>
-            <MudText Typo="Typo.h6" Class="fw-bold">Imagen y nombre del proyecto</MudText>
-            <MudText Typo="Typo.body2" Class="branding-muted">La identidad que aparece en la cabecera del monitor.</MudText>
+            <MudText Typo="Typo.h6" Class="fw-bold">@Ui["Project image and name"]</MudText>
+            <MudText Typo="Typo.body2" Class="branding-muted">@Ui["The identity shown in the monitor header."]</MudText>
         </div>
     </div>
     @if (!_loaded)
@@ -21,24 +21,24 @@
             <MudGrid>
                 <MudItem xs="12" sm="4">
                     <div class="branding-preview">
-                        <span class="preview-label">Vista previa</span>
-                        <img src="@(_logo ?? "SepsaMedha.jpg")" alt="Vista previa de la imagen del proyecto" style="width:100%;max-width:180px;height:90px;object-fit:contain" />
+                        <span class="preview-label">@Ui["Preview"]</span>
+                        <img src="@(_logo ?? "SepsaMedha.jpg")" alt="@Ui["Project image preview"]" style="width:100%;max-width:180px;height:90px;object-fit:contain" />
                         <MudText Class="mt-2" Style="overflow-wrap:anywhere">@_name</MudText>
                     </div>
                 </MudItem>
                 <MudItem xs="12" sm="8">
-                    <MudTextField @bind-Value="_name" Label="Nombre del proyecto" MaxLength="80" Required="true" Immediate="true" Variant="Variant.Outlined" Class="mb-4" />
-                    <label for="project-logo" class="image-label">Imagen del proyecto</label>
+                    <MudTextField @bind-Value="_name" Label="@Ui["Project name"]" MaxLength="80" Required="true" RequiredError="@Ui["Required"]" Immediate="true" Variant="Variant.Outlined" Class="mb-4" />
+                    <label for="project-logo" class="image-label">@Ui["Project image"]</label>
                     <div class="image-upload"><InputFile @key="_fileKey" id="project-logo" OnChange="SelectImage" accept="image/png,image/jpeg,image/webp" /></div>
-                    <MudText Typo="Typo.caption" Class="branding-muted d-block mb-2">PNG, JPG o WebP · Hasta 2 MiB</MudText>
-                    <MudButton OnClick="UseDefaultImage" Size="Size.Small" Disabled="@(_logo is null)">Usar imagen predeterminada</MudButton>
+                    <MudText Typo="Typo.caption" Class="branding-muted d-block mb-2">@Ui["PNG, JPG or WebP · Up to 2 MiB"]</MudText>
+                    <MudButton OnClick="UseDefaultImage" Size="Size.Small" Disabled="@(_logo is null)">@Ui["Use default image"]</MudButton>
                 </MudItem>
             </MudGrid>
         </fieldset>
         @if (_error is not null) { <MudAlert Severity="Severity.Error" Class="mt-3">@_error</MudAlert> }
         <div class="branding-actions">
-            <MudButton OnClick="Save" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" Disabled="@(_busy || string.IsNullOrWhiteSpace(_name))">Guardar personalización</MudButton>
-            <MudButton OnClick="Discard" Disabled="_busy">Descartar cambios</MudButton>
+            <MudButton OnClick="Save" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" Disabled="@(_busy || string.IsNullOrWhiteSpace(_name))">@Ui["Save branding"]</MudButton>
+            <MudButton OnClick="Discard" Disabled="_busy">@Ui["Discard changes"]</MudButton>
         </div>
     }
 </MudPaper>
@@ -91,7 +91,7 @@
             await Branding.SaveAsync(_name, _logo, _projectId, _originalBranding, _draftPath);
             _originalBranding = Branding.Current;
             _name = Branding.Current.ProjectName;
-            Snackbar.Add("Imagen y nombre del proyecto actualizados.", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Project image and name updated."), Severity.Success);
         }
         catch (Exception ex) { _error = ex.Message; }
         finally { _busy = false; }

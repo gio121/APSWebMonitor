@@ -36,7 +36,7 @@ public static class ApsControlEventsClient
     {
         int length = config.DownloadEnd - config.DownloadStart;
         if (string.IsNullOrWhiteSpace(host) || port is < 1 or > 65535 || config.DownloadStart != 0 || length is < 6 or > ControlEventsParser.MaxFileBytes || config.BlockSize is < 1 or > 32767)
-            throw new ArgumentException("Configuración de descarga no válida: se requiere una imagen desde dirección 0, puerto UDP y tamaño de bloque válidos.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Invalid download configuration: an image starting at address 0, a valid UDP port, and a valid block size are required."));
         _ = MemoryType(config);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(TimeSpan.FromMinutes(8));
@@ -103,7 +103,7 @@ public static class ApsControlEventsClient
                 }
                 catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
             }
-            if (received is null) throw new TimeoutException($"El equipo no respondió con un bloque válido en la dirección {offset} tras cinco intentos.");
+            if (received is null) throw new TimeoutException(ApsMonitor.Resources.MonitorResources.Format("The device did not respond with a valid block at address {0} after five attempts.", offset));
             received.CopyTo(bytes, offset);
             offset += received.Length;
             progress?.Invoke(100.0 * offset / length);
@@ -115,6 +115,6 @@ public static class ApsControlEventsClient
     private static byte MemoryType(ControlEventConfig config) => config.DownloadType.ToUpperInvariant() switch
     {
         "RAM" => 1, "FLASH" => 2,
-        _ => throw new ArgumentException("El CMFX debe especificar descarga RAM o FLASH.")
+        _ => throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The CMFX must specify a RAM or FLASH download."))
     };
 }

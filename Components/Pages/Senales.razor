@@ -17,29 +17,29 @@
     <div class="d-flex align-center">
         <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Info" Class="mr-2" />
         <MudText Typo="Typo.h5" Class="fw-bold">
-            @(SessionState.IsLoaded ? $"Señales (Sesión: {SessionState.FileName})" : "Señales")
+            @(SessionState.IsLoaded ? Ui["Signals (Session: {0})", SessionState.FileName] : Ui["Signals"])
         </MudText>
     </div>
     <div class="d-flex gap-2">
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep" Class="rounded-lg mr-2" OnClick="DeleteAllSignals">Borrar Todo</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteSweep" Class="rounded-lg mr-2" OnClick="DeleteAllSignals">@Ui["Delete all"]</MudButton>
         <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Upload" Class="rounded-lg" OnClick="AbrirSelectorFichero" Disabled="@_isImporting">
             @if (_isImporting)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span>Importando...</span>
+                <span>Importing...</span>
             }
             else
             {
-                <span>Importar .cmfx</span>
+                <span>@Ui["Import .cmfx"]</span>
             }
         </MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg ms-2" OnClick="OpenNewSignalDialog">Nueva Señal</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg ms-2" OnClick="OpenNewSignalDialog">@Ui["New signal"]</MudButton>
     </div>
 </div>
 
 <InputFile id="cmfxFileInput" OnChange="ImportarCmfx" Accept=".cmfx" style="display:none" />
 
-<MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Buscar..." Adornment="Adornment.Start" 
+<MudTextField @bind-Value="_searchString" Immediate="true" Placeholder="Search..." Adornment="Adornment.Start"
               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" 
               Class="mb-6 search-input" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 400px; background-color: var(--mud-palette-surface);" />
 
@@ -60,8 +60,8 @@ else
                     <div class="d-flex align-center">
                         <MudIcon Icon="@Icons.Material.Filled.Router" Color="Color.Info" Class="mr-3" />
                         <div>
-                            <MudText Typo="Typo.subtitle1" Class="fw-bold">Nodo @nodeNum: @nodeDesc</MudText>
-                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() señales configuradas</MudText>
+                            <MudText Typo="Typo.subtitle1" Class="fw-bold">@Ui["Node {0}: {1}", nodeNum, nodeDesc]</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">@group.Count() configured signals</MudText>
                         </div>
                     </div>
                 </TitleContent>
@@ -69,11 +69,11 @@ else
                     <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: var(--mud-palette-surface);">
                         <MudDataGrid T="Signal" Items="@group" Dense="true" Hover="true" Elevation="0">
                             <Columns>
-                                <PropertyColumn Property="x => x.Nombre" Title="Nombre" />
+                                <PropertyColumn Property="x => x.Nombre" Title="@Ui["Name"]" />
                                 <PropertyColumn Property="x => x.Tag" Title="Tag" />
-                                <PropertyColumn Property="x => x.TipoVariable" Title="Tipo" />
+                                <PropertyColumn Property="x => x.TipoVariable" Title="@Ui["Type_Text"]" />
                                 <PropertyColumn Property="x => x.BytePosicion" Title="Byte" />
-                                <TemplateColumn Title="Valor">
+                                <TemplateColumn Title="@Ui["Value_Lowercase"]">
                                     <CellTemplate>
                                         @{
                                             var currentVal = GetCurrentValue(context.Item);
@@ -84,7 +84,7 @@ else
                                         @if (!isAsciiSignal && context.Item.TipoVariable == "UINT8")
                                         {
                                             <MudChip T="string" Size="Size.Small" Color="@(currentVal == 1 ? Color.Success : Color.Dark)" Variant="Variant.Filled">
-                                                @(currentVal == 1 ? "ON" : "OFF")
+                                                @(currentVal == 1 ? "ON" : Ui["OFF"])
                                             </MudChip>
                                         }
                                         else
@@ -93,7 +93,7 @@ else
                                         }
                                     </CellTemplate>
                                 </TemplateColumn>
-                                <TemplateColumn Title="Acciones">
+                                <TemplateColumn Title="@Ui["Actions"]">
                                     <CellTemplate>
                                         <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" OnClick="@(() => OpenEditSignalDialog(context.Item))" />
                                         <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => DeleteSignal(context.Item))" />
@@ -246,11 +246,8 @@ else
                 var rootDesc = node.Element("description");
                 var descSource = swDesc ?? rootDesc;
 
-                var nodeDescElement = descSource?.Elements("localized_string_t")
-                                         .FirstOrDefault(d => d.Element("langid")?.Value == "es");
-                
-                string nodeDescription = nodeDescElement?.Element("stringvalue")?.Value 
-                                         ?? (nodeNumber == 1 ? "Control" : $"Nodo {nodeNumber}");
+                string nodeDescription = MonitorLocalization.EnglishDescription(descSource,
+                    nodeNumber == 1 ? "Control" : ApsMonitor.Resources.MonitorResources.Format("Node {0}",nodeNumber));
 
                 // 2. Construir mapa keyname → lista de BytePosicion leyendo <elements>/<valuereference_element_t>
                 //    Guardamos LISTA de posiciones porque varias señales (spareByte) comparten keyname
@@ -301,9 +298,8 @@ else
                         bytePos = sequentialBytePos;
 
                     // Descripciones
-                    var descriptions = el.Element("description")?.Elements("localized_string_t").ToList();
-                    var descEs = descriptions?.FirstOrDefault(d => d.Element("langid")?.Value == "es")?.Element("stringvalue")?.Value;
-                    var descEn = descriptions?.FirstOrDefault(d => d.Element("langid")?.Value == "en")?.Element("stringvalue")?.Value;
+                    var descEs = MonitorLocalization.Description(el.Element("description"), "es");
+                    var descEn = MonitorLocalization.Description(el.Element("description"), "en");
 
                     // Info: unidades
                     var infoNode = el.Element("info");
@@ -328,8 +324,8 @@ else
 
                     var signal = new Signal
                     {
-                        Nombre = descEs ?? keyname,
-                        Tag = keyname,
+                        Nombre = MonitorLocalization.EnglishDescription(el.Element("description"), keyname ?? ""),
+                        Tag = keyname ?? "",
                         DescripcionEs = descEs,
                         DescripcionEn = descEn,
                         TipoVariable = tipoVariable,
@@ -357,12 +353,12 @@ else
 
             var eventConfigurations = ControlEventsParser.LoadConfig(doc, allowEmpty: true);
             await DataService.ImportSignalsAsync(importedSignals, eventConfigurations);
-            Snackbar.Add($"Se importaron {importados} señales de {nodes.Count} nodos desde '{file.Name}'.", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Imported {0} signals from {1} nodes in '{2}'.",importados,nodes.Count,file.Name), Severity.Success);
             await LoadData();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al importar: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("Import failed: {0}",ex.Message), Severity.Error);
         }
         finally
         {
@@ -402,10 +398,7 @@ else
             int bitIdx = ApsCalculationUtils.SafeParseInt(bitEl.Element("value")?.Value, -1);
             if (bitIdx >= 0 && bitIdx < 16)
             {
-                var bitDesc = bitEl.Element("value_description")?
-                                 .Elements("localized_string_t")?
-                                 .FirstOrDefault(d => d.Element("langid")?.Value == "es")?
-                                 .Element("stringvalue")?.Value;
+                var bitDesc = MonitorLocalization.EnglishDescription(bitEl.Element("value_description"));
                 
                 if (!string.IsNullOrWhiteSpace(bitDesc)) signal.BitTextoActivo[bitIdx] = bitDesc;
             }
@@ -415,13 +408,13 @@ else
     private async Task ProcessDirectSignals(XDocument doc, string fileName)
     {
         // Lógica simplificada para XMLs sin estructura de nodos (como el anterior)1
-        Snackbar.Add("El archivo no tiene estructura de nodos <node_t>.", Severity.Warning);
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The file has no <node_t> structure."), Severity.Warning);
     }
 
     private async Task OpenNewSignalDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<SignalDialog>("Nueva Señal", options);
+        var dialog = await DialogService.ShowAsync<SignalDialog>(ApsMonitor.Resources.MonitorResources.Text("New signal"), options);
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
@@ -434,7 +427,7 @@ else
     {
         var parameters = new DialogParameters { ["Signal"] = signal };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<SignalDialog>("Editar Señal", parameters, options);
+        var dialog = await DialogService.ShowAsync<SignalDialog>(ApsMonitor.Resources.MonitorResources.Text("Edit signal"), parameters, options);
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
@@ -448,9 +441,9 @@ else
         try
         {
             var result = await DialogService.ShowMessageBoxAsync(
-                "Eliminar",
-                "¿Eliminar esta señal? Sus asignaciones se conservarán y se recuperarán al importar de nuevo el CMFX.",
-                yesText: "Eliminar", cancelText: "Cancelar");
+                ApsMonitor.Resources.MonitorResources.Text("Delete"),
+                ApsMonitor.Resources.MonitorResources.Text("Delete this signal? Its bindings will be preserved and restored when the CMFX is imported again."),
+                yesText: ApsMonitor.Resources.MonitorResources.Text("Delete"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
             if (result == true)
             {
@@ -466,14 +459,14 @@ else
         try
         {
             var result = await DialogService.ShowMessageBoxAsync(
-                "Borrar Todo",
-                "¿Eliminar todas las señales? Las asignaciones de las ventanas se conservarán y se recuperarán al importar de nuevo el CMFX.",
-                yesText: "Borrar Todo", cancelText: "Cancelar");
+                ApsMonitor.Resources.MonitorResources.Text("Delete all"),
+                ApsMonitor.Resources.MonitorResources.Text("Delete all signals? Window bindings will be preserved and restored when the CMFX is imported again."),
+                yesText: ApsMonitor.Resources.MonitorResources.Text("Delete all"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
             if (result == true)
             {
                 await DataService.DeleteAllSignalsAsync();
-                Snackbar.Add("Todas las señales han sido eliminadas.", Severity.Info);
+                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("All signals have been deleted."), Severity.Info);
                 await LoadData();
             }
         }

@@ -96,7 +96,7 @@ public class DhcpServerService : IDisposable
     public (bool Success, string Message) StartServer(DhcpServerConfig config)
     {
         if (IsRunning)
-            return (false, "El servidor DHCP ya está en ejecución.");
+            return (false, ApsMonitor.Resources.MonitorResources.Text("The DHCP server is already running."));
 
         Config = config;
 
@@ -127,7 +127,7 @@ public class DhcpServerService : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DHCP] Error resolviendo interfaz: {ex.Message}");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Unable to resolve interface: {0}", ex.Message));
             }
         }
 
@@ -183,7 +183,7 @@ public class DhcpServerService : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[DHCP] Aviso ligando socket de interfaz a {srvIp}: {ex.Message}");
+                    Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Warning binding interface socket to {0}: {1}", srvIp, ex.Message));
                 }
             }
 
@@ -191,16 +191,16 @@ public class DhcpServerService : IDisposable
             _listenTask = Task.Run(() => ListenLoop(_cts.Token));
             IsRunning = true;
 
-            string ifLabel = !string.IsNullOrEmpty(Config.InterfaceName) ? $" en '{Config.InterfaceName}'" : "";
-            return (true, $"Servidor DHCP iniciado{ifLabel}. Rango: {Config.StartIp} - {Config.EndIp}");
+            string ifLabel = !string.IsNullOrEmpty(Config.InterfaceName) ? ApsMonitor.Resources.MonitorResources.Format(" on '{0}'", Config.InterfaceName) : "";
+            return (true, ApsMonitor.Resources.MonitorResources.Format("DHCP server started{0}. Range: {1} - {2}", ifLabel, Config.StartIp, Config.EndIp));
         }
         catch (SocketException ex)
         {
-            return (false, $"Error al abrir puerto 67 (posible conflicto con otro servicio DHCP): {ex.Message}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to open port 67 (possible conflict with another DHCP service): {0}", ex.Message));
         }
         catch (Exception ex)
         {
-            return (false, $"Error al iniciar DHCP: {ex.Message}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to start DHCP: {0}", ex.Message));
         }
     }
 
@@ -273,7 +273,7 @@ public class DhcpServerService : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DHCP] Error en recepción: {ex.Message}");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Receive error: {0}", ex.Message));
             }
         }
     }
@@ -345,7 +345,7 @@ public class DhcpServerService : IDisposable
 
         if (msgType == 1) // DHCPDISCOVER
         {
-            Console.WriteLine($"[DHCP] DHCPDISCOVER recibido de MAC {mac}, host '{hostName}' en interfaz '{Config.InterfaceName}'");
+            Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] DHCPDISCOVER received from MAC {0}, host '{1}' on interface '{2}'", mac, hostName, Config.InterfaceName));
             var offeredIp = GetOrAllocateIp(mac, requestedIp);
             if (offeredIp != null)
             {
@@ -354,7 +354,7 @@ public class DhcpServerService : IDisposable
         }
         else if (msgType == 3) // DHCPREQUEST
         {
-            Console.WriteLine($"[DHCP] DHCPREQUEST recibido de MAC {mac}, requestedIp={requestedIp} en interfaz '{Config.InterfaceName}'");
+            Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] DHCPREQUEST received from MAC {0}, requestedIp={1} on interface '{2}'", mac, requestedIp, Config.InterfaceName));
 
             IPAddress? chosenIp = null;
 
@@ -373,7 +373,7 @@ public class DhcpServerService : IDisposable
                 {
                     // La IP solicitada es ajena al rango configurado (ej. IP de otra red corporativa/Wi-Fi).
                     // No conceder ni registrar concesión.
-                    Console.WriteLine($"[DHCP] Ignorando DHCPREQUEST fuera de rango/subred ({requestedIp}) para MAC {mac}");
+                    Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Ignoring DHCPREQUEST outside range/subnet ({0}) for MAC {1}", requestedIp, mac));
                     return;
                 }
             }
@@ -402,7 +402,7 @@ public class DhcpServerService : IDisposable
         }
         else if (msgType == 7) // DHCPRELEASE
         {
-            Console.WriteLine($"[DHCP] DHCPRELEASE recibido de MAC {mac}");
+            Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] DHCPRELEASE received from MAC {0}", mac));
             _leases.TryRemove(mac, out _);
             OnLeasesChanged?.Invoke();
         }
@@ -599,11 +599,11 @@ public class DhcpServerService : IDisposable
             try
             {
                 _socket.SendTo(sendData, new IPEndPoint(subnetBroadcast, 68));
-                Console.WriteLine($"[DHCP] {typeName} enviado a subred broadcast {subnetBroadcast}:68");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] {0} sent to subnet broadcast {1}:68", typeName, subnetBroadcast));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DHCP] Error enviando a {subnetBroadcast}: {ex.Message}");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Unable to send to {0}: {1}", subnetBroadcast, ex.Message));
             }
         }
 
@@ -613,11 +613,11 @@ public class DhcpServerService : IDisposable
             try
             {
                 _interfaceSocket.SendTo(sendData, new IPEndPoint(IPAddress.Broadcast, 68));
-                Console.WriteLine($"[DHCP] {typeName} enviado via socket de interfaz a 255.255.255.255:68");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] {0} sent through interface socket to 255.255.255.255:68", typeName));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DHCP] Error enviando via interfaceSocket broadcast: {ex.Message}");
+                Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] Broadcast send error through interfaceSocket: {0}", ex.Message));
             }
 
             try
@@ -641,7 +641,7 @@ public class DhcpServerService : IDisposable
             catch { }
         }
 
-        Console.WriteLine($"[DHCP] {typeName} completado para {mac} -> {yiaddr}");
+        Console.WriteLine(ApsMonitor.Resources.MonitorResources.Format("[DHCP] {0} completed for {1} -> {2}", typeName, mac, yiaddr));
     }
 
     public void Dispose()

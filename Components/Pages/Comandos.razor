@@ -13,14 +13,14 @@
 <div class="d-flex justify-space-between align-center mb-6">
     <div class="d-flex align-center">
         <MudText Typo="Typo.h5" Class="fw-bold" Color="Color.Info" Style="font-family: monospace;">>_</MudText>
-        <MudText Typo="Typo.h5" Class="fw-bold ml-2">Comandos</MudText>
+        <MudText Typo="Typo.h5" Class="fw-bold ml-2">@Ui["Commands"]</MudText>
     </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="OpenNewCommandDialog">Nuevo Comando</MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="rounded-lg" OnClick="OpenNewCommandDialog">@Ui["New command"]</MudButton>
 </div>
 
 @if (!Monitor.IsMonitoring || Monitor.IsReprogramming)
 {
-    <MudAlert Severity="Severity.Info" Class="mb-4">Active la monitorización para enviar comandos a control.</MudAlert>
+    <MudAlert Severity="Severity.Info" Class="mb-4">@Ui["Start monitoring to send commands to Control."]</MudAlert>
 }
 
 @if (_isLoading)
@@ -40,15 +40,15 @@ else
                     </div>
                     
                     <MudText Typo="Typo.caption" Class="text-muted mb-4 d-block">
-                        Confirmación: @(cmd.RequiereConfirmacion ? "Sí" : "No") &middot; Estilo: @cmd.Estilo
+                        Confirmation: @(cmd.RequiereConfirmacion ? Ui["Yes"] : Ui["No"]) &middot; Style: @cmd.Estilo
                     </MudText>
                     @if (cmd.FrameType == 0x6A)
                     {
-                        <MudText Typo="Typo.body2" Class="mb-3">@VariableLabel(cmd) · Valor bruto: @cmd.VariableValue</MudText>
+                        <MudText Typo="Typo.body2" Class="mb-3">@VariableLabel(cmd) · Raw value: @cmd.VariableValue</MudText>
                     }
                     @if (cmd.FrameType is not (0x6A or 0x7A))
                     {
-                        <MudText Typo="Typo.caption" Color="Color.Warning" Class="mb-3">Editar para configurar como comando 6A o 7A.</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Warning" Class="mb-3">@Ui["Edit to configure as a 6A or 7A command."]</MudText>
                     }
                     
                     <div class="mt-auto d-flex align-center gap-3">
@@ -58,7 +58,7 @@ else
                                    Class="exec-btn"
                                    Disabled="@(!CanSend(cmd))"
                                    OnClick="@(() => ExecuteCommand(cmd))">
-                            Enviar a control
+                            @Ui["Send to Control"]
                         </MudButton>
                         <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small" Class="text-muted icon-btn" OnClick="@(() => OpenEditCommandDialog(cmd))" />
                         <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" Class="icon-btn-error" OnClick="@(() => DeleteCommand(cmd))" />
@@ -70,12 +70,12 @@ else
 
     <MudPaper Class="log-panel mt-6" Elevation="0">
         <div class="pa-4 border-bottom border-dark">
-            <MudText Typo="Typo.subtitle1" Class="fw-bold">Log de Ejecución</MudText>
+            <MudText Typo="Typo.subtitle1" Class="fw-bold">@Ui["Execution log"]</MudText>
         </div>
         <div class="pa-4 log-content">
             @if (!_events.Any())
             {
-                <MudText Typo="Typo.body2" Class="text-muted">Sin eventos</MudText>
+                <MudText Typo="Typo.body2" Class="text-muted">@Ui["No events"]</MudText>
             }
             else
             {
@@ -86,7 +86,7 @@ else
                         <span class="log-msg">@ev.Mensaje</span>
                         @if(!string.IsNullOrEmpty(ev.Estado))
                         {
-                            <span class="log-status ml-2" style="color: @(ev.Estado is "OK" or "ENVIADO" ? "#4caf50" : "#f44336")">[@ev.Estado]</span>
+                            <span class="log-status ml-2" style="color: @(ev.Estado is "OK" or "ENVIADO" ? "#4caf50" : "#f44336")">[@MonitorLocalization.EventStatus(ev.Estado)]</span>
                         }
                     </div>
                 }
@@ -175,13 +175,13 @@ else
     private async Task OpenNewCommandDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<CommandDialog>("Nuevo Comando", options);
+        var dialog = await DialogService.ShowAsync<CommandDialog>(ApsMonitor.Resources.MonitorResources.Text("New command"), options);
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
         {
             await LoadData();
-            Snackbar.Add("Comando creado correctamente", Severity.Success);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Command created successfully"), Severity.Success);
         }
     }
 
@@ -189,13 +189,13 @@ else
     {
         var parameters = new DialogParameters { ["Command"] = command };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<CommandDialog>("Editar Comando", parameters, options);
+        var dialog = await DialogService.ShowAsync<CommandDialog>(ApsMonitor.Resources.MonitorResources.Text("Edit command"), parameters, options);
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
         {
             await LoadData();
-            Snackbar.Add("Comando modificado", Severity.Info);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("Command updated"), Severity.Info);
         }
     }
 
@@ -204,9 +204,9 @@ else
         try
         {
             var result = await DialogService.ShowMessageBoxAsync(
-                "Eliminar",
-                $"¿Eliminar el comando '{command.Nombre}'?",
-                yesText: "Eliminar", cancelText: "Cancelar");
+                ApsMonitor.Resources.MonitorResources.Text("Delete"),
+                ApsMonitor.Resources.MonitorResources.Format("Delete command '{0}'?",command.Nombre),
+                yesText: ApsMonitor.Resources.MonitorResources.Text("Delete"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
 
             if (result == true)
             {
@@ -223,8 +223,8 @@ else
     private bool MonitoringReady => Monitor.IsConnected && Monitor.IsMonitoring && !Monitor.IsReprogramming;
     private bool CanSend(ScadaCommand command) => !_sending && MonitoringReady && command.FrameType is 0x6A or 0x7A;
     private string CommandLabel(ScadaCommand command) => command.FrameType.HasValue
-        ? $"{command.FrameType:X2} · SC {command.Subcommand:X4}" : "Sin configurar";
-    private string VariableLabel(ScadaCommand command) => _signals.FirstOrDefault(s => s.Id == command.SignalId)?.BindingLabel ?? "Variable no disponible";
+        ? $"{command.FrameType:X2} · SC {command.Subcommand:X4}" : ApsMonitor.Resources.MonitorResources.Text("Not configured");
+    private string VariableLabel(ScadaCommand command) => _signals.FirstOrDefault(s => s.Id == command.SignalId)?.BindingLabel ?? ApsMonitor.Resources.MonitorResources.Text("Variable unavailable");
     private void OnMonitorChanged()
     {
         if (_disposed) return;
@@ -247,8 +247,8 @@ else
             string details = CommandLabel(command) + (command.FrameType == 0x6A ? $" · {VariableLabel(command)} = {command.VariableValue} (bruto)" : "");
             if (command.RequiereConfirmacion)
             {
-                var confirmed = await DialogService.ShowMessageBoxAsync("Confirmar envío a control",
-                    $"{command.Nombre}: {details}. ¿Enviar?", yesText: "Enviar", cancelText: "Cancelar");
+                var confirmed = await DialogService.ShowMessageBoxAsync(ApsMonitor.Resources.MonitorResources.Text("Confirm command to Control"),
+                    ApsMonitor.Resources.MonitorResources.Format("{0}: {1}. Send?",command.Nombre,details), yesText: ApsMonitor.Resources.MonitorResources.Text("Send"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
                 if (confirmed != true) return;
             }
             // The service rechecks monitoring after waiting for the shared transport.
@@ -256,10 +256,10 @@ else
             await DataService.AddEventAsync(new EventMessage
             {
                 Fecha = DateTime.Now,
-                Mensaje = $"{command.Nombre}: {details}. " + (sent ? $"TX {SepsaProtocolClient.ToHex(frame)}. Sin confirmación de ejecución." : "No se pudo enviar; revise la monitorización y el log del monitor."),
+                Mensaje = $"{command.Nombre}: {details}. " + (sent ? ApsMonitor.Resources.MonitorResources.Format("TX {0}. Execution not confirmed.",SepsaProtocolClient.ToHex(frame)) : ApsMonitor.Resources.MonitorResources.Text("Unable to send; check monitoring and the monitor log.")),
                 Estado = sent ? "ENVIADO" : "ERROR"
             });
-            Snackbar.Add(sent ? "Comando enviado a control; ejecución no confirmada." : "No se pudo enviar el comando a control.", sent ? Severity.Success : Severity.Error);
+            Snackbar.Add(sent ? ApsMonitor.Resources.MonitorResources.Text("Command sent to Control; execution not confirmed.") : ApsMonitor.Resources.MonitorResources.Text("Unable to send the command to Control."), sent ? Severity.Success : Severity.Error);
         }
         catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
         finally

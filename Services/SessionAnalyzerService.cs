@@ -135,7 +135,12 @@ public sealed class SessionAnalyzerService
     private static AnalyzerValueElement CreateElement(XElement value, int node, int position, string signature)
     {
         var result = new AnalyzerValueElement { KeyName = value.Element("keyname")?.Value?.Trim() ?? "", ValType = value.Element("value")?.Element("valtype")?.Value?.Trim() ?? "BYTE", Scale = Number(value.Element("value")?.Element("scale")?.Value, 1), Offset = Number(value.Element("value")?.Element("offset")?.Value, 0), NodeAddress = node, ByteOffset = position, Signature = signature };
-        foreach (var info in value.Element("info")?.Element("info_elements")?.Elements("info_value_element_t") ?? Enumerable.Empty<XElement>()) if (int.TryParse(info.Element("value")?.Value, out var bit)) { var label = info.Descendants("localized_string_t").FirstOrDefault(x => x.Element("langid")?.Value is "es" or "en")?.Element("stringvalue")?.Value; if (!string.IsNullOrWhiteSpace(label)) result.BitNames[bit] = label.Trim(); }
+        foreach (var info in value.Element("info")?.Element("info_elements")?.Elements("info_value_element_t") ?? Enumerable.Empty<XElement>())
+            if (int.TryParse(info.Element("value")?.Value, out var bit))
+            {
+                var label = MonitorLocalization.EnglishDescription(info.Element("value_description"));
+                if (!string.IsNullOrWhiteSpace(label)) result.BitNames[bit] = label;
+            }
         return result;
     }
     private static double Number(string? value, double fallback) => double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed) ? parsed : fallback;

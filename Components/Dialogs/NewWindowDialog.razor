@@ -1,10 +1,10 @@
 <MudDialog>
     <DialogContent>
-        <MudTextField @bind-Value="WindowName" Label="Nombre de la Ventana" Required="true" Variant="Variant.Outlined" AutoFocus="true" Immediate="true" Class="mb-4" />
-        <MudTextField @bind-Value="WindowDescription" Label="Descripción" Variant="Variant.Outlined" Lines="3" Immediate="true" />
+        <MudTextField @bind-Value="WindowName" Label="@Ui["Window name"]" Required="true" RequiredError="@Ui["Required"]" Variant="Variant.Outlined" AutoFocus="true" Immediate="true" Class="mb-4" />
+        <MudTextField @bind-Value="WindowDescription" Label="@Ui["Description"]" Variant="Variant.Outlined" Lines="3" Immediate="true" />
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Cancel">@Ui["Cancel"]</MudButton>
         <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(WindowName)">@SubmitButtonText</MudButton>
     </DialogActions>
 </MudDialog>
@@ -12,9 +12,9 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
 
-    [Parameter] public string WindowName { get; set; } = "Nuevo Sinóptico";
+    [Parameter] public string WindowName { get; set; } = ApsMonitor.Resources.MonitorResources.Text("New synoptic view");
     [Parameter] public string WindowDescription { get; set; } = "";
-    [Parameter] public string SubmitButtonText { get; set; } = "Crear";
+    [Parameter] public string SubmitButtonText { get; set; } = ApsMonitor.Resources.MonitorResources.Text("Create");
 
     public class WindowResult
     {

@@ -8,7 +8,7 @@
         <div class="d-flex align-center justify-space-between">
             <MudText Typo="Typo.h6" Class="fw-bold d-flex align-center gap-2" Style="color:#38bdf8;">
                 <MudIcon Icon="@Icons.Material.Filled.Terminal" />
-                Detalle Hexadecimal de Trama #@Packet.Index
+                @Ui["Frame #{0} hexadecimal details", Packet.Index]
             </MudText>
             <div class="d-flex align-center gap-2">
                 <MudChip T="string" Color="@(Packet.Protocol == "UDP" ? Color.Primary : Color.Secondary)" Size="Size.Small" Variant="Variant.Filled">
@@ -23,11 +23,11 @@
     <DialogContent>
         <div class="mb-3 d-flex flex-wrap gap-3 pa-2 rounded" style="background: rgba(0,0,0,0.2); border: 1px solid var(--mud-palette-lines-default);">
             <div>
-                <span class="text-caption text-muted">Origen: </span>
+                <span class="text-caption text-muted">@Ui["Source:"] </span>
                 <span class="text-caption fw-bold" style="color:var(--mud-palette-text-primary);">@Packet.SourceIp:@Packet.SourcePort</span>
             </div>
             <div>
-                <span class="text-caption text-muted">Destino: </span>
+                <span class="text-caption text-muted">@Ui["Destination:"] </span>
                 <span class="text-caption fw-bold" style="color:#38bdf8;">@Packet.DestinationIp:@Packet.DestinationPort</span>
             </div>
             <div>
@@ -42,16 +42,16 @@
 
         <div class="d-flex justify-space-between align-center mb-2">
             <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="color:var(--mud-palette-text-secondary);">
-                Volcado Hexadecimal & ASCII (Payload)
+                @Ui["Hexadecimal & ASCII dump (payload)"]
             </MudText>
             <div class="d-flex gap-2">
                 <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.ContentCopy" OnClick="CopyHex">
-                    Copiar Hex
+                    @Ui["Copy hex"]
                 </MudButton>
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Code" OnClick="CopyAscii">
-                    Copiar ASCII
+                    @Ui["Copy ASCII"]
                 </MudButton>
             </div>
         </div>
@@ -61,7 +61,7 @@
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="Close">Cerrar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="Close">@Ui["Close"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -86,18 +86,18 @@
     {
         string hex = Convert.ToHexString(Packet.Payload);
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", hex);
-        Snackbar.Add("Payload HEX copiado al portapapeles", Severity.Success);
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("HEX payload copied to clipboard"), Severity.Success);
     }
 
     private async Task CopyAscii()
     {
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", Packet.PayloadAscii);
-        Snackbar.Add("ASCII copiado al portapapeles", Severity.Success);
+        Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("ASCII copied to clipboard"), Severity.Success);
     }
 
     private static string BuildHexDump(byte[] data)
     {
-        if (data == null || data.Length == 0) return "-- Payload Vacío --";
+        if (data == null || data.Length == 0) return ApsMonitor.Resources.MonitorResources.Text("-- Empty payload --");
 
         var sb = new StringBuilder();
         sb.AppendLine("OFFSET    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII");

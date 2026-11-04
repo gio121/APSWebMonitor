@@ -148,7 +148,7 @@ public class PacketSenderService : IDisposable
 
             OnPlaybackProgress?.Invoke(Stats);
             OnStatusChanged?.Invoke(ReplayStatus.Idle);
-            OnLogMessage?.Invoke("[PacketReplay] Fichero de captura eliminado y estado reiniciado.");
+            OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("[PacketReplay] Capture file removed and state reset."));
         }
     }
 
@@ -173,7 +173,7 @@ public class PacketSenderService : IDisposable
 
         if (magic is 0xa1b2c3d4 or 0xd4c3b2a1 or 0xa1b23c4d or 0x4d3cb2a1)
         {
-            info.Format = magic is 0xa1b23c4d or 0x4d3cb2a1 ? "PCAP Clásico (Nanosegundos)" : "PCAP Clásico (Microsegundos)";
+            info.Format = magic is 0xa1b23c4d or 0x4d3cb2a1 ? ApsMonitor.Resources.MonitorResources.Text("Classic PCAP (nanoseconds)") : ApsMonitor.Resources.MonitorResources.Text("Classic PCAP (microseconds)");
             fs.Seek(0, SeekOrigin.Begin);
             ParseClassicPcap(fs, magic, packets);
         }
@@ -196,7 +196,7 @@ public class PacketSenderService : IDisposable
             }
             else
             {
-                info.Format = "Texto / Hex Dump";
+                info.Format = ApsMonitor.Resources.MonitorResources.Text("Text / hex dump");
                 ParseHexDump(text, packets);
             }
         }
@@ -962,7 +962,7 @@ public class PacketSenderService : IDisposable
                     uint comId = (uint)((payload[8] << 24) | (payload[9] << 16) | (payload[10] << 8) | payload[11]);
                     return $"TRDP PD ComID:{comId} ({payload.Length} B){crcBadge}";
                 }
-                return $"TRDP Trama ({payload.Length} B){crcBadge}";
+                return ApsMonitor.Resources.MonitorResources.Format("TRDP frame ({0} B){1}", payload.Length, crcBadge);
             }
 
             // Detectar DHCP
@@ -1041,10 +1041,10 @@ public class PacketSenderService : IDisposable
         lock (_lock)
         {
             if (_stats.Status == ReplayStatus.Playing)
-                return (false, "La reproducción ya se encuentra activa.");
+                return (false, ApsMonitor.Resources.MonitorResources.Text("Playback is already active."));
 
             if (_playlist.Count == 0)
-                return (false, "No hay tramas en la lista para reproducir.");
+                return (false, ApsMonitor.Resources.MonitorResources.Text("There are no frames in the playlist."));
 
             _config = config;
 
@@ -1055,7 +1055,7 @@ public class PacketSenderService : IDisposable
             }
             catch (Exception ex)
             {
-                return (false, $"Error al inicializar socket de red: {ex.Message}");
+                return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to initialise network socket: {0}", ex.Message));
             }
 
             _cts?.Cancel();
@@ -1069,10 +1069,10 @@ public class PacketSenderService : IDisposable
             _stats.ElapsedRealTime = TimeSpan.Zero;
 
             OnStatusChanged?.Invoke(ReplayStatus.Playing);
-            OnLogMessage?.Invoke($"[PacketReplay] Reproducción iniciada con {_playlist.Count} tramas a velocidad {GetSpeedDescription(config)}.");
+            OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("[PacketReplay] Playback started with {0} frames at {1} speed.", _playlist.Count, GetSpeedDescription(config)));
 
             _playbackTask = Task.Run(() => PlaybackLoopAsync(_cts.Token));
-            return (true, "Reproducción iniciada correctamente.");
+            return (true, ApsMonitor.Resources.MonitorResources.Text("Playback started successfully."));
         }
     }
 
@@ -1085,7 +1085,7 @@ public class PacketSenderService : IDisposable
                 _isPaused = true;
                 _stats.Status = ReplayStatus.Paused;
                 OnStatusChanged?.Invoke(ReplayStatus.Paused);
-                OnLogMessage?.Invoke($"[PacketReplay] Reproducción pausada en trama #{_currentIndex + 1}.");
+                OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("[PacketReplay] Playback paused at frame #{0}.", _currentIndex + 1));
             }
         }
     }
@@ -1099,7 +1099,7 @@ public class PacketSenderService : IDisposable
                 _isPaused = false;
                 _stats.Status = ReplayStatus.Playing;
                 OnStatusChanged?.Invoke(ReplayStatus.Playing);
-                OnLogMessage?.Invoke($"[PacketReplay] Reproducción reanudada.");
+                OnLogMessage?.Invoke($"[PacketReplay] Playback resumed.");
             }
         }
     }
@@ -1117,7 +1117,7 @@ public class PacketSenderService : IDisposable
             CloseSocket();
             OnStatusChanged?.Invoke(ReplayStatus.Idle);
             OnPlaybackProgress?.Invoke(Stats);
-            OnLogMessage?.Invoke("[PacketReplay] Reproducción detenida y reiniciada.");
+            OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("[PacketReplay] Playback stopped and reset."));
         }
     }
 
@@ -1141,7 +1141,7 @@ public class PacketSenderService : IDisposable
     {
         lock (_lock)
         {
-            if (_playlist.Count == 0) return (false, "No hay tramas.");
+            if (_playlist.Count == 0) return (false, ApsMonitor.Resources.MonitorResources.Text("No frames."));
             if (_currentIndex >= _playlist.Count) _currentIndex = 0;
 
             try
@@ -1151,7 +1151,7 @@ public class PacketSenderService : IDisposable
             }
             catch (Exception ex)
             {
-                return (false, $"Error de socket: {ex.Message}");
+                return (false, ApsMonitor.Resources.MonitorResources.Format("Socket error: {0}", ex.Message));
             }
 
             var pkt = _playlist[_currentIndex];
@@ -1162,16 +1162,16 @@ public class PacketSenderService : IDisposable
                 _stats.PacketsSent++;
                 _stats.TotalBytesSent += pkt.Payload.Length;
                 _stats.CurrentCaptureRelativeTime = pkt.RelativeTime;
-                _stats.CurrentPacketDescription = $"Trama #{pkt.Index}: {pkt.Info} -> {GetTargetEndPoint(pkt, _config)}";
+                _stats.CurrentPacketDescription = ApsMonitor.Resources.MonitorResources.Format("Frame #{0}: {1} -> {2}", pkt.Index, pkt.Info, GetTargetEndPoint(pkt, _config));
                 _currentIndex = (_currentIndex + 1) % _playlist.Count;
                 OnPlaybackProgress?.Invoke(Stats);
-                return (true, $"Trama #{pkt.Index} enviada.");
+                return (true, ApsMonitor.Resources.MonitorResources.Format("Frame #{0} sent.", pkt.Index));
             }
             else
             {
                 _stats.PacketsFailed++;
                 OnPlaybackProgress?.Invoke(Stats);
-                return (false, $"Error enviando trama #{pkt.Index}: {err}");
+                return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to send frame #{0}: {1}", pkt.Index, err));
             }
         }
     }
@@ -1189,13 +1189,13 @@ public class PacketSenderService : IDisposable
             bool ok = TransmitPacket(packet, cfg, out string err);
             if (ok)
             {
-                return (true, $"Trama #{packet.Index} enviada con éxito ({packet.Payload.Length} bytes a {GetTargetEndPoint(packet, cfg)}).");
+                return (true, ApsMonitor.Resources.MonitorResources.Format("Frame #{0} sent successfully ({1} bytes to {2}).", packet.Index, packet.Payload.Length, GetTargetEndPoint(packet, cfg)));
             }
-            return (false, $"Error al enviar trama #{packet.Index}: {err}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Unable to send frame #{0}: {1}", packet.Index, err));
         }
         catch (Exception ex)
         {
-            return (false, $"Excepción al enviar trama: {ex.Message}");
+            return (false, ApsMonitor.Resources.MonitorResources.Format("Exception sending frame: {0}", ex.Message));
         }
     }
 
@@ -1233,7 +1233,7 @@ public class PacketSenderService : IDisposable
                         if (_config.LoopPlayback && _playlist.Count > 0)
                         {
                             _currentIndex = 0;
-                            OnLogMessage?.Invoke("[PacketReplay] Reiniciando bucle de reproducción continuo.");
+                            OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("[PacketReplay] Restarting continuous playback loop."));
                         }
                         else
                         {
@@ -1335,7 +1335,7 @@ public class PacketSenderService : IDisposable
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            OnLogMessage?.Invoke($"[PacketReplay] Error en bucle: {ex.Message}");
+            OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("[PacketReplay] Loop error: {0}", ex.Message));
         }
         finally
         {
@@ -1349,7 +1349,7 @@ public class PacketSenderService : IDisposable
                 _stats.CurrentBitrateKbps = 0;
                 OnStatusChanged?.Invoke(_stats.Status);
                 OnPlaybackProgress?.Invoke(Stats);
-                OnLogMessage?.Invoke($"[PacketReplay] Reproducción finalizada. Total enviados: {_stats.PacketsSent} ({_stats.TotalBytesSent} bytes).");
+                OnLogMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Format("[PacketReplay] Playback finished. Total sent: {0} ({1} bytes).", _stats.PacketsSent, _stats.TotalBytesSent));
             }
         }
     }
@@ -1359,7 +1359,7 @@ public class PacketSenderService : IDisposable
         error = string.Empty;
         if (packet.Payload.Length == 0 && packet.RawBytes.Length == 0)
         {
-            error = "Paquete vacío.";
+            error = ApsMonitor.Resources.MonitorResources.Text("Empty packet.");
             return false;
         }
 
@@ -1376,7 +1376,7 @@ public class PacketSenderService : IDisposable
 
             if (_udpSocket == null)
             {
-                error = "Socket no inicializado.";
+                error = ApsMonitor.Resources.MonitorResources.Text("Socket not initialised.");
                 return false;
             }
 
@@ -1505,7 +1505,7 @@ public class PacketSenderService : IDisposable
         if (!IPAddress.TryParse(req.DestinationIp, out var targetIp))
         {
             result.Success = false;
-            result.Message = "Dirección IP destino inválida.";
+            result.Message = ApsMonitor.Resources.MonitorResources.Text("Invalid destination IP address.");
             return result;
         }
 
@@ -1524,14 +1524,14 @@ public class PacketSenderService : IDisposable
         catch (Exception ex)
         {
             result.Success = false;
-            result.Message = $"Formato de datos no válido: {ex.Message}";
+            result.Message = ApsMonitor.Resources.MonitorResources.Format("Invalid data format: {0}", ex.Message);
             return result;
         }
 
         if (payload.Length == 0)
         {
             result.Success = false;
-            result.Message = "El payload está vacío.";
+            result.Message = ApsMonitor.Resources.MonitorResources.Text("The payload is empty.");
             return result;
         }
 
@@ -1594,14 +1594,14 @@ public class PacketSenderService : IDisposable
             result.Success = true;
             result.BytesSent = sentTotal;
             result.RoundTripMs = sw.ElapsedMilliseconds;
-            result.Message = $"Enviado(s) {reps} paquete(s) con éxito ({sentTotal} bytes totales) en {sw.ElapsedMilliseconds} ms.";
+            result.Message = ApsMonitor.Resources.MonitorResources.Format("Sent {0} packet(s) successfully ({1} total bytes) in {2} ms.", reps, sentTotal, sw.ElapsedMilliseconds);
         }
         catch (Exception ex)
         {
             sw.Stop();
             result.Success = false;
             result.RoundTripMs = sw.ElapsedMilliseconds;
-            result.Message = $"Fallo al enviar: {ex.Message}";
+            result.Message = ApsMonitor.Resources.MonitorResources.Format("Send failed: {0}", ex.Message);
         }
 
         lock (ManualHistory)
@@ -1621,9 +1621,9 @@ public class PacketSenderService : IDisposable
     {
         return cfg.SpeedMode switch
         {
-            PlaybackSpeedMode.RealTime => $"Tiempo Real ({cfg.SpeedMultiplier:F2}x)",
-            PlaybackSpeedMode.Burst => "Ráfaga Máxima",
-            PlaybackSpeedMode.FixedInterval => $"Intervalo fijo ({cfg.FixedIntervalMs} ms)",
+            PlaybackSpeedMode.RealTime => ApsMonitor.Resources.MonitorResources.Format("Real time ({0:F2}x)", cfg.SpeedMultiplier),
+            PlaybackSpeedMode.Burst => ApsMonitor.Resources.MonitorResources.Text("Maximum burst"),
+            PlaybackSpeedMode.FixedInterval => ApsMonitor.Resources.MonitorResources.Format("Fixed interval ({0} ms)", cfg.FixedIntervalMs),
             _ => "Normal"
         };
     }

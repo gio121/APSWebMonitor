@@ -13,7 +13,7 @@ public sealed class ProjectLoadingService(ProjectDatabaseService projects, Proje
             var project = projects.Find(id);
             if (project.Id == projects.Current?.Id) return;
             if (!keepDraft && projects.Current is not null && (await projects.GetDraftStatusAsync()).HasChanges)
-                throw new InvalidOperationException("Hay cambios pendientes. Crea una nueva revisión o elige conservar el borrador antes de cambiar.");
+                throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("There are pending changes. Create a new revision or keep the draft before switching."));
             project = await projects.OpenDraftAsync(project);
             await monitor.ChangeProjectAsync(async () =>
             {
@@ -55,7 +55,7 @@ public sealed class ProjectLoadingService(ProjectDatabaseService projects, Proje
                 if (new[] { "senales", "comandos", "trdp" }.Any(key => permissions.GetValueOrDefault(key))) return;
             }
         }
-        throw new UnauthorizedAccessException("Necesitas permisos de edición de configuración para publicar o descartar un borrador.");
+        throw new UnauthorizedAccessException(ApsMonitor.Resources.MonitorResources.Text("You need configuration editing permissions to publish or discard a draft."));
     }
 
     public async Task DiscardAsync(System.Security.Claims.ClaimsPrincipal user)

@@ -1,0 +1,4692 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name=" · CMFX not loaded" xml:space="preserve">
+    <value> · CMFX not loaded</value>
+  </data>
+  <data name=" (All frames)" xml:space="preserve">
+    <value> (All frames)</value>
+  </data>
+  <data name=" (ComID filter: {0})" xml:space="preserve">
+    <value> (ComID filter: {0})</value>
+  </data>
+  <data name=" (copy)" xml:space="preserve">
+    <value> (copy)</value>
+  </data>
+  <data name=" on '{0}'" xml:space="preserve">
+    <value> on '{0}'</value>
+  </data>
+  <data name="_event_{0}_details" xml:space="preserve">
+    <value>_event_{0}_details</value>
+  </data>
+  <data name="_event_{0}_traces" xml:space="preserve">
+    <value>_event_{0}_traces</value>
+  </data>
+  <data name="_events" xml:space="preserve">
+    <value>_events</value>
+  </data>
+  <data name="-- Empty payload --" xml:space="preserve">
+    <value>-- Empty payload --</value>
+  </data>
+  <data name=". If you have already loaded one, check that the selected dataset matches the" xml:space="preserve">
+    <value>. If you have already loaded one, check that the selected dataset matches the</value>
+  </data>
+  <data name=".img images, .gz files (with .md5 where applicable), or an edf / sdf pair (maximum 512 MiB)" xml:space="preserve">
+    <value>.img images, .gz files (with .md5 where applicable), or an edf / sdf pair (maximum 512 MiB)</value>
+  </data>
+  <data name="· Block:" xml:space="preserve">
+    <value>· Block:</value>
+  </data>
+  <data name="· UDP port:" xml:space="preserve">
+    <value>· UDP port:</value>
+  </data>
+  <data name="· User:" xml:space="preserve">
+    <value>· User:</value>
+  </data>
+  <data name="'{0}' duplicated." xml:space="preserve">
+    <value>'{0}' duplicated.</value>
+  </data>
+  <data name="'{0}' imported successfully." xml:space="preserve">
+    <value>'{0}' imported successfully.</value>
+  </data>
+  <data name="(Automatically recalculates little-endian CRC32 to prevent TRDP_CRC_ERR -35 in ecnmanager)" xml:space="preserve">
+    <value>(Automatically recalculates little-endian CRC32 to prevent TRDP_CRC_ERR -35 in ecnmanager)</value>
+  </data>
+  <data name="(linked to the tags of signals loaded in the Signals section)" xml:space="preserve">
+    <value>(linked to the tags of signals loaded in the Signals section)</value>
+  </data>
+  <data name="(No raw data available)" xml:space="preserve">
+    <value>(No raw data available)</value>
+  </data>
+  <data name="(None - Use constant)" xml:space="preserve">
+    <value>(None - Use constant)</value>
+  </data>
+  <data name="(Synoptic view)" xml:space="preserve">
+    <value>(Synoptic view)</value>
+  </data>
+  <data name="(Wireshark PCAP - TRDP header removed)" xml:space="preserve">
+    <value>(Wireshark PCAP - TRDP header removed)</value>
+  </data>
+  <data name=") and a UDP command to ControlManager (port 50001)." xml:space="preserve">
+    <value>) and a UDP command to ControlManager (port 50001).</value>
+  </data>
+  <data name=") and operating hours in" xml:space="preserve">
+    <value>) and operating hours in</value>
+  </data>
+  <data name="), contactor operations (" xml:space="preserve">
+    <value>), contactor operations (</value>
+  </data>
+  <data name="[DHCP] {0} completed for {1} -&gt; {2}" xml:space="preserve">
+    <value>[DHCP] {0} completed for {1} -&gt; {2}</value>
+  </data>
+  <data name="[DHCP] {0} sent through interface socket to 255.255.255.255:68" xml:space="preserve">
+    <value>[DHCP] {0} sent through interface socket to 255.255.255.255:68</value>
+  </data>
+  <data name="[DHCP] {0} sent to subnet broadcast {1}:68" xml:space="preserve">
+    <value>[DHCP] {0} sent to subnet broadcast {1}:68</value>
+  </data>
+  <data name="[DHCP] Broadcast send error through interfaceSocket: {0}" xml:space="preserve">
+    <value>[DHCP] Broadcast send error through interfaceSocket: {0}</value>
+  </data>
+  <data name="[DHCP] DHCPDISCOVER received from MAC {0}, host '{1}' on interface '{2}'" xml:space="preserve">
+    <value>[DHCP] DHCPDISCOVER received from MAC {0}, host '{1}' on interface '{2}'</value>
+  </data>
+  <data name="[DHCP] DHCPRELEASE received from MAC {0}" xml:space="preserve">
+    <value>[DHCP] DHCPRELEASE received from MAC {0}</value>
+  </data>
+  <data name="[DHCP] DHCPREQUEST received from MAC {0}, requestedIp={1} on interface '{2}'" xml:space="preserve">
+    <value>[DHCP] DHCPREQUEST received from MAC {0}, requestedIp={1} on interface '{2}'</value>
+  </data>
+  <data name="[DHCP] Ignoring DHCPREQUEST outside range/subnet ({0}) for MAC {1}" xml:space="preserve">
+    <value>[DHCP] Ignoring DHCPREQUEST outside range/subnet ({0}) for MAC {1}</value>
+  </data>
+  <data name="[DHCP] Receive error: {0}" xml:space="preserve">
+    <value>[DHCP] Receive error: {0}</value>
+  </data>
+  <data name="[DHCP] Unable to resolve interface: {0}" xml:space="preserve">
+    <value>[DHCP] Unable to resolve interface: {0}</value>
+  </data>
+  <data name="[DHCP] Unable to send to {0}: {1}" xml:space="preserve">
+    <value>[DHCP] Unable to send to {0}: {1}</value>
+  </data>
+  <data name="[DHCP] Warning binding interface socket to {0}: {1}" xml:space="preserve">
+    <value>[DHCP] Warning binding interface socket to {0}: {1}</value>
+  </data>
+  <data name="[NetworkAdapterService] Gateway {0} does not match subnet {1}/{2}. Omitting gateway." xml:space="preserve">
+    <value>[NetworkAdapterService] Gateway {0} does not match subnet {1}/{2}. Omitting gateway.</value>
+  </data>
+  <data name="[PacketReplay] Capture file removed and state reset." xml:space="preserve">
+    <value>[PacketReplay] Capture file removed and state reset.</value>
+  </data>
+  <data name="[PacketReplay] Loop error: {0}" xml:space="preserve">
+    <value>[PacketReplay] Loop error: {0}</value>
+  </data>
+  <data name="[PacketReplay] Playback finished. Total sent: {0} ({1} bytes)." xml:space="preserve">
+    <value>[PacketReplay] Playback finished. Total sent: {0} ({1} bytes).</value>
+  </data>
+  <data name="[PacketReplay] Playback paused at frame #{0}." xml:space="preserve">
+    <value>[PacketReplay] Playback paused at frame #{0}.</value>
+  </data>
+  <data name="[PacketReplay] Playback resumed." xml:space="preserve">
+    <value>[PacketReplay] Playback resumed.</value>
+  </data>
+  <data name="[PacketReplay] Playback started with {0} frames at {1} speed." xml:space="preserve">
+    <value>[PacketReplay] Playback started with {0} frames at {1} speed.</value>
+  </data>
+  <data name="[PacketReplay] Playback stopped and reset." xml:space="preserve">
+    <value>[PacketReplay] Playback stopped and reset.</value>
+  </data>
+  <data name="[PacketReplay] Restarting continuous playback loop." xml:space="preserve">
+    <value>[PacketReplay] Restarting continuous playback loop.</value>
+  </data>
+  <data name="{0} of {1} inputs{2}  →  bit {3}" xml:space="preserve">
+    <value>{0} of {1} inputs{2}  →  bit {3}</value>
+  </data>
+  <data name="{0} of {1} records" xml:space="preserve">
+    <value>{0} of {1} records</value>
+  </data>
+  <data name="{0} of {1} tabs enabled. Assign this role in Manage users." xml:space="preserve">
+    <value>{0} of {1} tabs enabled. Assign this role in Manage users.</value>
+  </data>
+  <data name="{0} sessions" xml:space="preserve">
+    <value>{0} sessions</value>
+  </data>
+  <data name="{0} valid events out of {1} slots" xml:space="preserve">
+    <value>{0} valid events out of {1} slots</value>
+  </data>
+  <data name="{0}: {1} command (0x{2:X4}) sent" xml:space="preserve">
+    <value>{0}: {1} command (0x{2:X4}) sent</value>
+  </data>
+  <data name="{0}: {1}. Send?" xml:space="preserve">
+    <value>{0}: {1}. Send?</value>
+  </data>
+  <data name="{0}: reset sent" xml:space="preserve">
+    <value>{0}: reset sent</value>
+  </data>
+  <data name="{0}: unable to send {1} command" xml:space="preserve">
+    <value>{0}: unable to send {1} command</value>
+  </data>
+  <data name="{0}: unable to send reset" xml:space="preserve">
+    <value>{0}: unable to send reset</value>
+  </data>
+  <data name="EcnmanagerRestartDetails" xml:space="preserve">
+    <value>{0}
+The ecnmanager service has restarted and the new mode is active.</value>
+  </data>
+  <data name="{0}Type: {1}, Offset: {2} (bit {3}){4}" xml:space="preserve">
+    <value>{0}Type: {1}, Offset: {2} (bit {3}){4}</value>
+  </data>
+  <data name="{first_item}-{last_item} of {all_items}" xml:space="preserve">
+    <value>{first_item}-{last_item} of {all_items}</value>
+  </data>
+  <data name="* delta_h (e.g. kWh)" xml:space="preserve">
+    <value>* delta_h (e.g. kWh)</value>
+  </data>
+  <data name="MonitoringPauseNotice" xml:space="preserve">
+    <value>
+Active continuous monitoring will stop temporarily during the transfer.</value>
+  </data>
+  <data name="+= Add" xml:space="preserve">
+    <value>+= Add</value>
+  </data>
+  <data name="&lt;134&gt;Sep 28 12:00:00 APS-MONITOR TEST_PING: Test packet injection" xml:space="preserve">
+    <value>&lt;134&gt;Sep 28 12:00:00 APS-MONITOR TEST_PING: Test packet injection</value>
+  </data>
+  <data name="= {0} configurable bits." xml:space="preserve">
+    <value>= {0} configurable bits.</value>
+  </data>
+  <data name="⏱️ Elapsed time delta variable (for integrating energy, distance, etc.):" xml:space="preserve">
+    <value>⏱️ Elapsed time delta variable (for integrating energy, distance, etc.):</value>
+  </data>
+  <data name="0 to hide" xml:space="preserve">
+    <value>0 to hide</value>
+  </data>
+  <data name="0.0.0.0 (Any interface / standard routing)" xml:space="preserve">
+    <value>0.0.0.0 (Any interface / standard routing)</value>
+  </data>
+  <data name="0000–FFFF; the 0x prefix is accepted" xml:space="preserve">
+    <value>0000–FFFF; the 0x prefix is accepted</value>
+  </data>
+  <data name="6A · Variable modification" xml:space="preserve">
+    <value>6A · Variable modification</value>
+  </data>
+  <data name="6A commands require a variable and a value." xml:space="preserve">
+    <value>6A commands require a variable and a value.</value>
+  </data>
+  <data name="7A · Internal command" xml:space="preserve">
+    <value>7A · Internal command</value>
+  </data>
+  <data name="8A command failed: {0}" xml:space="preserve">
+    <value>8A command failed: {0}</value>
+  </data>
+  <data name="8A command response (failure)" xml:space="preserve">
+    <value>8A command response (failure)</value>
+  </data>
+  <data name="8A command response (success)" xml:space="preserve">
+    <value>8A command response (success)</value>
+  </data>
+  <data name="A firmware update is already in progress." xml:space="preserve">
+    <value>A firmware update is already in progress.</value>
+  </data>
+  <data name="A password is required for a new user" xml:space="preserve">
+    <value>A password is required for a new user</value>
+  </data>
+  <data name="A pending publication needs recovery. Reload the project." xml:space="preserve">
+    <value>A pending publication needs recovery. Reload the project.</value>
+  </data>
+  <data name="A role with that name already exists." xml:space="preserve">
+    <value>A role with that name already exists.</value>
+  </data>
+  <data name="AC presence" xml:space="preserve">
+    <value>AC presence</value>
+  </data>
+  <data name="Access" xml:space="preserve">
+    <value>Access</value>
+  </data>
+  <data name="Accumulates positive increments over time." xml:space="preserve">
+    <value>Accumulates positive increments over time.</value>
+  </data>
+  <data name="across restarts." xml:space="preserve">
+    <value>across restarts.</value>
+  </data>
+  <data name="Action and timer" xml:space="preserve">
+    <value>Action and timer</value>
+  </data>
+  <data name="Action type *" xml:space="preserve">
+    <value>Action type *</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Active (link verified)" xml:space="preserve">
+    <value>Active (link verified)</value>
+  </data>
+  <data name="Active bit text (1)" xml:space="preserve">
+    <value>Active bit text (1)</value>
+  </data>
+  <data name="Active project: {0} · Revision {1}" xml:space="preserve">
+    <value>Active project: {0} · Revision {1}</value>
+  </data>
+  <data name="Active windows" xml:space="preserve">
+    <value>Active windows</value>
+  </data>
+  <data name="Actual frame number in the original Wireshark file (frame.number)" xml:space="preserve">
+    <value>Actual frame number in the original Wireshark file (frame.number)</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Add / filter detail signals" xml:space="preserve">
+    <value>Add / filter detail signals</value>
+  </data>
+  <data name="Add category" xml:space="preserve">
+    <value>Add category</value>
+  </data>
+  <data name="Add condition" xml:space="preserve">
+    <value>Add condition</value>
+  </data>
+  <data name="Add control variable" xml:space="preserve">
+    <value>Add control variable</value>
+  </data>
+  <data name="Add DAT" xml:space="preserve">
+    <value>Add DAT</value>
+  </data>
+  <data name="Add DAT files to begin" xml:space="preserve">
+    <value>Add DAT files to begin</value>
+  </data>
+  <data name="Add input" xml:space="preserve">
+    <value>Add input</value>
+  </data>
+  <data name="Add mapping" xml:space="preserve">
+    <value>Add mapping</value>
+  </data>
+  <data name="Add signals in the Signals section to display them in the monitor" xml:space="preserve">
+    <value>Add signals in the Signals section to display them in the monitor</value>
+  </data>
+  <data name="Add state text" xml:space="preserve">
+    <value>Add state text</value>
+  </data>
+  <data name="Add to current value" xml:space="preserve">
+    <value>Add to current value</value>
+  </data>
+  <data name="Add to current value (+=)" xml:space="preserve">
+    <value>Add to current value (+=)</value>
+  </data>
+  <data name="Additional ControlFrame conditions ({0})" xml:space="preserve">
+    <value>Additional ControlFrame conditions ({0})</value>
+  </data>
+  <data name="Address outside the memory range on line {0}. Check the flash offset." xml:space="preserve">
+    <value>Address outside the memory range on line {0}. Check the flash offset.</value>
+  </data>
+  <data name="Adds the calculation or mapping result to the destination variable's accumulated value on each cycle instead of overwriting it." xml:space="preserve">
+    <value>Adds the calculation or mapping result to the destination variable's accumulated value on each cycle instead of overwriting it.</value>
+  </data>
+  <data name="Adds the formula result to the accumulated value on each cycle (+=)." xml:space="preserve">
+    <value>Adds the formula result to the accumulated value on each cycle (+=).</value>
+  </data>
+  <data name="Administration" xml:space="preserve">
+    <value>Administration</value>
+  </data>
+  <data name="Administrator" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="Administrators" xml:space="preserve">
+    <value>Administrators</value>
+  </data>
+  <data name="after saving." xml:space="preserve">
+    <value>after saving.</value>
+  </data>
+  <data name="Alarm" xml:space="preserve">
+    <value>Alarm</value>
+  </data>
+  <data name="Alarms" xml:space="preserve">
+    <value>Alarms</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="All (0.0.0.0)" xml:space="preserve">
+    <value>All (0.0.0.0)</value>
+  </data>
+  <data name="All conditions must match" xml:space="preserve">
+    <value>All conditions must match</value>
+  </data>
+  <data name="All signals have been deleted." xml:space="preserve">
+    <value>All signals have been deleted.</value>
+  </data>
+  <data name="always (On every received packet / continuous)" xml:space="preserve">
+    <value>always (On every received packet / continuous)</value>
+  </data>
+  <data name="Amount added to the variable when the bit activates (0→1)" xml:space="preserve">
+    <value>Amount added to the variable when the bit activates (0→1)</value>
+  </data>
+  <data name="An error occurred while processing your request." xml:space="preserve">
+    <value>An error occurred while processing your request.</value>
+  </data>
+  <data name="An immediate restart command will be sent to the service" xml:space="preserve">
+    <value>An immediate restart command will be sent to the service</value>
+  </data>
+  <data name="Analog – scale an analogue variable" xml:space="preserve">
+    <value>Analog – scale an analogue variable</value>
+  </data>
+  <data name="Analyser" xml:space="preserve">
+    <value>Analyser</value>
+  </data>
+  <data name="Analysis complete: {0:N0} samples." xml:space="preserve">
+    <value>Analysis complete: {0:N0} samples.</value>
+  </data>
+  <data name="Analysis failed: {0}" xml:space="preserve">
+    <value>Analysis failed: {0}</value>
+  </data>
+  <data name="AND (all)" xml:space="preserve">
+    <value>AND (all)</value>
+  </data>
+  <data name="and restarting the app." xml:space="preserve">
+    <value>and restarting the app.</value>
+  </data>
+  <data name="Another process is working on this draft. Wait for it to finish and try again." xml:space="preserve">
+    <value>Another process is working on this draft. Wait for it to finish and try again.</value>
+  </data>
+  <data name="Another transfer is in progress on the device." xml:space="preserve">
+    <value>Another transfer is in progress on the device.</value>
+  </data>
+  <data name="Another user has changed the branding. Reload the page before saving." xml:space="preserve">
+    <value>Another user has changed the branding. Reload the page before saving.</value>
+  </data>
+  <data name="Another user has changed this data. Your changes have not been saved. Reload the page and review the current version before saving again." xml:space="preserve">
+    <value>Another user has changed this data. Your changes have not been saved. Reload the page and review the current version before saving again.</value>
+  </data>
+  <data name="Applied automatically when this variable is selected in mappings" xml:space="preserve">
+    <value>Applied automatically when this variable is selected in mappings</value>
+  </data>
+  <data name="Apply mode" xml:space="preserve">
+    <value>Apply mode</value>
+  </data>
+  <data name="Apply static IP" xml:space="preserve">
+    <value>Apply static IP</value>
+  </data>
+  <data name="Applying {0} mode and restarting ecnmanager…" xml:space="preserve">
+    <value>Applying {0} mode and restarting ecnmanager…</value>
+  </data>
+  <data name="Applying mode…" xml:space="preserve">
+    <value>Applying mode…</value>
+  </data>
+  <data name="APS system records from a log file" xml:space="preserve">
+    <value>APS system records from a log file</value>
+  </data>
+  <data name="Are you sure you want to delete user '{0}' ({1})?" xml:space="preserve">
+    <value>Are you sure you want to delete user '{0}' ({1})?</value>
+  </data>
+  <data name="Are you sure you want to permanently delete window '{0}'?" xml:space="preserve">
+    <value>Are you sure you want to permanently delete window '{0}'?</value>
+  </data>
+  <data name="Arrange" xml:space="preserve">
+    <value>Arrange</value>
+  </data>
+  <data name="as a digital status variable. Current type:" xml:space="preserve">
+    <value>as a digital status variable. Current type:</value>
+  </data>
+  <data name="as a new configuration in the local database." xml:space="preserve">
+    <value>as a new configuration in the local database.</value>
+  </data>
+  <data name="ASCII / Text" xml:space="preserve">
+    <value>ASCII / Text</value>
+  </data>
+  <data name="ASCII copied to clipboard" xml:space="preserve">
+    <value>ASCII copied to clipboard</value>
+  </data>
+  <data name="ASCII reading" xml:space="preserve">
+    <value>ASCII reading</value>
+  </data>
+  <data name="ASCII text" xml:space="preserve">
+    <value>ASCII text</value>
+  </data>
+  <data name="Assign standard values ({0})" xml:space="preserve">
+    <value>Assign standard values ({0})</value>
+  </data>
+  <data name="Assigned IP addresses / active leases ({0})" xml:space="preserve">
+    <value>Assigned IP addresses / active leases ({0})</value>
+  </data>
+  <data name="Assigned subnet mask" xml:space="preserve">
+    <value>Assigned subnet mask</value>
+  </data>
+  <data name="Associated control variable" xml:space="preserve">
+    <value>Associated control variable</value>
+  </data>
+  <data name="At least 2 variables are required to select the largest value." xml:space="preserve">
+    <value>At least 2 variables are required to select the largest value.</value>
+  </data>
+  <data name="Automatic network configuration is implemented for Windows." xml:space="preserve">
+    <value>Automatic network configuration is implemented for Windows.</value>
+  </data>
+  <data name="Automatically correct TRDP IEEE 802.3 CRC (Header FCS and Data FCS)" xml:space="preserve">
+    <value>Automatically correct TRDP IEEE 802.3 CRC (Header FCS and Data FCS)</value>
+  </data>
+  <data name="BANDWIDTH" xml:space="preserve">
+    <value>BANDWIDTH</value>
+  </data>
+  <data name="Big-Endian (TRDP IEC 61375 standard)" xml:space="preserve">
+    <value>Big-Endian (TRDP IEC 61375 standard)</value>
+  </data>
+  <data name="Big-Endian (TRDP standard)" xml:space="preserve">
+    <value>Big-Endian (TRDP standard)</value>
+  </data>
+  <data name="BIN, HEX, H86 or MCS file (maximum 16 MiB)" xml:space="preserve">
+    <value>BIN, HEX, H86 or MCS file (maximum 16 MiB)</value>
+  </data>
+  <data name="Bit (0–7, optional)" xml:space="preserve">
+    <value>Bit (0–7, optional)</value>
+  </data>
+  <data name="Bit (blank: full value)" xml:space="preserve">
+    <value>Bit (blank: full value)</value>
+  </data>
+  <data name="Bit {0} active in {1}" xml:space="preserve">
+    <value>Bit {0} active in {1}</value>
+  </data>
+  <data name="Bit to bit – copy a bit" xml:space="preserve">
+    <value>Bit to bit – copy a bit</value>
+  </data>
+  <data name="Block" xml:space="preserve">
+    <value>Block</value>
+  </data>
+  <data name="Block {0} exceeds the event boundaries." xml:space="preserve">
+    <value>Block {0} exceeds the event boundaries.</value>
+  </data>
+  <data name="Block size (bytes)" xml:space="preserve">
+    <value>Block size (bytes)</value>
+  </data>
+  <data name="Board IP (ControlManager UDP:50001)" xml:space="preserve">
+    <value>Board IP (ControlManager UDP:50001)</value>
+  </data>
+  <data name="Board IP address" xml:space="preserve">
+    <value>Board IP address</value>
+  </data>
+  <data name="Box" xml:space="preserve">
+    <value>Box</value>
+  </data>
+  <data name="Branch 1 network" xml:space="preserve">
+    <value>Branch 1 network</value>
+  </data>
+  <data name="Bring to front" xml:space="preserve">
+    <value>Bring to front</value>
+  </data>
+  <data name="Byte in frame (position)" xml:space="preserve">
+    <value>Byte in frame (position)</value>
+  </data>
+  <data name="Byte order changed to: {0}" xml:space="preserve">
+    <value>Byte order changed to: {0}</value>
+  </data>
+  <data name="C135KD · ECN / communications configuration" xml:space="preserve">
+    <value>C135KD · ECN / communications configuration</value>
+  </data>
+  <data name="C135KF · Control FPGA" xml:space="preserve">
+    <value>C135KF · Control FPGA</value>
+  </data>
+  <data name="C135KI · Control unit" xml:space="preserve">
+    <value>C135KI · Control unit</value>
+  </data>
+  <data name="Calculation formula" xml:space="preserve">
+    <value>Calculation formula</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Cancel selection" xml:space="preserve">
+    <value>Cancel selection</value>
+  </data>
+  <data name="Cannot be deleted (deletable: false)" xml:space="preserve">
+    <value>Cannot be deleted (deletable: false)</value>
+  </data>
+  <data name="Capacitor" xml:space="preserve">
+    <value>Capacitor</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="Capture directly from a physical network interface (Npcap/WinPcap) — all TRDP frames in real time" xml:space="preserve">
+    <value>Capture directly from a physical network interface (Npcap/WinPcap) — all TRDP frames in real time</value>
+  </data>
+  <data name="Capture duration:" xml:space="preserve">
+    <value>Capture duration:</value>
+  </data>
+  <data name="Capture file removed and list cleared." xml:space="preserve">
+    <value>Capture file removed and list cleared.</value>
+  </data>
+  <data name="Capture frames ({0})" xml:space="preserve">
+    <value>Capture frames ({0})</value>
+  </data>
+  <data name="Capture loaded ({0}): {1} frames matching ComID {2} ({3} blocks)." xml:space="preserve">
+    <value>Capture loaded ({0}): {1} frames matching ComID {2} ({3} blocks).</value>
+  </data>
+  <data name="Capture loaded: {0} frames found ({1})." xml:space="preserve">
+    <value>Capture loaded: {0} frames found ({1}).</value>
+  </data>
+  <data name="Capture time" xml:space="preserve">
+    <value>Capture time</value>
+  </data>
+  <data name="CAPTURE TIME:" xml:space="preserve">
+    <value>CAPTURE TIME:</value>
+  </data>
+  <data name="Category '{0}' has no reset configured" xml:space="preserve">
+    <value>Category '{0}' has no reset configured</value>
+  </data>
+  <data name="Category '{0}' has no Start/Stop subcommands configured" xml:space="preserve">
+    <value>Category '{0}' has no Start/Stop subcommands configured</value>
+  </data>
+  <data name="Category name" xml:space="preserve">
+    <value>Category name</value>
+  </data>
+  <data name="Category: {0}" xml:space="preserve">
+    <value>Category: {0}</value>
+  </data>
+  <data name="Change" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="Change description (optional)" xml:space="preserve">
+    <value>Change description (optional)</value>
+  </data>
+  <data name="Change device mode" xml:space="preserve">
+    <value>Change device mode</value>
+  </data>
+  <data name="Change dynamic/legacy mode on the device" xml:space="preserve">
+    <value>Change dynamic/legacy mode on the device</value>
+  </data>
+  <data name="Change file" xml:space="preserve">
+    <value>Change file</value>
+  </data>
+  <data name="Change file · {0}" xml:space="preserve">
+    <value>Change file · {0}</value>
+  </data>
+  <data name="Change file…" xml:space="preserve">
+    <value>Change file…</value>
+  </data>
+  <data name="Change mapping mode" xml:space="preserve">
+    <value>Change mapping mode</value>
+  </data>
+  <data name="Change project" xml:space="preserve">
+    <value>Change project</value>
+  </data>
+  <data name="Change project and version" xml:space="preserve">
+    <value>Change project and version</value>
+  </data>
+  <data name="Changes update the DHCP server in real time" xml:space="preserve">
+    <value>Changes update the DHCP server in real time</value>
+  </data>
+  <data name="Changing the mode requires a service restart to take effect on the device." xml:space="preserve">
+    <value>Changing the mode requires a service restart to take effect on the device.</value>
+  </data>
+  <data name="Chart signals" xml:space="preserve">
+    <value>Chart signals</value>
+  </data>
+  <data name="Check connection" xml:space="preserve">
+    <value>Check connection</value>
+  </data>
+  <data name="ConfirmFirmwareUpdateMessage" xml:space="preserve">
+    <value>Check the device, version, and files.{0}
+Start the firmware update?</value>
+  </data>
+  <data name="Checking session…" xml:space="preserve">
+    <value>Checking session…</value>
+  </data>
+  <data name="Choose detected IP (Monitor / DHCP)..." xml:space="preserve">
+    <value>Choose detected IP (Monitor / DHCP)...</value>
+  </data>
+  <data name="Choose detected IP..." xml:space="preserve">
+    <value>Choose detected IP...</value>
+  </data>
+  <data name="Circuit breaker" xml:space="preserve">
+    <value>Circuit breaker</value>
+  </data>
+  <data name="Classic PCAP (microseconds)" xml:space="preserve">
+    <value>Classic PCAP (microseconds)</value>
+  </data>
+  <data name="Classic PCAP (nanoseconds)" xml:space="preserve">
+    <value>Classic PCAP (nanoseconds)</value>
+  </data>
+  <data name="Clear all" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="Clear console" xml:space="preserve">
+    <value>Clear console</value>
+  </data>
+  <data name="Clear filters" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="Clear leases" xml:space="preserve">
+    <value>Clear leases</value>
+  </data>
+  <data name="Click to insert into the formula" xml:space="preserve">
+    <value>Click to insert into the formula</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Close session" xml:space="preserve">
+    <value>Close session</value>
+  </data>
+  <data name="Close window" xml:space="preserve">
+    <value>Close window</value>
+  </data>
+  <data name="CMFX error: {0}" xml:space="preserve">
+    <value>CMFX error: {0}</value>
+  </data>
+  <data name="Coil" xml:space="preserve">
+    <value>Coil</value>
+  </data>
+  <data name="Color rules" xml:space="preserve">
+    <value>Color rules</value>
+  </data>
+  <data name="Comma-separated integers" xml:space="preserve">
+    <value>Comma-separated integers</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="Command 6A requires a finite numeric value and a numeric variable." xml:space="preserve">
+    <value>Command 6A requires a finite numeric value and a numeric variable.</value>
+  </data>
+  <data name="Command 8A accepted by the device: {0}" xml:space="preserve">
+    <value>Command 8A accepted by the device: {0}</value>
+  </data>
+  <data name="Command 8A rejected: {0}" xml:space="preserve">
+    <value>Command 8A rejected: {0}</value>
+  </data>
+  <data name="Command bit" xml:space="preserve">
+    <value>Command bit</value>
+  </data>
+  <data name="Command created successfully" xml:space="preserve">
+    <value>Command created successfully</value>
+  </data>
+  <data name="Command delivered to Control." xml:space="preserve">
+    <value>Command delivered to Control.</value>
+  </data>
+  <data name="Command name" xml:space="preserve">
+    <value>Command name</value>
+  </data>
+  <data name="Command sent successfully over UDP to ControlManager (port 50001)" xml:space="preserve">
+    <value>Command sent successfully over UDP to ControlManager (port 50001)</value>
+  </data>
+  <data name="Command sent successfully." xml:space="preserve">
+    <value>Command sent successfully.</value>
+  </data>
+  <data name="Command sent to Control (through HTTP)" xml:space="preserve">
+    <value>Command sent to Control (through HTTP)</value>
+  </data>
+  <data name="Command sent to Control; execution not confirmed." xml:space="preserve">
+    <value>Command sent to Control; execution not confirmed.</value>
+  </data>
+  <data name="Command signal" xml:space="preserve">
+    <value>Command signal</value>
+  </data>
+  <data name="Command to send" xml:space="preserve">
+    <value>Command to send</value>
+  </data>
+  <data name="Command transmitted to ControlManager successfully." xml:space="preserve">
+    <value>Command transmitted to ControlManager successfully.</value>
+  </data>
+  <data name="Command type" xml:space="preserve">
+    <value>Command type</value>
+  </data>
+  <data name="Command updated" xml:space="preserve">
+    <value>Command updated</value>
+  </data>
+  <data name="Commands" xml:space="preserve">
+    <value>Commands</value>
+  </data>
+  <data name="Comment (optional)" xml:space="preserve">
+    <value>Comment (optional)</value>
+  </data>
+  <data name="Communications" xml:space="preserve">
+    <value>Communications</value>
+  </data>
+  <data name="Communications rejected the update command." xml:space="preserve">
+    <value>Communications rejected the update command.</value>
+  </data>
+  <data name="Compare with another signal (optional)" xml:space="preserve">
+    <value>Compare with another signal (optional)</value>
+  </data>
+  <data name="Comparison bit" xml:space="preserve">
+    <value>Comparison bit</value>
+  </data>
+  <data name="Comparison condition (optional)" xml:space="preserve">
+    <value>Comparison condition (optional)</value>
+  </data>
+  <data name="Comparison value" xml:space="preserve">
+    <value>Comparison value</value>
+  </data>
+  <data name="COMPLETED" xml:space="preserve">
+    <value>COMPLETED</value>
+  </data>
+  <data name="Condition" xml:space="preserve">
+    <value>Condition</value>
+  </data>
+  <data name="Condition to bit – condition → bit" xml:space="preserve">
+    <value>Condition to bit – condition → bit</value>
+  </data>
+  <data name="condition_false / level_low (While false)" xml:space="preserve">
+    <value>condition_false / level_low (While false)</value>
+  </data>
+  <data name="condition_true / level_high (While true)" xml:space="preserve">
+    <value>condition_true / level_high (While true)</value>
+  </data>
+  <data name="Configuration '{0}' saved to a JSON file." xml:space="preserve">
+    <value>Configuration '{0}' saved to a JSON file.</value>
+  </data>
+  <data name="Configuration deleted." xml:space="preserve">
+    <value>Configuration deleted.</value>
+  </data>
+  <data name="Configuration imported from device: {0} networks, {1} datasets." xml:space="preserve">
+    <value>Configuration imported from device: {0} networks, {1} datasets.</value>
+  </data>
+  <data name="Configuration name *" xml:space="preserve">
+    <value>Configuration name *</value>
+  </data>
+  <data name="Configuration not found" xml:space="preserve">
+    <value>Configuration not found</value>
+  </data>
+  <data name="Configuration saved (HTTP fallback)" xml:space="preserve">
+    <value>Configuration saved (HTTP fallback)</value>
+  </data>
+  <data name="Configuration saved successfully." xml:space="preserve">
+    <value>Configuration saved successfully.</value>
+  </data>
+  <data name="Configuration saved through SFTP to /mnt/artifacts/ecnmanager.json" xml:space="preserve">
+    <value>Configuration saved through SFTP to /mnt/artifacts/ecnmanager.json</value>
+  </data>
+  <data name="Configuration sent successfully." xml:space="preserve">
+    <value>Configuration sent successfully.</value>
+  </data>
+  <data name="CONFIGURATION TO SEND" xml:space="preserve">
+    <value>CONFIGURATION TO SEND</value>
+  </data>
+  <data name="Configure descriptions for each active/inactive bit. Only applies when the signal is used" xml:space="preserve">
+    <value>Configure descriptions for each active/inactive bit. Only applies when the signal is used</value>
+  </data>
+  <data name="Configure fault categories" xml:space="preserve">
+    <value>Configure fault categories</value>
+  </data>
+  <data name="Configure faults" xml:space="preserve">
+    <value>Configure faults</value>
+  </data>
+  <data name="Configure role permissions" xml:space="preserve">
+    <value>Configure role permissions</value>
+  </data>
+  <data name="Configure session" xml:space="preserve">
+    <value>Configure session</value>
+  </data>
+  <data name="Configure the command as 6A or 7A before sending it." xml:space="preserve">
+    <value>Configure the command as 6A or 7A before sending it.</value>
+  </data>
+  <data name="Configure the computer's network interface and assign dynamic IP addresses to connected devices (APS, TCMS, etc.)." xml:space="preserve">
+    <value>Configure the computer's network interface and assign dynamic IP addresses to connected devices (APS, TCMS, etc.).</value>
+  </data>
+  <data name="Configure the fault categories shown in the status dialog. Add the relevant signals to each category." xml:space="preserve">
+    <value>Configure the fault categories shown in the status dialog. Add the relevant signals to each category.</value>
+  </data>
+  <data name="Configure the SEPSA subcommands to start, stop, and reset this converter. Use hexadecimal values (e.g. 0x0005)." xml:space="preserve">
+    <value>Configure the SEPSA subcommands to start, stop, and reset this converter. Use hexadecimal values (e.g. 0x0005).</value>
+  </data>
+  <data name="Configured" xml:space="preserve">
+    <value>Configured</value>
+  </data>
+  <data name="configured network(s)" xml:space="preserve">
+    <value>configured network(s)</value>
+  </data>
+  <data name="configured signals" xml:space="preserve">
+    <value>configured signals</value>
+  </data>
+  <data name="Confirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Confirm {0}" xml:space="preserve">
+    <value>Confirm {0}</value>
+  </data>
+  <data name="Confirm {0} for {1} (SubCmd 0x{2:X4}, FT 0x{3:X2})?" xml:space="preserve">
+    <value>Confirm {0} for {1} (SubCmd 0x{2:X4}, FT 0x{3:X2})?</value>
+  </data>
+  <data name="Confirm 8A command" xml:space="preserve">
+    <value>Confirm 8A command</value>
+  </data>
+  <data name="Confirm command to Control" xml:space="preserve">
+    <value>Confirm command to Control</value>
+  </data>
+  <data name="Confirm deletion" xml:space="preserve">
+    <value>Confirm deletion</value>
+  </data>
+  <data name="Confirm discard" xml:space="preserve">
+    <value>Confirm discard</value>
+  </data>
+  <data name="Confirm fault RESET for {0} (SubCmd 0x{1:X4})?" xml:space="preserve">
+    <value>Confirm fault RESET for {0} (SubCmd 0x{1:X4})?</value>
+  </data>
+  <data name="Confirm firmware update" xml:space="preserve">
+    <value>Confirm firmware update</value>
+  </data>
+  <data name="Confirm RESET" xml:space="preserve">
+    <value>Confirm RESET</value>
+  </data>
+  <data name="Confirmation" xml:space="preserve">
+    <value>Confirmation</value>
+  </data>
+  <data name="Confirmation:" xml:space="preserve">
+    <value>Confirmation:</value>
+  </data>
+  <data name="Confirmed: {0} · Pending: {1} · Dropped/unconfirmed: {2}" xml:space="preserve">
+    <value>Confirmed: {0} · Pending: {1} · Dropped/unconfirmed: {2}</value>
+  </data>
+  <data name="Connect" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="Connect to a device and send a frame to begin" xml:space="preserve">
+    <value>Connect to a device and send a frame to begin</value>
+  </data>
+  <data name="connected" xml:space="preserve">
+    <value>connected</value>
+  </data>
+  <data name="Connected to ControlManager UDP at {0}:{1}. Ready to send/receive." xml:space="preserve">
+    <value>Connected to ControlManager UDP at {0}:{1}. Ready to send/receive.</value>
+  </data>
+  <data name="Connected to the communications board" xml:space="preserve">
+    <value>Connected to the communications board</value>
+  </data>
+  <data name="Connected to TRDP streaming over UDP ({0}:50002)" xml:space="preserve">
+    <value>Connected to TRDP streaming over UDP ({0}:50002)</value>
+  </data>
+  <data name="Connected to TRDP WebSocket ({0})" xml:space="preserve">
+    <value>Connected to TRDP WebSocket ({0})</value>
+  </data>
+  <data name="Connected_Text" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Connected: SEPSA response received within the last 3 seconds." xml:space="preserve">
+    <value>Connected: SEPSA response received within the last 3 seconds.</value>
+  </data>
+  <data name="Connecting through SFTP to {0}:{1} as '{2}'…" xml:space="preserve">
+    <value>Connecting through SFTP to {0}:{1} as '{2}'…</value>
+  </data>
+  <data name="Connecting..." xml:space="preserve">
+    <value>Connecting...</value>
+  </data>
+  <data name="Connection error: {0}" xml:space="preserve">
+    <value>Connection error: {0}</value>
+  </data>
+  <data name="Connection unconfirmed: no recent SEPSA responses received." xml:space="preserve">
+    <value>Connection unconfirmed: no recent SEPSA responses received.</value>
+  </data>
+  <data name="Constant – fixed value" xml:space="preserve">
+    <value>Constant – fixed value</value>
+  </data>
+  <data name="Constant data (Data)" xml:space="preserve">
+    <value>Constant data (Data)</value>
+  </data>
+  <data name="Constant value" xml:space="preserve">
+    <value>Constant value</value>
+  </data>
+  <data name="Contactor" xml:space="preserve">
+    <value>Contactor</value>
+  </data>
+  <data name="Continuous monitoring started" xml:space="preserve">
+    <value>Continuous monitoring started</value>
+  </data>
+  <data name="Continuous monitoring started: alternating 1A and 1D frames every 100 ms." xml:space="preserve">
+    <value>Continuous monitoring started: alternating 1A and 1D frames every 100 ms.</value>
+  </data>
+  <data name="Control conditions" xml:space="preserve">
+    <value>Control conditions</value>
+  </data>
+  <data name="Control events" xml:space="preserve">
+    <value>Control events</value>
+  </data>
+  <data name="Control firmware update confirmed successfully by the device." xml:space="preserve">
+    <value>Control firmware update confirmed successfully by the device.</value>
+  </data>
+  <data name="Control frame" xml:space="preserve">
+    <value>Control frame</value>
+  </data>
+  <data name="Control frame variables ordered by VarOffset (bits)." xml:space="preserve">
+    <value>Control frame variables ordered by VarOffset (bits).</value>
+  </data>
+  <data name="Control variable" xml:space="preserve">
+    <value>Control variable</value>
+  </data>
+  <data name="Control variable (source) *" xml:space="preserve">
+    <value>Control variable (source) *</value>
+  </data>
+  <data name="Control variables:" xml:space="preserve">
+    <value>Control variables:</value>
+  </data>
+  <data name="ControlManager port (50001)" xml:space="preserve">
+    <value>ControlManager port (50001)</value>
+  </data>
+  <data name="ControlManager UDP port" xml:space="preserve">
+    <value>ControlManager UDP port</value>
+  </data>
+  <data name="Converter" xml:space="preserve">
+    <value>Converter</value>
+  </data>
+  <data name="Converter_InvalidBoolean" xml:space="preserve">
+    <value>Not a valid boolean</value>
+  </data>
+  <data name="Converter_InvalidDateTime" xml:space="preserve">
+    <value>Not a valid date time</value>
+  </data>
+  <data name="Converter_InvalidNumber" xml:space="preserve">
+    <value>Not a valid number</value>
+  </data>
+  <data name="Copy ASCII" xml:space="preserve">
+    <value>Copy ASCII</value>
+  </data>
+  <data name="Copy hex" xml:space="preserve">
+    <value>Copy hex</value>
+  </data>
+  <data name="Copy raw hex" xml:space="preserve">
+    <value>Copy raw hex</value>
+  </data>
+  <data name="cosmos_data counters reset to 0 successfully." xml:space="preserve">
+    <value>cosmos_data counters reset to 0 successfully.</value>
+  </data>
+  <data name="Count down (maximum minus value)" xml:space="preserve">
+    <value>Count down (maximum minus value)</value>
+  </data>
+  <data name="Counter signal (badge)" xml:space="preserve">
+    <value>Counter signal (badge)</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Create a configuration or import a JSON configuration file." xml:space="preserve">
+    <value>Create a configuration or import a JSON configuration file.</value>
+  </data>
+  <data name="Create new revision" xml:space="preserve">
+    <value>Create new revision</value>
+  </data>
+  <data name="Create new user" xml:space="preserve">
+    <value>Create new user</value>
+  </data>
+  <data name="Create role" xml:space="preserve">
+    <value>Create role</value>
+  </data>
+  <data name="Cumulative" xml:space="preserve">
+    <value>Cumulative</value>
+  </data>
+  <data name="Cumulative variable" xml:space="preserve">
+    <value>Cumulative variable</value>
+  </data>
+  <data name="CURRENT POSITION" xml:space="preserve">
+    <value>CURRENT POSITION</value>
+  </data>
+  <data name="Current range: {0} — {1}" xml:space="preserve">
+    <value>Current range: {0} — {1}</value>
+  </data>
+  <data name="CURRENT RATE" xml:space="preserve">
+    <value>CURRENT RATE</value>
+  </data>
+  <data name="Custom TRDP configuration" xml:space="preserve">
+    <value>Custom TRDP configuration</value>
+  </data>
+  <data name="Customise your project and manage access to the monitor." xml:space="preserve">
+    <value>Customise your project and manage access to the monitor.</value>
+  </data>
+  <data name="CYCLING" xml:space="preserve">
+    <value>CYCLING</value>
+  </data>
+  <data name="Cycling_Text" xml:space="preserve">
+    <value>Cycling</value>
+  </data>
+  <data name="Dark mode" xml:space="preserve">
+    <value>Dark mode</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="DAT loaded: {0} valid events." xml:space="preserve">
+    <value>DAT loaded: {0} valid events.</value>
+  </data>
+  <data name="Data format" xml:space="preserve">
+    <value>Data format</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="Dataset / frame" xml:space="preserve">
+    <value>Dataset / frame</value>
+  </data>
+  <data name="Dataset source variable" xml:space="preserve">
+    <value>Dataset source variable</value>
+  </data>
+  <data name="Dataset structure" xml:space="preserve">
+    <value>Dataset structure</value>
+  </data>
+  <data name="Date and time" xml:space="preserve">
+    <value>Date and time</value>
+  </data>
+  <data name="Date and time ({0})" xml:space="preserve">
+    <value>Date and time ({0})</value>
+  </data>
+  <data name="DATE AND TIME_Text" xml:space="preserve">
+    <value>DATE AND TIME</value>
+  </data>
+  <data name="Date, device, process, PID or message..." xml:space="preserve">
+    <value>Date, device, process, PID or message...</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Default network" xml:space="preserve">
+    <value>Default network</value>
+  </data>
+  <data name="Default offset" xml:space="preserve">
+    <value>Default offset</value>
+  </data>
+  <data name="Default port (SFTP)" xml:space="preserve">
+    <value>Default port (SFTP)</value>
+  </data>
+  <data name="Default scale" xml:space="preserve">
+    <value>Default scale</value>
+  </data>
+  <data name="Default scale and offset will be loaded automatically, if available" xml:space="preserve">
+    <value>Default scale and offset will be loaded automatically, if available</value>
+  </data>
+  <data name="Default user created: {0}" xml:space="preserve">
+    <value>Default user created: {0}</value>
+  </data>
+  <data name="Default value offset" xml:space="preserve">
+    <value>Default value offset</value>
+  </data>
+  <data name="DEFAULT VALUES FOR MAPPINGS" xml:space="preserve">
+    <value>DEFAULT VALUES FOR MAPPINGS</value>
+  </data>
+  <data name="Default: 128 (Control) / 400 (FPGA)" xml:space="preserve">
+    <value>Default: 128 (Control) / 400 (FPGA)</value>
+  </data>
+  <data name="defined for this dataset." xml:space="preserve">
+    <value>defined for this dataset.</value>
+  </data>
+  <data name="Delay between transmissions (ms)" xml:space="preserve">
+    <value>Delay between transmissions (ms)</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Delete '{0}'?" xml:space="preserve">
+    <value>Delete '{0}'?</value>
+  </data>
+  <data name="Delete all" xml:space="preserve">
+    <value>Delete all</value>
+  </data>
+  <data name="Delete all signals? Window bindings will be preserved and restored when the CMFX is imported again." xml:space="preserve">
+    <value>Delete all signals? Window bindings will be preserved and restored when the CMFX is imported again.</value>
+  </data>
+  <data name="Delete command '{0}'?" xml:space="preserve">
+    <value>Delete command '{0}'?</value>
+  </data>
+  <data name="Delete condition" xml:space="preserve">
+    <value>Delete condition</value>
+  </data>
+  <data name="Delete rule" xml:space="preserve">
+    <value>Delete rule</value>
+  </data>
+  <data name="Delete this signal? Its bindings will be preserved and restored when the CMFX is imported again." xml:space="preserve">
+    <value>Delete this signal? Its bindings will be preserved and restored when the CMFX is imported again.</value>
+  </data>
+  <data name="delta_h (hours)" xml:space="preserve">
+    <value>delta_h (hours)</value>
+  </data>
+  <data name="delta_s (s)" xml:space="preserve">
+    <value>delta_s (s)</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Description (ES)" xml:space="preserve">
+    <value>Description (ES)</value>
+  </data>
+  <data name="Description / notes" xml:space="preserve">
+    <value>Description / notes</value>
+  </data>
+  <data name="Destination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Destination and connectivity" xml:space="preserve">
+    <value>Destination and connectivity</value>
+  </data>
+  <data name="Destination bit (0–15)" xml:space="preserve">
+    <value>Destination bit (0–15)</value>
+  </data>
+  <data name="Destination command" xml:space="preserve">
+    <value>Destination command</value>
+  </data>
+  <data name="Destination directory on the remote device for uploaded files" xml:space="preserve">
+    <value>Destination directory on the remote device for uploaded files</value>
+  </data>
+  <data name="Destination IP" xml:space="preserve">
+    <value>Destination IP</value>
+  </data>
+  <data name="Destination IP address" xml:space="preserve">
+    <value>Destination IP address</value>
+  </data>
+  <data name="Destination IP override" xml:space="preserve">
+    <value>Destination IP override</value>
+  </data>
+  <data name="Destination port" xml:space="preserve">
+    <value>Destination port</value>
+  </data>
+  <data name="Destination port (blank = keep original)" xml:space="preserve">
+    <value>Destination port (blank = keep original)</value>
+  </data>
+  <data name="Destination:" xml:space="preserve">
+    <value>Destination:</value>
+  </data>
+  <data name="Destination: {0}" xml:space="preserve">
+    <value>Destination: {0}</value>
+  </data>
+  <data name="FirmwareDestinationMessage" xml:space="preserve">
+    <value>Destination: {0} ({1}) at {2}.
+</value>
+  </data>
+  <data name="Detail signals (descriptions)" xml:space="preserve">
+    <value>Detail signals (descriptions)</value>
+  </data>
+  <data name="Development" xml:space="preserve">
+    <value>Development</value>
+  </data>
+  <data name="Development Mode" xml:space="preserve">
+    <value>Development Mode</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="Device {0}" xml:space="preserve">
+    <value>Device {0}</value>
+  </data>
+  <data name="Device configuration imported: '{0}'" xml:space="preserve">
+    <value>Device configuration imported: '{0}'</value>
+  </data>
+  <data name="Device fault records and traces" xml:space="preserve">
+    <value>Device fault records and traces</value>
+  </data>
+  <data name="Device IP (e.g. 192.168.1.100)" xml:space="preserve">
+    <value>Device IP (e.g. 192.168.1.100)</value>
+  </data>
+  <data name="Device IP address for firmware updates" xml:space="preserve">
+    <value>Device IP address for firmware updates</value>
+  </data>
+  <data name="Device IP address or hostname" xml:space="preserve">
+    <value>Device IP address or hostname</value>
+  </data>
+  <data name="Device processing flash memory ({0:F0}%)…" xml:space="preserve">
+    <value>Device processing flash memory ({0:F0}%)…</value>
+  </data>
+  <data name="Device response: {0}" xml:space="preserve">
+    <value>Device response: {0}</value>
+  </data>
+  <data name="Device signature «{0}» not found in the imported signal configuration." xml:space="preserve">
+    <value>Device signature «{0}» not found in the imported signal configuration.</value>
+  </data>
+  <data name="DEVICE_Text" xml:space="preserve">
+    <value>DEVICE</value>
+  </data>
+  <data name="DHCP client enabled" xml:space="preserve">
+    <value>DHCP client enabled</value>
+  </data>
+  <data name="DHCP server started{0}. Range: {1} - {2}" xml:space="preserve">
+    <value>DHCP server started{0}. Range: {1} - {2}</value>
+  </data>
+  <data name="DHCP server stopped." xml:space="preserve">
+    <value>DHCP server stopped.</value>
+  </data>
+  <data name="Digital bits" xml:space="preserve">
+    <value>Digital bits</value>
+  </data>
+  <data name="Diode" xml:space="preserve">
+    <value>Diode</value>
+  </data>
+  <data name="Direct copy – copy bytes directly" xml:space="preserve">
+    <value>Direct copy – copy bytes directly</value>
+  </data>
+  <data name="Direct dataset formula (optional)" xml:space="preserve">
+    <value>Direct dataset formula (optional)</value>
+  </data>
+  <data name="Direct SFTP transfer (port 22) and restart through SSH / ControlManager." xml:space="preserve">
+    <value>Direct SFTP transfer (port 22) and restart through SSH / ControlManager.</value>
+  </data>
+  <data name="Disable" xml:space="preserve">
+    <value>Disable</value>
+  </data>
+  <data name="Disable admin mode" xml:space="preserve">
+    <value>Disable admin mode</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Discard changes" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="Discard draft" xml:space="preserve">
+    <value>Discard draft</value>
+  </data>
+  <data name="Discard unsaved configuration changes?" xml:space="preserve">
+    <value>Discard unsaved configuration changes?</value>
+  </data>
+  <data name="Discard unsaved form changes?" xml:space="preserve">
+    <value>Discard unsaved form changes?</value>
+  </data>
+  <data name="Disconnect" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="disconnected" xml:space="preserve">
+    <value>disconnected</value>
+  </data>
+  <data name="Disconnected by user" xml:space="preserve">
+    <value>Disconnected by user</value>
+  </data>
+  <data name="Disconnected_Text" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="Disconnected. Monitoring stopped." xml:space="preserve">
+    <value>Disconnected. Monitoring stopped.</value>
+  </data>
+  <data name="Disconnector" xml:space="preserve">
+    <value>Disconnector</value>
+  </data>
+  <data name="Download failed: {0}" xml:space="preserve">
+    <value>Download failed: {0}</value>
+  </data>
+  <data name="Download from {0}:{1} timed out." xml:space="preserve">
+    <value>Download from {0}:{1} timed out.</value>
+  </data>
+  <data name="Download from APS" xml:space="preserve">
+    <value>Download from APS</value>
+  </data>
+  <data name="Download interrupted or timed out." xml:space="preserve">
+    <value>Download interrupted or timed out.</value>
+  </data>
+  <data name="Download original" xml:space="preserve">
+    <value>Download original</value>
+  </data>
+  <data name="Downloading events:" xml:space="preserve">
+    <value>Downloading events:</value>
+  </data>
+  <data name="Draft changes will remain saved." xml:space="preserve">
+    <value>Draft changes will remain saved.</value>
+  </data>
+  <data name="Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="Duplicate or invalid name, or empty file." xml:space="preserve">
+    <value>Duplicate or invalid name, or empty file.</value>
+  </data>
+  <data name="Dynamic" xml:space="preserve">
+    <value>Dynamic</value>
+  </data>
+  <data name="Dynamic variable data (optional)" xml:space="preserve">
+    <value>Dynamic variable data (optional)</value>
+  </data>
+  <data name="E.g. 0.1, 0.2 or 1.0. Existing revisions are preserved." xml:space="preserve">
+    <value>E.g. 0.1, 0.2 or 1.0. Existing revisions are preserved.</value>
+  </data>
+  <data name="E.g. 00 00 00 00 00 00 00" xml:space="preserve">
+    <value>E.g. 00 00 00 00 00 00 00</value>
+  </data>
+  <data name="E.g. 0x0004" xml:space="preserve">
+    <value>E.g. 0x0004</value>
+  </data>
+  <data name="E.g. 0x0005" xml:space="preserve">
+    <value>E.g. 0x0005</value>
+  </data>
+  <data name="E.g. 0x0006" xml:space="preserve">
+    <value>E.g. 0x0006</value>
+  </data>
+  <data name="E.g. 1, 2, 5" xml:space="preserve">
+    <value>E.g. 1, 2, 5</value>
+  </data>
+  <data name="E.g. 17224" xml:space="preserve">
+    <value>E.g. 17224</value>
+  </data>
+  <data name="E.g. 192.168.1.100" xml:space="preserve">
+    <value>E.g. 192.168.1.100</value>
+  </data>
+  <data name="E.g. AC STOP command to TCMS (cmd_aps bit 0 to 1)" xml:space="preserve">
+    <value>E.g. AC STOP command to TCMS (cmd_aps bit 0 to 1)</value>
+  </data>
+  <data name="E.g. aps1_r1" xml:space="preserve">
+    <value>E.g. aps1_r1</value>
+  </data>
+  <data name="E.g. C135KI or F22044" xml:space="preserve">
+    <value>E.g. C135KI or F22044</value>
+  </data>
+  <data name="E.g. Control, Power..." xml:space="preserve">
+    <value>E.g. Control, Power...</value>
+  </data>
+  <data name="E.g. hv_cat_volt" xml:space="preserve">
+    <value>E.g. hv_cat_volt</value>
+  </data>
+  <data name="E.g. POWER * delta_h or (v1 + v2) / 2" xml:space="preserve">
+    <value>E.g. POWER * delta_h or (v1 + v2) / 2</value>
+  </data>
+  <data name="E.g. stop_ac" xml:space="preserve">
+    <value>E.g. stop_ac</value>
+  </data>
+  <data name="E.g. TRAIN_SPEED" xml:space="preserve">
+    <value>E.g. TRAIN_SPEED</value>
+  </data>
+  <data name="ecnmanager restarted" xml:space="preserve">
+    <value>ecnmanager restarted</value>
+  </data>
+  <data name="ecnmanager service restarted successfully." xml:space="preserve">
+    <value>ecnmanager service restarted successfully.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Edit – {0}" xml:space="preserve">
+    <value>Edit – {0}</value>
+  </data>
+  <data name="Edit {0}" xml:space="preserve">
+    <value>Edit {0}</value>
+  </data>
+  <data name="Edit command" xml:space="preserve">
+    <value>Edit command</value>
+  </data>
+  <data name="Edit details" xml:space="preserve">
+    <value>Edit details</value>
+  </data>
+  <data name="Edit mapping" xml:space="preserve">
+    <value>Edit mapping</value>
+  </data>
+  <data name="Edit network" xml:space="preserve">
+    <value>Edit network</value>
+  </data>
+  <data name="Edit network – {0}" xml:space="preserve">
+    <value>Edit network – {0}</value>
+  </data>
+  <data name="Edit rule – {0}" xml:space="preserve">
+    <value>Edit rule – {0}</value>
+  </data>
+  <data name="Edit rule '{0}'" xml:space="preserve">
+    <value>Edit rule '{0}'</value>
+  </data>
+  <data name="Edit signal" xml:space="preserve">
+    <value>Edit signal</value>
+  </data>
+  <data name="Edit to configure as a 6A or 7A command." xml:space="preserve">
+    <value>Edit to configure as a 6A or 7A command.</value>
+  </data>
+  <data name="Edit user" xml:space="preserve">
+    <value>Edit user</value>
+  </data>
+  <data name="ELAPSED TIME:" xml:space="preserve">
+    <value>ELAPSED TIME:</value>
+  </data>
+  <data name="Elements" xml:space="preserve">
+    <value>Elements</value>
+  </data>
+  <data name="Embedded DHCP server" xml:space="preserve">
+    <value>Embedded DHCP server</value>
+  </data>
+  <data name="Empty packet." xml:space="preserve">
+    <value>Empty packet.</value>
+  </data>
+  <data name="Empty slot or invalid record" xml:space="preserve">
+    <value>Empty slot or invalid record</value>
+  </data>
+  <data name="Empty slots" xml:space="preserve">
+    <value>Empty slots</value>
+  </data>
+  <data name="Enable" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="Enable admin mode" xml:space="preserve">
+    <value>Enable admin mode</value>
+  </data>
+  <data name="Enable broadcast" xml:space="preserve">
+    <value>Enable broadcast</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="End date" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="End time:" xml:space="preserve">
+    <value>End time:</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Enter a mathematical formula." xml:space="preserve">
+    <value>Enter a mathematical formula.</value>
+  </data>
+  <data name="Enter a valid IP address" xml:space="preserve">
+    <value>Enter a valid IP address</value>
+  </data>
+  <data name="Enter a valid IPv4 address for the target device." xml:space="preserve">
+    <value>Enter a valid IPv4 address for the target device.</value>
+  </data>
+  <data name="Enter a valid project name and version without paths or special file characters." xml:space="preserve">
+    <value>Enter a valid project name and version without paths or special file characters.</value>
+  </data>
+  <data name="Enter a valid revision, for example 0.2." xml:space="preserve">
+    <value>Enter a valid revision, for example 0.2.</value>
+  </data>
+  <data name="Enter signal tag…" xml:space="preserve">
+    <value>Enter signal tag…</value>
+  </data>
+  <data name="Enter the command name." xml:space="preserve">
+    <value>Enter the command name.</value>
+  </data>
+  <data name="Enter the project and version. Choose an APS Monitor .db, .sqlite or .sqlite3 file up to 100 MiB, then press «Load project»." xml:space="preserve">
+    <value>Enter the project and version. Choose an APS Monitor .db, .sqlite or .sqlite3 file up to 100 MiB, then press «Load project».</value>
+  </data>
+  <data name="Enter your credentials to sign in" xml:space="preserve">
+    <value>Enter your credentials to sign in</value>
+  </data>
+  <data name="Enter your username and password" xml:space="preserve">
+    <value>Enter your username and password</value>
+  </data>
+  <data name="environment will display more detailed information about the error that occurred." xml:space="preserve">
+    <value>environment will display more detailed information about the error that occurred.</value>
+  </data>
+  <data name="equals – equal to value" xml:space="preserve">
+    <value>equals – equal to value</value>
+  </data>
+  <data name="Equals (blank: non-zero)" xml:space="preserve">
+    <value>Equals (blank: non-zero)</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Error." xml:space="preserve">
+    <value>Error.</value>
+  </data>
+  <data name="Event" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="Event and transmission log" xml:space="preserve">
+    <value>Event and transmission log</value>
+  </data>
+  <data name="Event number" xml:space="preserve">
+    <value>Event number</value>
+  </data>
+  <data name="Event traces" xml:space="preserve">
+    <value>Event traces</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Exception</value>
+  </data>
+  <data name="Exception sending frame: {0}" xml:space="preserve">
+    <value>Exception sending frame: {0}</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>Execute</value>
+  </data>
+  <data name="Execution log" xml:space="preserve">
+    <value>Execution log</value>
+  </data>
+  <data name="Existing revisions are never overwritten." xml:space="preserve">
+    <value>Existing revisions are never overwritten.</value>
+  </data>
+  <data name="Expand a node to view its live values" xml:space="preserve">
+    <value>Expand a node to view its live values</value>
+  </data>
+  <data name="Expand bits" xml:space="preserve">
+    <value>Expand bits</value>
+  </data>
+  <data name="Expected value" xml:space="preserve">
+    <value>Expected value</value>
+  </data>
+  <data name="Expires" xml:space="preserve">
+    <value>Expires</value>
+  </data>
+  <data name="Export CSV" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="Export details CSV" xml:space="preserve">
+    <value>Export details CSV</value>
+  </data>
+  <data name="Export events CSV" xml:space="preserve">
+    <value>Export events CSV</value>
+  </data>
+  <data name="Export traces CSV" xml:space="preserve">
+    <value>Export traces CSV</value>
+  </data>
+  <data name="Expression *" xml:space="preserve">
+    <value>Expression *</value>
+  </data>
+  <data name="FAILED" xml:space="preserve">
+    <value>FAILED</value>
+  </data>
+  <data name="Failed to rejoin." xml:space="preserve">
+    <value>Failed to rejoin.</value>
+  </data>
+  <data name="Failed to resume the session." xml:space="preserve">
+    <value>Failed to resume the session.</value>
+  </data>
+  <data name="Failure at {0}. Code: {1}. {2}" xml:space="preserve">
+    <value>Failure at {0}. Code: {1}. {2}</value>
+  </data>
+  <data name="Failures Counter:" xml:space="preserve">
+    <value>Failures Counter:</value>
+  </data>
+  <data name="Failures:" xml:space="preserve">
+    <value>Failures:</value>
+  </data>
+  <data name="falling_edge (Falling edge 1→0)" xml:space="preserve">
+    <value>falling_edge (Falling edge 1→0)</value>
+  </data>
+  <data name="Fan" xml:space="preserve">
+    <value>Fan</value>
+  </data>
+  <data name="FAULT" xml:space="preserve">
+    <value>FAULT</value>
+  </data>
+  <data name="Fault color" xml:space="preserve">
+    <value>Fault color</value>
+  </data>
+  <data name="Fault configuration updated. Remember to save." xml:space="preserve">
+    <value>Fault configuration updated. Remember to save.</value>
+  </data>
+  <data name="Fault values and the last sample of each trace" xml:space="preserve">
+    <value>Fault values and the last sample of each trace</value>
+  </data>
+  <data name="Faults" xml:space="preserve">
+    <value>Faults</value>
+  </data>
+  <data name="FILE DETAILS" xml:space="preserve">
+    <value>FILE DETAILS</value>
+  </data>
+  <data name="File is empty or exceeds 16 MiB." xml:space="preserve">
+    <value>File is empty or exceeds 16 MiB.</value>
+  </data>
+  <data name="File loaded: {0} records." xml:space="preserve">
+    <value>File loaded: {0} records.</value>
+  </data>
+  <data name="File transferred. Verifying and writing flash memory…" xml:space="preserve">
+    <value>File transferred. Verifying and writing flash memory…</value>
+  </data>
+  <data name="File:" xml:space="preserve">
+    <value>File:</value>
+  </data>
+  <data name="Files exceed 512 MiB." xml:space="preserve">
+    <value>Files exceed 512 MiB.</value>
+  </data>
+  <data name="Files transferred to '{0}'. Firmware update completed successfully." xml:space="preserve">
+    <value>Files transferred to '{0}'. Firmware update completed successfully.</value>
+  </data>
+  <data name="Files transferred to '{0}'. Sending firmware update command 8A…" xml:space="preserve">
+    <value>Files transferred to '{0}'. Sending firmware update command 8A…</value>
+  </data>
+  <data name="Files transferred. Device restarting communications…" xml:space="preserve">
+    <value>Files transferred. Device restarting communications…</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Filter and decode with dataset" xml:space="preserve">
+    <value>Filter and decode with dataset</value>
+  </data>
+  <data name="Filter signals to add..." xml:space="preserve">
+    <value>Filter signals to add...</value>
+  </data>
+  <data name="Filter variables (e.g. volt, cur, temp, sts)..." xml:space="preserve">
+    <value>Filter variables (e.g. volt, cur, temp, sts)...</value>
+  </data>
+  <data name="Filtered by {0} (ComID: {1})" xml:space="preserve">
+    <value>Filtered by {0} (ComID: {1})</value>
+  </data>
+  <data name="Filtered for {0}" xml:space="preserve">
+    <value>Filtered for {0}</value>
+  </data>
+  <data name="Firmware update" xml:space="preserve">
+    <value>Firmware update</value>
+  </data>
+  <data name="Firmware update confirmed by the device." xml:space="preserve">
+    <value>Firmware update confirmed by the device.</value>
+  </data>
+  <data name="Firmware update error" xml:space="preserve">
+    <value>Firmware update error</value>
+  </data>
+  <data name="Firmware update incomplete: {0}" xml:space="preserve">
+    <value>Firmware update incomplete: {0}</value>
+  </data>
+  <data name="Firmware update status" xml:space="preserve">
+    <value>Firmware update status</value>
+  </data>
+  <data name="Fixed interval ({0} ms)" xml:space="preserve">
+    <value>Fixed interval ({0} ms)</value>
+  </data>
+  <data name="Fixed interval between frames" xml:space="preserve">
+    <value>Fixed interval between frames</value>
+  </data>
+  <data name="Fixed maximum" xml:space="preserve">
+    <value>Fixed maximum</value>
+  </data>
+  <data name="Flash offset" xml:space="preserve">
+    <value>Flash offset</value>
+  </data>
+  <data name="Font size" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Format:" xml:space="preserve">
+    <value>Format:</value>
+  </data>
+  <data name="Format: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK] (e.g. AA0802037A050793)" xml:space="preserve">
+    <value>Format: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK] (e.g. AA0802037A050793)</value>
+  </data>
+  <data name="Formula – mathematical / arithmetic expression" xml:space="preserve">
+    <value>Formula – mathematical / arithmetic expression</value>
+  </data>
+  <data name="Formula assistant" xml:space="preserve">
+    <value>Formula assistant</value>
+  </data>
+  <data name="FPGA records must occupy at least four bytes." xml:space="preserve">
+    <value>FPGA records must occupy at least four bytes.</value>
+  </data>
+  <data name="FPGA time (µs)" xml:space="preserve">
+    <value>FPGA time (µs)</value>
+  </data>
+  <data name="Frame" xml:space="preserve">
+    <value>Frame</value>
+  </data>
+  <data name="Frame #{0}" xml:space="preserve">
+    <value>Frame #{0}</value>
+  </data>
+  <data name="Frame #{0} hexadecimal details" xml:space="preserve">
+    <value>Frame #{0} hexadecimal details</value>
+  </data>
+  <data name="Frame #{0} sent successfully ({1} bytes to {2})." xml:space="preserve">
+    <value>Frame #{0} sent successfully ({1} bytes to {2}).</value>
+  </data>
+  <data name="Frame #{0} sent." xml:space="preserve">
+    <value>Frame #{0} sent.</value>
+  </data>
+  <data name="Frame #{0}: {1} -&gt; {2}" xml:space="preserve">
+    <value>Frame #{0}: {1} -&gt; {2}</value>
+  </data>
+  <data name="Frame delivered to WebMonitorBackend and dispatched to Control through RS485. (ControlManager does not issue synchronous UDP acknowledgements for Control commands.)" xml:space="preserve">
+    <value>Frame delivered to WebMonitorBackend and dispatched to Control through RS485. (ControlManager does not issue synchronous UDP acknowledgements for Control commands.)</value>
+  </data>
+  <data name="Frame name" xml:space="preserve">
+    <value>Frame name</value>
+  </data>
+  <data name="Frame structure" xml:space="preserve">
+    <value>Frame structure</value>
+  </data>
+  <data name="Frame type *" xml:space="preserve">
+    <value>Frame type *</value>
+  </data>
+  <data name="Frames per page:" xml:space="preserve">
+    <value>Frames per page:</value>
+  </data>
+  <data name="Frames:" xml:space="preserve">
+    <value>Frames:</value>
+  </data>
+  <data name="FREQUENCY" xml:space="preserve">
+    <value>FREQUENCY</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="from the device through SFTP and import it" xml:space="preserve">
+    <value>from the device through SFTP and import it</value>
+  </data>
+  <data name="Full name" xml:space="preserve">
+    <value>Full name</value>
+  </data>
+  <data name="Fuse" xml:space="preserve">
+    <value>Fuse</value>
+  </data>
+  <data name="Gateway (optional)" xml:space="preserve">
+    <value>Gateway (optional)</value>
+  </data>
+  <data name="General dataset" xml:space="preserve">
+    <value>General dataset</value>
+  </data>
+  <data name="Global broadcast" xml:space="preserve">
+    <value>Global broadcast</value>
+  </data>
+  <data name="Go to end" xml:space="preserve">
+    <value>Go to end</value>
+  </data>
+  <data name="Go to end of block" xml:space="preserve">
+    <value>Go to end of block</value>
+  </data>
+  <data name="Go to start" xml:space="preserve">
+    <value>Go to start</value>
+  </data>
+  <data name="Go to start of block" xml:space="preserve">
+    <value>Go to start of block</value>
+  </data>
+  <data name="Green" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="Grid" xml:space="preserve">
+    <value>Grid</value>
+  </data>
+  <data name="Header: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK]" xml:space="preserve">
+    <value>Header: AA 08 02 03 [FT] [SC_L] [SC_H] [CHK]</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="HEX (Hexadecimal bytes)" xml:space="preserve">
+    <value>HEX (Hexadecimal bytes)</value>
+  </data>
+  <data name="HEX payload copied to clipboard" xml:space="preserve">
+    <value>HEX payload copied to clipboard</value>
+  </data>
+  <data name="Hexadecimal / raw viewer" xml:space="preserve">
+    <value>Hexadecimal / raw viewer</value>
+  </data>
+  <data name="Hexadecimal &amp; ASCII dump (payload)" xml:space="preserve">
+    <value>Hexadecimal &amp; ASCII dump (payload)</value>
+  </data>
+  <data name="Hexadecimal frame (hex_command) *" xml:space="preserve">
+    <value>Hexadecimal frame (hex_command) *</value>
+  </data>
+  <data name="Hexadecimal frame recalculated." xml:space="preserve">
+    <value>Hexadecimal frame recalculated.</value>
+  </data>
+  <data name="Hexadecimal subcommand" xml:space="preserve">
+    <value>Hexadecimal subcommand</value>
+  </data>
+  <data name="Hide sidebar" xml:space="preserve">
+    <value>Hide sidebar</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Horizontal line" xml:space="preserve">
+    <value>Horizontal line</value>
+  </data>
+  <data name="IEEE 802.3 CRC32 recalculated successfully for the TRDP header/data." xml:space="preserve">
+    <value>IEEE 802.3 CRC32 recalculated successfully for the TRDP header/data.</value>
+  </data>
+  <data name="If defined, the mathematical expression is evaluated when generating the variable." xml:space="preserve">
+    <value>If defined, the mathematical expression is evaluated when generating the variable.</value>
+  </data>
+  <data name="If not selected, the fixed value below is used" xml:space="preserve">
+    <value>If not selected, the fixed value below is used</value>
+  </data>
+  <data name="Implemented for Windows." xml:space="preserve">
+    <value>Implemented for Windows.</value>
+  </data>
+  <data name="Import .cmfx" xml:space="preserve">
+    <value>Import .cmfx</value>
+  </data>
+  <data name="Import database" xml:space="preserve">
+    <value>Import database</value>
+  </data>
+  <data name="Import failed: {0}" xml:space="preserve">
+    <value>Import failed: {0}</value>
+  </data>
+  <data name="Import JSON" xml:space="preserve">
+    <value>Import JSON</value>
+  </data>
+  <data name="Imported {0} signals from {1} nodes in '{2}'." xml:space="preserve">
+    <value>Imported {0} signals from {1} nodes in '{2}'.</value>
+  </data>
+  <data name="Imported configuration" xml:space="preserve">
+    <value>Imported configuration</value>
+  </data>
+  <data name="Imported from JSON" xml:space="preserve">
+    <value>Imported from JSON</value>
+  </data>
+  <data name="Imported signals must have a keyname." xml:space="preserve">
+    <value>Imported signals must have a keyname.</value>
+  </data>
+  <data name="Importing and checking the database…" xml:space="preserve">
+    <value>Importing and checking the database…</value>
+  </data>
+  <data name="Importing..." xml:space="preserve">
+    <value>Importing...</value>
+  </data>
+  <data name="in_list – in value list" xml:space="preserve">
+    <value>in_list – in value list</value>
+  </data>
+  <data name="in_list (In list)" xml:space="preserve">
+    <value>in_list (In list)</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactive</value>
+  </data>
+  <data name="Inactive bit text (0)" xml:space="preserve">
+    <value>Inactive bit text (0)</value>
+  </data>
+  <data name="Incomplete SFTP access response." xml:space="preserve">
+    <value>Incomplete SFTP access response.</value>
+  </data>
+  <data name="Incorrect credentials" xml:space="preserve">
+    <value>Incorrect credentials</value>
+  </data>
+  <data name="Incorrect DAT size: {0} bytes; expected {1}." xml:space="preserve">
+    <value>Incorrect DAT size: {0} bytes; expected {1}.</value>
+  </data>
+  <data name="Incorrect MD5 for {0}." xml:space="preserve">
+    <value>Incorrect MD5 for {0}.</value>
+  </data>
+  <data name="Incorrect username or password" xml:space="preserve">
+    <value>Incorrect username or password</value>
+  </data>
+  <data name="Info / description" xml:space="preserve">
+    <value>Info / description</value>
+  </data>
+  <data name="Initial value" xml:space="preserve">
+    <value>Initial value</value>
+  </data>
+  <data name="Inject and replay captures" xml:space="preserve">
+    <value>Inject and replay captures</value>
+  </data>
+  <data name="Inspect hex and ASCII" xml:space="preserve">
+    <value>Inspect hex and ASCII</value>
+  </data>
+  <data name="Interface" xml:space="preserve">
+    <value>Interface</value>
+  </data>
+  <data name="Interface '{0}' configured as a DHCP client." xml:space="preserve">
+    <value>Interface '{0}' configured as a DHCP client.</value>
+  </data>
+  <data name="Interface IP address" xml:space="preserve">
+    <value>Interface IP address</value>
+  </data>
+  <data name="interface_Text" xml:space="preserve">
+    <value>interface</value>
+  </data>
+  <data name="Interface: {0}" xml:space="preserve">
+    <value>Interface: {0}</value>
+  </data>
+  <data name="Interval (interval_ms) *" xml:space="preserve">
+    <value>Interval (interval_ms) *</value>
+  </data>
+  <data name="Interval (µs)" xml:space="preserve">
+    <value>Interval (µs)</value>
+  </data>
+  <data name="Interval / minimum interval (min_interval_ms) *" xml:space="preserve">
+    <value>Interval / minimum interval (min_interval_ms) *</value>
+  </data>
+  <data name="Invalid BCD value." xml:space="preserve">
+    <value>Invalid BCD value.</value>
+  </data>
+  <data name="Invalid block size." xml:space="preserve">
+    <value>Invalid block size.</value>
+  </data>
+  <data name="Invalid CMFX field: {0}." xml:space="preserve">
+    <value>Invalid CMFX field: {0}.</value>
+  </data>
+  <data name="Invalid control UDP port." xml:space="preserve">
+    <value>Invalid control UDP port.</value>
+  </data>
+  <data name="Invalid data format: {0}" xml:space="preserve">
+    <value>Invalid data format: {0}</value>
+  </data>
+  <data name="Invalid destination IP address." xml:space="preserve">
+    <value>Invalid destination IP address.</value>
+  </data>
+  <data name="Invalid download configuration: an image starting at address 0, a valid UDP port, and a valid block size are required." xml:space="preserve">
+    <value>Invalid download configuration: an image starting at address 0, a valid UDP port, and a valid block size are required.</value>
+  </data>
+  <data name="Invalid event sizes or addresses in the CMFX." xml:space="preserve">
+    <value>Invalid event sizes or addresses in the CMFX.</value>
+  </data>
+  <data name="Invalid FPGA timestamp: expected increments of 0 or 1 µs." xml:space="preserve">
+    <value>Invalid FPGA timestamp: expected increments of 0 or 1 µs.</value>
+  </data>
+  <data name="Invalid hexadecimal subcommand (0000–FFFF)." xml:space="preserve">
+    <value>Invalid hexadecimal subcommand (0000–FFFF).</value>
+  </data>
+  <data name="Invalid image format." xml:space="preserve">
+    <value>Invalid image format.</value>
+  </data>
+  <data name="Invalid image." xml:space="preserve">
+    <value>Invalid image.</value>
+  </data>
+  <data name="Invalid Intel HEX record on line {0} (format, type or checksum)." xml:space="preserve">
+    <value>Invalid Intel HEX record on line {0} (format, type or checksum).</value>
+  </data>
+  <data name="Invalid IP address." xml:space="preserve">
+    <value>Invalid IP address.</value>
+  </data>
+  <data name="Invalid subnet mask." xml:space="preserve">
+    <value>Invalid subnet mask.</value>
+  </data>
+  <data name="Invalid value." xml:space="preserve">
+    <value>Invalid value.</value>
+  </data>
+  <data name="Invert (NOT: if bit=0)" xml:space="preserve">
+    <value>Invert (NOT: if bit=0)</value>
+  </data>
+  <data name="Invert bit" xml:space="preserve">
+    <value>Invert bit</value>
+  </data>
+  <data name="Invert bit (NOT: bit 0 → 1, bit 1 → 0)" xml:space="preserve">
+    <value>Invert bit (NOT: bit 0 → 1, bit 1 → 0)</value>
+  </data>
+  <data name="Invert command" xml:space="preserve">
+    <value>Invert command</value>
+  </data>
+  <data name="Invert condition" xml:space="preserve">
+    <value>Invert condition</value>
+  </data>
+  <data name="Invert condition (NOT: true when there is no match)" xml:space="preserve">
+    <value>Invert condition (NOT: true when there is no match)</value>
+  </data>
+  <data name="Invert edge (detect falling edge from 1 to 0)" xml:space="preserve">
+    <value>Invert edge (detect falling edge from 1 to 0)</value>
+  </data>
+  <data name="Invert state" xml:space="preserve">
+    <value>Invert state</value>
+  </data>
+  <data name="Inverter" xml:space="preserve">
+    <value>Inverter</value>
+  </data>
+  <data name="IP {0} and subnet mask {1} configured successfully on '{2}'." xml:space="preserve">
+    <value>IP {0} and subnet mask {1} configured successfully on '{2}'.</value>
+  </data>
+  <data name="IP address" xml:space="preserve">
+    <value>IP address</value>
+  </data>
+  <data name="IP address of the device to update" xml:space="preserve">
+    <value>IP address of the device to update</value>
+  </data>
+  <data name="It can result in displaying sensitive information from exceptions to end users." xml:space="preserve">
+    <value>It can result in displaying sensitive information from exceptions to end users.</value>
+  </data>
+  <data name="Keep draft and switch" xml:space="preserve">
+    <value>Keep draft and switch</value>
+  </data>
+  <data name="Keep the device powered and the server running until the update finishes. Monitoring is stopped during the firmware update." xml:space="preserve">
+    <value>Keep the device powered and the server running until the update finishes. Monitoring is stopped during the firmware update.</value>
+  </data>
+  <data name="Key" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Last Stop:" xml:space="preserve">
+    <value>Last Stop:</value>
+  </data>
+  <data name="Last write: {0} · Session: {1}" xml:space="preserve">
+    <value>Last write: {0} · Session: {1}</value>
+  </data>
+  <data name="Latency" xml:space="preserve">
+    <value>Latency</value>
+  </data>
+  <data name="Latest events" xml:space="preserve">
+    <value>Latest events</value>
+  </data>
+  <data name="Lease duration (hours)" xml:space="preserve">
+    <value>Lease duration (hours)</value>
+  </data>
+  <data name="Lease start" xml:space="preserve">
+    <value>Lease start</value>
+  </data>
+  <data name="Leases for '{0}' cleared." xml:space="preserve">
+    <value>Leases for '{0}' cleared.</value>
+  </data>
+  <data name="Length (bytes)" xml:space="preserve">
+    <value>Length (bytes)</value>
+  </data>
+  <data name="Light mode" xml:space="preserve">
+    <value>Light mode</value>
+  </data>
+  <data name="Linked signal" xml:space="preserve">
+    <value>Linked signal</value>
+  </data>
+  <data name="Links that write to" xml:space="preserve">
+    <value>Links that write to</value>
+  </data>
+  <data name="Listening IP (received_ip) *" xml:space="preserve">
+    <value>Listening IP (received_ip) *</value>
+  </data>
+  <data name="Listening on: {0}" xml:space="preserve">
+    <value>Listening on: {0}</value>
+  </data>
+  <data name="Little endian (default)" xml:space="preserve">
+    <value>Little endian (default)</value>
+  </data>
+  <data name="Little-Endian (swapped)" xml:space="preserve">
+    <value>Little-Endian (swapped)</value>
+  </data>
+  <data name="Live device connection status" xml:space="preserve">
+    <value>Live device connection status</value>
+  </data>
+  <data name="Live monitor" xml:space="preserve">
+    <value>Live monitor</value>
+  </data>
+  <data name="Live network sniffer mode. Select a physical interface and press" xml:space="preserve">
+    <value>Live network sniffer mode. Select a physical interface and press</value>
+  </data>
+  <data name="Live signals" xml:space="preserve">
+    <value>Live signals</value>
+  </data>
+  <data name="Live TRDP viewer and PCAP player" xml:space="preserve">
+    <value>Live TRDP viewer and PCAP player</value>
+  </data>
+  <data name="Live values decoded from board communications" xml:space="preserve">
+    <value>Live values decoded from board communications</value>
+  </data>
+  <data name="Load a CMFX and one or more DAT files to compare them." xml:space="preserve">
+    <value>Load a CMFX and one or more DAT files to compare them.</value>
+  </data>
+  <data name="Load CMFX" xml:space="preserve">
+    <value>Load CMFX</value>
+  </data>
+  <data name="Load new session (.dat)" xml:space="preserve">
+    <value>Load new session (.dat)</value>
+  </data>
+  <data name="Load project" xml:space="preserve">
+    <value>Load project</value>
+  </data>
+  <data name="Load the CMFX configuration file first." xml:space="preserve">
+    <value>Load the CMFX configuration file first.</value>
+  </data>
+  <data name="Load Wireshark capture" xml:space="preserve">
+    <value>Load Wireshark capture</value>
+  </data>
+  <data name="Load Wireshark capture (.pcap, .pcapng, .json)" xml:space="preserve">
+    <value>Load Wireshark capture (.pcap, .pcapng, .json)</value>
+  </data>
+  <data name="Loading ({0}%)..." xml:space="preserve">
+    <value>Loading ({0}%)...</value>
+  </data>
+  <data name="Loading capture to disk: {0}%" xml:space="preserve">
+    <value>Loading capture to disk: {0}%</value>
+  </data>
+  <data name="Loading monitor…" xml:space="preserve">
+    <value>Loading monitor…</value>
+  </data>
+  <data name="Loading permissions..." xml:space="preserve">
+    <value>Loading permissions...</value>
+  </data>
+  <data name="Loading project…" xml:space="preserve">
+    <value>Loading project…</value>
+  </data>
+  <data name="Loading..." xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="LOCKED OUT" xml:space="preserve">
+    <value>LOCKED OUT</value>
+  </data>
+  <data name="Log downloaded from APS." xml:space="preserve">
+    <value>Log downloaded from APS.</value>
+  </data>
+  <data name="Logic to bit – OR/AND of multiple sources" xml:space="preserve">
+    <value>Logic to bit – OR/AND of multiple sources</value>
+  </data>
+  <data name="logic_to_bit requires at least 2 inputs." xml:space="preserve">
+    <value>logic_to_bit requires at least 2 inputs.</value>
+  </data>
+  <data name="Logical operator" xml:space="preserve">
+    <value>Logical operator</value>
+  </data>
+  <data name="Loop playback" xml:space="preserve">
+    <value>Loop playback</value>
+  </data>
+  <data name="MAC address" xml:space="preserve">
+    <value>MAC address</value>
+  </data>
+  <data name="Maintenance" xml:space="preserve">
+    <value>Maintenance</value>
+  </data>
+  <data name="Manage detail signals..." xml:space="preserve">
+    <value>Manage detail signals...</value>
+  </data>
+  <data name="Manage monitor user accounts and credentials." xml:space="preserve">
+    <value>Manage monitor user accounts and credentials.</value>
+  </data>
+  <data name="Manage users" xml:space="preserve">
+    <value>Manage users</value>
+  </data>
+  <data name="Manual packet generator (Packet Sender)" xml:space="preserve">
+    <value>Manual packet generator (Packet Sender)</value>
+  </data>
+  <data name="Manual Packet Sender" xml:space="preserve">
+    <value>Manual Packet Sender</value>
+  </data>
+  <data name="Manual transmission history" xml:space="preserve">
+    <value>Manual transmission history</value>
+  </data>
+  <data name="Mapping type *" xml:space="preserve">
+    <value>Mapping type *</value>
+  </data>
+  <data name="Max value – largest value among 2 or more variables" xml:space="preserve">
+    <value>Max value – largest value among 2 or more variables</value>
+  </data>
+  <data name="max_value requires at least 2 control variables to compare." xml:space="preserve">
+    <value>max_value requires at least 2 control variables to compare.</value>
+  </data>
+  <data name="max. 100" xml:space="preserve">
+    <value>max. 100</value>
+  </data>
+  <data name="Maximum burst" xml:space="preserve">
+    <value>Maximum burst</value>
+  </data>
+  <data name="Maximum burst (no delays)" xml:space="preserve">
+    <value>Maximum burst (no delays)</value>
+  </data>
+  <data name="Maximum value signal" xml:space="preserve">
+    <value>Maximum value signal</value>
+  </data>
+  <data name="Memory base address" xml:space="preserve">
+    <value>Memory base address</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="MESSAGE_Text" xml:space="preserve">
+    <value>MESSAGE</value>
+  </data>
+  <data name="Milliseconds between packets" xml:space="preserve">
+    <value>Milliseconds between packets</value>
+  </data>
+  <data name="Minimise player" xml:space="preserve">
+    <value>Minimise player</value>
+  </data>
+  <data name="Minimise variables" xml:space="preserve">
+    <value>Minimise variables</value>
+  </data>
+  <data name="Missing {0}.md5." xml:space="preserve">
+    <value>Missing {0}.md5.</value>
+  </data>
+  <data name="Missing definition for {0} in value_elements." xml:space="preserve">
+    <value>Missing definition for {0} in value_elements.</value>
+  </data>
+  <data name="Missing InfluxDB organisation, bucket or valid token." xml:space="preserve">
+    <value>Missing InfluxDB organisation, bucket or valid token.</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Mode changed to {0} successfully." xml:space="preserve">
+    <value>Mode changed to {0} successfully.</value>
+  </data>
+  <data name="Mode updated" xml:space="preserve">
+    <value>Mode updated</value>
+  </data>
+  <data name="Monitoring loop error: {0}" xml:space="preserve">
+    <value>Monitoring loop error: {0}</value>
+  </data>
+  <data name="Monitoring must be active to send commands" xml:space="preserve">
+    <value>Monitoring must be active to send commands</value>
+  </data>
+  <data name="Monitoring stopped" xml:space="preserve">
+    <value>Monitoring stopped</value>
+  </data>
+  <data name="Monitoring stopped or the target changed before sending." xml:space="preserve">
+    <value>Monitoring stopped or the target changed before sending.</value>
+  </data>
+  <data name="MudAlert_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MudBaseDatePicker_NextMonth" xml:space="preserve">
+    <value>Next month {0}</value>
+  </data>
+  <data name="MudBaseDatePicker_NextYear" xml:space="preserve">
+    <value>Next year {0}</value>
+  </data>
+  <data name="MudBaseDatePicker_PrevMonth" xml:space="preserve">
+    <value>Previous month {0}</value>
+  </data>
+  <data name="MudBaseDatePicker_PrevYear" xml:space="preserve">
+    <value>Previous year {0}</value>
+  </data>
+  <data name="MudChip_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MudColorPicker_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MudDataGrid_AddFilter" xml:space="preserve">
+    <value>Add filter</value>
+  </data>
+  <data name="MudDataGrid_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="MudDataGrid_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="MudDataGrid_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="MudDataGrid_ClearFilter" xml:space="preserve">
+    <value>Clear filter</value>
+  </data>
+  <data name="MudDataGrid_CollapseAllGroups" xml:space="preserve">
+    <value>Collapse all groups</value>
+  </data>
+  <data name="MudDataGrid_Column" xml:space="preserve">
+    <value>Column</value>
+  </data>
+  <data name="MudDataGrid_Columns" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="MudDataGrid_Contains" xml:space="preserve">
+    <value>contains</value>
+  </data>
+  <data name="MudDataGrid_EndsWith" xml:space="preserve">
+    <value>ends with</value>
+  </data>
+  <data name="MudDataGrid_Equals" xml:space="preserve">
+    <value>equals</value>
+  </data>
+  <data name="MudDataGrid_ExpandAllGroups" xml:space="preserve">
+    <value>Expand all groups</value>
+  </data>
+  <data name="MudDataGrid_Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="MudDataGrid_Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="MudDataGrid_Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="MudDataGrid_HideAll" xml:space="preserve">
+    <value>Hide all</value>
+  </data>
+  <data name="MudDataGrid_Is" xml:space="preserve">
+    <value>is</value>
+  </data>
+  <data name="MudDataGrid_IsAfter" xml:space="preserve">
+    <value>is after</value>
+  </data>
+  <data name="MudDataGrid_IsBefore" xml:space="preserve">
+    <value>is before</value>
+  </data>
+  <data name="MudDataGrid_IsEmpty" xml:space="preserve">
+    <value>is empty</value>
+  </data>
+  <data name="MudDataGrid_IsNot" xml:space="preserve">
+    <value>is not</value>
+  </data>
+  <data name="MudDataGrid_IsNotEmpty" xml:space="preserve">
+    <value>is not empty</value>
+  </data>
+  <data name="MudDataGrid_IsOnOrAfter" xml:space="preserve">
+    <value>is on or after</value>
+  </data>
+  <data name="MudDataGrid_IsOnOrBefore" xml:space="preserve">
+    <value>is on or before</value>
+  </data>
+  <data name="MudDataGrid_Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="MudDataGrid_NotContains" xml:space="preserve">
+    <value>not contains</value>
+  </data>
+  <data name="MudDataGrid_NotEquals" xml:space="preserve">
+    <value>not equals</value>
+  </data>
+  <data name="MudDataGrid_OpenFilters" xml:space="preserve">
+    <value>Open filters</value>
+  </data>
+  <data name="MudDataGrid_Operator" xml:space="preserve">
+    <value>Operator</value>
+  </data>
+  <data name="MudDataGrid_RefreshData" xml:space="preserve">
+    <value>Refresh data</value>
+  </data>
+  <data name="MudDataGrid_RemoveFilter" xml:space="preserve">
+    <value>Remove filter</value>
+  </data>
+  <data name="MudDataGrid_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="MudDataGrid_SelectAllRows" xml:space="preserve">
+    <value>Select all rows</value>
+  </data>
+  <data name="MudDataGrid_SelectRow" xml:space="preserve">
+    <value>Select row</value>
+  </data>
+  <data name="MudDataGrid_ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="MudDataGrid_ShowColumnOptions" xml:space="preserve">
+    <value>Column options</value>
+  </data>
+  <data name="MudDataGrid_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="MudDataGrid_StartsWith" xml:space="preserve">
+    <value>starts with</value>
+  </data>
+  <data name="MudDataGrid_Ungroup" xml:space="preserve">
+    <value>Ungroup</value>
+  </data>
+  <data name="MudDataGrid_Unsort" xml:space="preserve">
+    <value>Unsort</value>
+  </data>
+  <data name="MudDataGrid_Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="MudDataGridPager_AllItems" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="MudDataGridPager_FirstPage" xml:space="preserve">
+    <value>First page</value>
+  </data>
+  <data name="MudDataGridPager_InfoFormat" xml:space="preserve">
+    <value>{0}-{1} of {2}</value>
+  </data>
+  <data name="MudDataGridPager_LastPage" xml:space="preserve">
+    <value>Last page</value>
+  </data>
+  <data name="MudDataGridPager_NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="MudDataGridPager_PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="MudDataGridPager_RowsPerPage" xml:space="preserve">
+    <value>Rows per page:</value>
+  </data>
+  <data name="MudDateRangePicker_End" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="MudDateRangePicker_Start" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="MudDialog_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MudInput_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="MudInput_Decrement" xml:space="preserve">
+    <value>Decrement</value>
+  </data>
+  <data name="MudInput_Increment" xml:space="preserve">
+    <value>Increment</value>
+  </data>
+  <data name="MudNavGroup_ToggleExpand" xml:space="preserve">
+    <value>Toggle {0}</value>
+  </data>
+  <data name="MudPagination_FirstPage" xml:space="preserve">
+    <value>First page</value>
+  </data>
+  <data name="MudPagination_LastPage" xml:space="preserve">
+    <value>Last page</value>
+  </data>
+  <data name="MudPagination_NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="MudPagination_PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="MudSnackbar_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MudTable_CancelEditRow" xml:space="preserve">
+    <value>Cancel edit</value>
+  </data>
+  <data name="MudTable_CommitRow" xml:space="preserve">
+    <value>Commit edit</value>
+  </data>
+  <data name="MudTable_EditRow" xml:space="preserve">
+    <value>Edit row</value>
+  </data>
+  <data name="MudTable_Loading" xml:space="preserve">
+    <value>Loading…</value>
+  </data>
+  <data name="MudTablePager_FirstPage" xml:space="preserve">
+    <value>First page</value>
+  </data>
+  <data name="MudTablePager_LastPage" xml:space="preserve">
+    <value>Last page</value>
+  </data>
+  <data name="MudTablePager_NextPage" xml:space="preserve">
+    <value>Next page</value>
+  </data>
+  <data name="MudTablePager_PreviousPage" xml:space="preserve">
+    <value>Previous page</value>
+  </data>
+  <data name="Multicast IP" xml:space="preserve">
+    <value>Multicast IP</value>
+  </data>
+  <data name="Multiple event nodes have the same device signature." xml:space="preserve">
+    <value>Multiple event nodes have the same device signature.</value>
+  </data>
+  <data name="Multiplier applied to the value" xml:space="preserve">
+    <value>Multiplier applied to the value</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Name and username are required" xml:space="preserve">
+    <value>Name and username are required</value>
+  </data>
+  <data name="Name:" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="netsh exited with code {0}." xml:space="preserve">
+    <value>netsh exited with code {0}.</value>
+  </data>
+  <data name="netsh exited with code {0}. Check administrator permissions." xml:space="preserve">
+    <value>netsh exited with code {0}. Check administrator permissions.</value>
+  </data>
+  <data name="Network adapter / interface" xml:space="preserve">
+    <value>Network adapter / interface</value>
+  </data>
+  <data name="Network and DHCP" xml:space="preserve">
+    <value>Network and DHCP</value>
+  </data>
+  <data name="Network and DHCP configuration - APS Monitor" xml:space="preserve">
+    <value>Network and DHCP configuration - APS Monitor</value>
+  </data>
+  <data name="Network and DHCP server configuration" xml:space="preserve">
+    <value>Network and DHCP server configuration</value>
+  </data>
+  <data name="Network capture stopped." xml:space="preserve">
+    <value>Network capture stopped.</value>
+  </data>
+  <data name="NETWORK CONFIGURATION" xml:space="preserve">
+    <value>NETWORK CONFIGURATION</value>
+  </data>
+  <data name="Network interface (Npcap)" xml:space="preserve">
+    <value>Network interface (Npcap)</value>
+  </data>
+  <data name="Network log" xml:space="preserve">
+    <value>Network log</value>
+  </data>
+  <data name="Network name *" xml:space="preserve">
+    <value>Network name *</value>
+  </data>
+  <data name="Network sniffer stopped." xml:space="preserve">
+    <value>Network sniffer stopped.</value>
+  </data>
+  <data name="NETWORK TRAFFIC" xml:space="preserve">
+    <value>NETWORK TRAFFIC</value>
+  </data>
+  <data name="Network: {0} ({1})" xml:space="preserve">
+    <value>Network: {0} ({1})</value>
+  </data>
+  <data name="Networks" xml:space="preserve">
+    <value>Networks</value>
+  </data>
+  <data name="networks_Text" xml:space="preserve">
+    <value>networks</value>
+  </data>
+  <data name="New category" xml:space="preserve">
+    <value>New category</value>
+  </data>
+  <data name="New command" xml:space="preserve">
+    <value>New command</value>
+  </data>
+  <data name="New condition" xml:space="preserve">
+    <value>New condition</value>
+  </data>
+  <data name="New configuration" xml:space="preserve">
+    <value>New configuration</value>
+  </data>
+  <data name="New control rule" xml:space="preserve">
+    <value>New control rule</value>
+  </data>
+  <data name="New control rule (control_commands)" xml:space="preserve">
+    <value>New control rule (control_commands)</value>
+  </data>
+  <data name="New control variable" xml:space="preserve">
+    <value>New control variable</value>
+  </data>
+  <data name="New mapping" xml:space="preserve">
+    <value>New mapping</value>
+  </data>
+  <data name="New mode:" xml:space="preserve">
+    <value>New mode:</value>
+  </data>
+  <data name="New network" xml:space="preserve">
+    <value>New network</value>
+  </data>
+  <data name="New revision" xml:space="preserve">
+    <value>New revision</value>
+  </data>
+  <data name="New role name" xml:space="preserve">
+    <value>New role name</value>
+  </data>
+  <data name="New signal" xml:space="preserve">
+    <value>New signal</value>
+  </data>
+  <data name="New synoptic view" xml:space="preserve">
+    <value>New synoptic view</value>
+  </data>
+  <data name="New TRDP configuration" xml:space="preserve">
+    <value>New TRDP configuration</value>
+  </data>
+  <data name="New TRDP network" xml:space="preserve">
+    <value>New TRDP network</value>
+  </data>
+  <data name="New user" xml:space="preserve">
+    <value>New user</value>
+  </data>
+  <data name="New variable" xml:space="preserve">
+    <value>New variable</value>
+  </data>
+  <data name="New window" xml:space="preserve">
+    <value>New window</value>
+  </data>
+  <data name="Next block" xml:space="preserve">
+    <value>Next block</value>
+  </data>
+  <data name="Next frame" xml:space="preserve">
+    <value>Next frame</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="No active DHCP leases for '{0}'. Connect devices to the configured network port." xml:space="preserve">
+    <value>No active DHCP leases for '{0}'. Connect devices to the configured network port.</value>
+  </data>
+  <data name="No active project." xml:space="preserve">
+    <value>No active project.</value>
+  </data>
+  <data name="No active session" xml:space="preserve">
+    <value>No active session</value>
+  </data>
+  <data name="No configuration selected." xml:space="preserve">
+    <value>No configuration selected.</value>
+  </data>
+  <data name="No control variable conditions (the rule is evaluated using only the source variable)." xml:space="preserve">
+    <value>No control variable conditions (the rule is evaluated using only the source variable).</value>
+  </data>
+  <data name="No data found for the selected ranges." xml:space="preserve">
+    <value>No data found for the selected ranges.</value>
+  </data>
+  <data name="No described faults" xml:space="preserve">
+    <value>No described faults</value>
+  </data>
+  <data name="No description" xml:space="preserve">
+    <value>No description</value>
+  </data>
+  <data name="No event nodes available among the added signals." xml:space="preserve">
+    <value>No event nodes available among the added signals.</value>
+  </data>
+  <data name="No events" xml:space="preserve">
+    <value>No events</value>
+  </data>
+  <data name="No events match the filters." xml:space="preserve">
+    <value>No events match the filters.</value>
+  </data>
+  <data name="No events recorded yet." xml:space="preserve">
+    <value>No events recorded yet.</value>
+  </data>
+  <data name="No file" xml:space="preserve">
+    <value>No file</value>
+  </data>
+  <data name="No files to update in /mnt/artifacts/update" xml:space="preserve">
+    <value>No files to update in /mnt/artifacts/update</value>
+  </data>
+  <data name="No frames for ComID {0}" xml:space="preserve">
+    <value>No frames for ComID {0}</value>
+  </data>
+  <data name="No frames found in the capture for ComID {0} ({1}). Try without a filter or select another dataset." xml:space="preserve">
+    <value>No frames found in the capture for ComID {0} ({1}). Try without a filter or select another dataset.</value>
+  </data>
+  <data name="No frames loaded. Press" xml:space="preserve">
+    <value>No frames loaded. Press</value>
+  </data>
+  <data name="No frames to display in this block/dataset." xml:space="preserve">
+    <value>No frames to display in this block/dataset.</value>
+  </data>
+  <data name="No frames." xml:space="preserve">
+    <value>No frames.</value>
+  </data>
+  <data name="No inputs. Add at least 2." xml:space="preserve">
+    <value>No inputs. Add at least 2.</value>
+  </data>
+  <data name="No IP address" xml:space="preserve">
+    <value>No IP address</value>
+  </data>
+  <data name="No IP address assigned" xml:space="preserve">
+    <value>No IP address assigned</value>
+  </data>
+  <data name="No IP address or hostname specified." xml:space="preserve">
+    <value>No IP address or hostname specified.</value>
+  </data>
+  <data name="No mappings. This variable will not be populated automatically." xml:space="preserve">
+    <value>No mappings. This variable will not be populated automatically.</value>
+  </data>
+  <data name="No Npcap capture device available." xml:space="preserve">
+    <value>No Npcap capture device available.</value>
+  </data>
+  <data name="No project folders in {0}." xml:space="preserve">
+    <value>No project folders in {0}.</value>
+  </data>
+  <data name="No records to display" xml:space="preserve">
+    <value>No records to display</value>
+  </data>
+  <data name="No response to frame [{0:X2}] after 500 ms" xml:space="preserve">
+    <value>No response to frame [{0:X2}] after 500 ms</value>
+  </data>
+  <data name="No rules" xml:space="preserve">
+    <value>No rules</value>
+  </data>
+  <data name="No rules added" xml:space="preserve">
+    <value>No rules added</value>
+  </data>
+  <data name="No signals configured" xml:space="preserve">
+    <value>No signals configured</value>
+  </data>
+  <data name="No signals configured." xml:space="preserve">
+    <value>No signals configured.</value>
+  </data>
+  <data name="No signals found" xml:space="preserve">
+    <value>No signals found</value>
+  </data>
+  <data name="No trace samples available for this block." xml:space="preserve">
+    <value>No trace samples available for this block.</value>
+  </data>
+  <data name="No TRDP configurations" xml:space="preserve">
+    <value>No TRDP configurations</value>
+  </data>
+  <data name="No valid response received for command 8A." xml:space="preserve">
+    <value>No valid response received for command 8A.</value>
+  </data>
+  <data name="No variables added. Add at least 2 variables." xml:space="preserve">
+    <value>No variables added. Add at least 2 variables.</value>
+  </data>
+  <data name="No variables detected to display." xml:space="preserve">
+    <value>No variables detected to display.</value>
+  </data>
+  <data name="Node {0}" xml:space="preserve">
+    <value>Node {0}</value>
+  </data>
+  <data name="Node {0}: {1}" xml:space="preserve">
+    <value>Node {0}: {1}</value>
+  </data>
+  <data name="Node name *" xml:space="preserve">
+    <value>Node name *</value>
+  </data>
+  <data name="Node number *" xml:space="preserve">
+    <value>Node number *</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="None (use bit sum)" xml:space="preserve">
+    <value>None (use bit sum)</value>
+  </data>
+  <data name="None (Value != 0)" xml:space="preserve">
+    <value>None (Value != 0)</value>
+  </data>
+  <data name="Not configured" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="Not Found" xml:space="preserve">
+    <value>Not Found</value>
+  </data>
+  <data name="Not loaded" xml:space="preserve">
+    <value>Not loaded</value>
+  </data>
+  <data name="Not selected" xml:space="preserve">
+    <value>Not selected</value>
+  </data>
+  <data name="Number format (e.g. 0.0)" xml:space="preserve">
+    <value>Number format (e.g. 0.0)</value>
+  </data>
+  <data name="Number of transmissions (burst)" xml:space="preserve">
+    <value>Number of transmissions (burst)</value>
+  </data>
+  <data name="Numeric conversion offset" xml:space="preserve">
+    <value>Numeric conversion offset</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="of the capture." xml:space="preserve">
+    <value>of the capture.</value>
+  </data>
+  <data name="OFF" xml:space="preserve">
+    <value>OFF</value>
+  </data>
+  <data name="Offset (added)" xml:space="preserve">
+    <value>Offset (added)</value>
+  </data>
+  <data name="Offset added to the result" xml:space="preserve">
+    <value>Offset added to the result</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="on the communications board through SSH (" xml:space="preserve">
+    <value>on the communications board through SSH (</value>
+  </data>
+  <data name="on the device will be" xml:space="preserve">
+    <value>on the device will be</value>
+  </data>
+  <data name="on the physical network at different speeds or in real time using capture timestamps." xml:space="preserve">
+    <value>on the physical network at different speeds or in real time using capture timestamps.</value>
+  </data>
+  <data name="on_change (When the value changes)" xml:space="preserve">
+    <value>on_change (When the value changes)</value>
+  </data>
+  <data name="Open an APS log file or change the filters." xml:space="preserve">
+    <value>Open an APS log file or change the filters.</value>
+  </data>
+  <data name="Open control events DAT" xml:space="preserve">
+    <value>Open control events DAT</value>
+  </data>
+  <data name="Open events file" xml:space="preserve">
+    <value>Open events file</value>
+  </data>
+  <data name="Open file" xml:space="preserve">
+    <value>Open file</value>
+  </data>
+  <data name="Open log file" xml:space="preserve">
+    <value>Open log file</value>
+  </data>
+  <data name="Open project selector" xml:space="preserve">
+    <value>Open project selector</value>
+  </data>
+  <data name="Open the active project" xml:space="preserve">
+    <value>Open the active project</value>
+  </data>
+  <data name="Open Wireshark capture" xml:space="preserve">
+    <value>Open Wireshark capture</value>
+  </data>
+  <data name="Opening access…" xml:space="preserve">
+    <value>Opening access…</value>
+  </data>
+  <data name="Opening project selector…" xml:space="preserve">
+    <value>Opening project selector…</value>
+  </data>
+  <data name="Operation cancelled by the user (administrator UAC elevation was cancelled)." xml:space="preserve">
+    <value>Operation cancelled by the user (administrator UAC elevation was cancelled).</value>
+  </data>
+  <data name="Operation completed" xml:space="preserve">
+    <value>Operation completed</value>
+  </data>
+  <data name="Operators and functions:" xml:space="preserve">
+    <value>Operators and functions:</value>
+  </data>
+  <data name="Operators: +, -, *, /, (, ). Functions: max(a,b), min(a,b), abs(x)." xml:space="preserve">
+    <value>Operators: +, -, *, /, (, ). Functions: max(a,b), min(a,b), abs(x).</value>
+  </data>
+  <data name="Optional: status signal (status_ac, status_dc, etc.)..." xml:space="preserve">
+    <value>Optional: status signal (status_ac, status_dc, etc.)...</value>
+  </data>
+  <data name="Optional: total count signal..." xml:space="preserve">
+    <value>Optional: total count signal...</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="OR (any)" xml:space="preserve">
+    <value>OR (any)</value>
+  </data>
+  <data name="Orange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="Other: {0}" xml:space="preserve">
+    <value>Other: {0}</value>
+  </data>
+  <data name="Output network interface" xml:space="preserve">
+    <value>Output network interface</value>
+  </data>
+  <data name="Override destination IP/port" xml:space="preserve">
+    <value>Override destination IP/port</value>
+  </data>
+  <data name="Packet Sender window" xml:space="preserve">
+    <value>Packet Sender window</value>
+  </data>
+  <data name="Page cannot be configured." xml:space="preserve">
+    <value>Page cannot be configured.</value>
+  </data>
+  <data name="Paged local playback with automatic ComID filtering" xml:space="preserve">
+    <value>Paged local playback with automatic ComID filtering</value>
+  </data>
+  <data name="Parsed variables" xml:space="preserve">
+    <value>Parsed variables</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Password (leave blank to keep current)" xml:space="preserve">
+    <value>Password (leave blank to keep current)</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="PAUSED" xml:space="preserve">
+    <value>PAUSED</value>
+  </data>
+  <data name="Payload / data to transmit" xml:space="preserve">
+    <value>Payload / data to transmit</value>
+  </data>
+  <data name="PCAP capture mode (ComID filter)" xml:space="preserve">
+    <value>PCAP capture mode (ComID filter)</value>
+  </data>
+  <data name="Pending changes · Create new revision" xml:space="preserve">
+    <value>Pending changes · Create new revision</value>
+  </data>
+  <data name="Periodic TCMS_OK command (heartbeat to Control)" xml:space="preserve">
+    <value>Periodic TCMS_OK command (heartbeat to Control)</value>
+  </data>
+  <data name="Periodic TCMS_OK command to Control" xml:space="preserve">
+    <value>Periodic TCMS_OK command to Control</value>
+  </data>
+  <data name="Periodic transmission interval in milliseconds" xml:space="preserve">
+    <value>Periodic transmission interval in milliseconds</value>
+  </data>
+  <data name="Permission updated." xml:space="preserve">
+    <value>Permission updated.</value>
+  </data>
+  <data name="Persist value in" xml:space="preserve">
+    <value>Persist value in</value>
+  </data>
+  <data name="Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Play on network" xml:space="preserve">
+    <value>Play on network</value>
+  </data>
+  <data name="Playback is already active." xml:space="preserve">
+    <value>Playback is already active.</value>
+  </data>
+  <data name="Playback started successfully." xml:space="preserve">
+    <value>Playback started successfully.</value>
+  </data>
+  <data name="PLAYING ON NETWORK" xml:space="preserve">
+    <value>PLAYING ON NETWORK</value>
+  </data>
+  <data name="Please retry or reload the page." xml:space="preserve">
+    <value>Please retry or reload the page.</value>
+  </data>
+  <data name="Plotly is unavailable." xml:space="preserve">
+    <value>Plotly is unavailable.</value>
+  </data>
+  <data name="PNG, JPG or WebP · Up to 2 MiB" xml:space="preserve">
+    <value>PNG, JPG or WebP · Up to 2 MiB</value>
+  </data>
+  <data name="Point / time (µs for FPGA)" xml:space="preserve">
+    <value>Point / time (µs for FPGA)</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Position within filtered frames" xml:space="preserve">
+    <value>Position within filtered frames</value>
+  </data>
+  <data name="Pre-update monitoring:" xml:space="preserve">
+    <value>Pre-update monitoring:</value>
+  </data>
+  <data name="Prefix (e.g. R:)" xml:space="preserve">
+    <value>Prefix (e.g. R:)</value>
+  </data>
+  <data name="Press" xml:space="preserve">
+    <value>Press</value>
+  </data>
+  <data name="Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Previous block" xml:space="preserve">
+    <value>Previous block</value>
+  </data>
+  <data name="Previous frame" xml:space="preserve">
+    <value>Previous frame</value>
+  </data>
+  <data name="Process" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="PROCESS_Text" xml:space="preserve">
+    <value>PROCESS</value>
+  </data>
+  <data name="Processing file..." xml:space="preserve">
+    <value>Processing file...</value>
+  </data>
+  <data name="Processing..." xml:space="preserve">
+    <value>Processing...</value>
+  </data>
+  <data name="Processing…" xml:space="preserve">
+    <value>Processing…</value>
+  </data>
+  <data name="Progress bar" xml:space="preserve">
+    <value>Progress bar</value>
+  </data>
+  <data name="Progress bar configuration" xml:space="preserve">
+    <value>Progress bar configuration</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Project «{0}» has no revisions yet. You can import its database by specifying a version." xml:space="preserve">
+    <value>Project «{0}» has no revisions yet. You can import its database by specifying a version.</value>
+  </data>
+  <data name="Project «{0}», revision {1}, imported. Press «Load project» to open it." xml:space="preserve">
+    <value>Project «{0}», revision {1}, imported. Press «Load project» to open it.</value>
+  </data>
+  <data name="Project database" xml:space="preserve">
+    <value>Project database</value>
+  </data>
+  <data name="Project image" xml:space="preserve">
+    <value>Project image</value>
+  </data>
+  <data name="Project image and name" xml:space="preserve">
+    <value>Project image and name</value>
+  </data>
+  <data name="Project image and name updated." xml:space="preserve">
+    <value>Project image and name updated.</value>
+  </data>
+  <data name="Project image preview" xml:space="preserve">
+    <value>Project image preview</value>
+  </data>
+  <data name="Project name" xml:space="preserve">
+    <value>Project name</value>
+  </data>
+  <data name="Project updated. Opening project selector…" xml:space="preserve">
+    <value>Project updated. Opening project selector…</value>
+  </data>
+  <data name="Projects folder" xml:space="preserve">
+    <value>Projects folder</value>
+  </data>
+  <data name="Properties" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="Proportional scale" xml:space="preserve">
+    <value>Proportional scale</value>
+  </data>
+  <data name="Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Quick select:" xml:space="preserve">
+    <value>Quick select:</value>
+  </data>
+  <data name="Quick templates:" xml:space="preserve">
+    <value>Quick templates:</value>
+  </data>
+  <data name="Range end IP" xml:space="preserve">
+    <value>Range end IP</value>
+  </data>
+  <data name="Range start IP" xml:space="preserve">
+    <value>Range start IP</value>
+  </data>
+  <data name="Range:" xml:space="preserve">
+    <value>Range:</value>
+  </data>
+  <data name="Raw hex copied to clipboard." xml:space="preserve">
+    <value>Raw hex copied to clipboard.</value>
+  </data>
+  <data name="Raw protocol value, without scaling or offset. Encoded according to the variable type." xml:space="preserve">
+    <value>Raw protocol value, without scaling or offset. Encoded according to the variable type.</value>
+  </data>
+  <data name="Raw value:" xml:space="preserve">
+    <value>Raw value:</value>
+  </data>
+  <data name="Raw value: {0}" xml:space="preserve">
+    <value>Raw value: {0}</value>
+  </data>
+  <data name="Read and import" xml:space="preserve">
+    <value>Read and import</value>
+  </data>
+  <data name="Read configuration from device" xml:space="preserve">
+    <value>Read configuration from device</value>
+  </data>
+  <data name="Read device configuration" xml:space="preserve">
+    <value>Read device configuration</value>
+  </data>
+  <data name="Read from device" xml:space="preserve">
+    <value>Read from device</value>
+  </data>
+  <data name="Reading device configuration…" xml:space="preserve">
+    <value>Reading device configuration…</value>
+  </data>
+  <data name="Reading file…" xml:space="preserve">
+    <value>Reading file…</value>
+  </data>
+  <data name="Reading packets and network headers... {0}%" xml:space="preserve">
+    <value>Reading packets and network headers... {0}%</value>
+  </data>
+  <data name="Ready." xml:space="preserve">
+    <value>Ready.</value>
+  </data>
+  <data name="Real time" xml:space="preserve">
+    <value>Real time</value>
+  </data>
+  <data name="Real time ({0:F2}x)" xml:space="preserve">
+    <value>Real time ({0:F2}x)</value>
+  </data>
+  <data name="Real time ({0:G}x)" xml:space="preserve">
+    <value>Real time ({0:G}x)</value>
+  </data>
+  <data name="Real time (Wireshark timestamps)" xml:space="preserve">
+    <value>Real time (Wireshark timestamps)</value>
+  </data>
+  <data name="Recalculate hex" xml:space="preserve">
+    <value>Recalculate hex</value>
+  </data>
+  <data name="Recalculate IEEE 802.3 little-endian CRC32 for the TRDP header and data" xml:space="preserve">
+    <value>Recalculate IEEE 802.3 little-endian CRC32 for the TRDP header and data</value>
+  </data>
+  <data name="Recalculate TRDP CRC" xml:space="preserve">
+    <value>Recalculate TRDP CRC</value>
+  </data>
+  <data name="RECORD FILTERS" xml:space="preserve">
+    <value>RECORD FILTERS</value>
+  </data>
+  <data name="records" xml:space="preserve">
+    <value>records</value>
+  </data>
+  <data name="Records exceed the CMFX download size." xml:space="preserve">
+    <value>Records exceed the CMFX download size.</value>
+  </data>
+  <data name="Records per page" xml:space="preserve">
+    <value>Records per page</value>
+  </data>
+  <data name="Records without a complete date remain in the results." xml:space="preserve">
+    <value>Records without a complete date remain in the results.</value>
+  </data>
+  <data name="Rectifier" xml:space="preserve">
+    <value>Rectifier</value>
+  </data>
+  <data name="Red" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="Refresh interfaces" xml:space="preserve">
+    <value>Refresh interfaces</value>
+  </data>
+  <data name="Refresh list" xml:space="preserve">
+    <value>Refresh list</value>
+  </data>
+  <data name="Refresh signals" xml:space="preserve">
+    <value>Refresh signals</value>
+  </data>
+  <data name="Rejoin failed... trying again in" xml:space="preserve">
+    <value>Rejoin failed... trying again in</value>
+  </data>
+  <data name="Rejoining the server..." xml:space="preserve">
+    <value>Rejoining the server...</value>
+  </data>
+  <data name="Relative" xml:space="preserve">
+    <value>Relative</value>
+  </data>
+  <data name="Remote destination path (directory)" xml:space="preserve">
+    <value>Remote destination path (directory)</value>
+  </data>
+  <data name="Remote path:" xml:space="preserve">
+    <value>Remote path:</value>
+  </data>
+  <data name="Remote user password" xml:space="preserve">
+    <value>Remote user password</value>
+  </data>
+  <data name="Remove file" xml:space="preserve">
+    <value>Remove file</value>
+  </data>
+  <data name="Remove session" xml:space="preserve">
+    <value>Remove session</value>
+  </data>
+  <data name="Reply" xml:space="preserve">
+    <value>Reply</value>
+  </data>
+  <data name="Request ID:" xml:space="preserve">
+    <value>Request ID:</value>
+  </data>
+  <data name="Require confirmation" xml:space="preserve">
+    <value>Require confirmation</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Rescan Npcap network interfaces" xml:space="preserve">
+    <value>Rescan Npcap network interfaces</value>
+  </data>
+  <data name="Reset command executed successfully. Values in cosmos_data.txt have been reset to 0." xml:space="preserve">
+    <value>Reset command executed successfully. Values in cosmos_data.txt have been reset to 0.</value>
+  </data>
+  <data name="Reset Cosmos Data" xml:space="preserve">
+    <value>Reset Cosmos Data</value>
+  </data>
+  <data name="Reset cosmos_data counters" xml:space="preserve">
+    <value>Reset cosmos_data counters</value>
+  </data>
+  <data name="Reset cosmos_data counters to 0 (PTE / Energy)" xml:space="preserve">
+    <value>Reset cosmos_data counters to 0 (PTE / Energy)</value>
+  </data>
+  <data name="Resistor" xml:space="preserve">
+    <value>Resistor</value>
+  </data>
+  <data name="Response" xml:space="preserve">
+    <value>Response</value>
+  </data>
+  <data name="Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Restart ECNManager" xml:space="preserve">
+    <value>Restart ECNManager</value>
+  </data>
+  <data name="Restart ecnmanager service" xml:space="preserve">
+    <value>Restart ecnmanager service</value>
+  </data>
+  <data name="Restart ECNManager service_Text" xml:space="preserve">
+    <value>Restart ECNManager service</value>
+  </data>
+  <data name="Restart the ECNManager service on the device" xml:space="preserve">
+    <value>Restart the ECNManager service on the device</value>
+  </data>
+  <data name="Restarting ecnmanager service…" xml:space="preserve">
+    <value>Restarting ecnmanager service…</value>
+  </data>
+  <data name="Restore DHCP" xml:space="preserve">
+    <value>Restore DHCP</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Resulting hexadecimal frame" xml:space="preserve">
+    <value>Resulting hexadecimal frame</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>Resume</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Retrying SFTP upload as user '{0}'…" xml:space="preserve">
+    <value>Retrying SFTP upload as user '{0}'…</value>
+  </data>
+  <data name="Revision {0} has no database yet. Add it to its folder or import it." xml:space="preserve">
+    <value>Revision {0} has no database yet. Add it to its folder or import it.</value>
+  </data>
+  <data name="Revision / version" xml:space="preserve">
+    <value>Revision / version</value>
+  </data>
+  <data name="Revision version" xml:space="preserve">
+    <value>Revision version</value>
+  </data>
+  <data name="Rising edge 0→1 of {0}[bit {1}]{2}  →  +{3:G4}" xml:space="preserve">
+    <value>Rising edge 0→1 of {0}[bit {1}]{2}  →  +{3:G4}</value>
+  </data>
+  <data name="Rising edge increment – add a value on a 0→1 edge" xml:space="preserve">
+    <value>Rising edge increment – add a value on a 0→1 edge</value>
+  </data>
+  <data name="rising_edge (Rising edge 0→1)" xml:space="preserve">
+    <value>rising_edge (Rising edge 0→1)</value>
+  </data>
+  <data name="rising_edge_increment requires a source control variable." xml:space="preserve">
+    <value>rising_edge_increment requires a source control variable.</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Role created. Enable the tabs it can access." xml:space="preserve">
+    <value>Role created. Enable the tabs it can access.</value>
+  </data>
+  <data name="Roles and access permissions" xml:space="preserve">
+    <value>Roles and access permissions</value>
+  </data>
+  <data name="Roles and tab access" xml:space="preserve">
+    <value>Roles and tab access</value>
+  </data>
+  <data name="root (recommended)" xml:space="preserve">
+    <value>root (recommended)</value>
+  </data>
+  <data name="Rotation" xml:space="preserve">
+    <value>Rotation</value>
+  </data>
+  <data name="Rows per page:" xml:space="preserve">
+    <value>Rows per page:</value>
+  </data>
+  <data name="RTC time update parameters" xml:space="preserve">
+    <value>RTC time update parameters</value>
+  </data>
+  <data name="rtc_update (RTC time synchronisation)" xml:space="preserve">
+    <value>rtc_update (RTC time synchronisation)</value>
+  </data>
+  <data name="Rule description" xml:space="preserve">
+    <value>Rule description</value>
+  </data>
+  <data name="Rule enabled (enabled)" xml:space="preserve">
+    <value>Rule enabled (enabled)</value>
+  </data>
+  <data name="Rule ID" xml:space="preserve">
+    <value>Rule ID</value>
+  </data>
+  <data name="Rule ID *" xml:space="preserve">
+    <value>Rule ID *</value>
+  </data>
+  <data name="RUNNING on {0}" xml:space="preserve">
+    <value>RUNNING on {0}</value>
+  </data>
+  <data name="Sample" xml:space="preserve">
+    <value>Sample</value>
+  </data>
+  <data name="Samples" xml:space="preserve">
+    <value>Samples</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Save branding" xml:space="preserve">
+    <value>Save branding</value>
+  </data>
+  <data name="Save DAT" xml:space="preserve">
+    <value>Save DAT</value>
+  </data>
+  <data name="Save JSON…" xml:space="preserve">
+    <value>Save JSON…</value>
+  </data>
+  <data name="Save rule" xml:space="preserve">
+    <value>Save rule</value>
+  </data>
+  <data name="Save to cosmos_data.txt" xml:space="preserve">
+    <value>Save to cosmos_data.txt</value>
+  </data>
+  <data name="SCADA SYSTEM" xml:space="preserve">
+    <value>SCADA SYSTEM</value>
+  </data>
+  <data name="Scale (multiplier)" xml:space="preserve">
+    <value>Scale (multiplier)</value>
+  </data>
+  <data name="Scale (scale)" xml:space="preserve">
+    <value>Scale (scale)</value>
+  </data>
+  <data name="Scale / Offset" xml:space="preserve">
+    <value>Scale / Offset</value>
+  </data>
+  <data name="SCMD command parameters" xml:space="preserve">
+    <value>SCMD command parameters</value>
+  </data>
+  <data name="Search by IP or content..." xml:space="preserve">
+    <value>Search by IP or content...</value>
+  </data>
+  <data name="Search by number or fault" xml:space="preserve">
+    <value>Search by number or fault</value>
+  </data>
+  <data name="Search control variable…" xml:space="preserve">
+    <value>Search control variable…</value>
+  </data>
+  <data name="Search records" xml:space="preserve">
+    <value>Search records</value>
+  </data>
+  <data name="Search signal" xml:space="preserve">
+    <value>Search signal</value>
+  </data>
+  <data name="Search signal..." xml:space="preserve">
+    <value>Search signal...</value>
+  </data>
+  <data name="Search variable..." xml:space="preserve">
+    <value>Search variable...</value>
+  </data>
+  <data name="Search windows..." xml:space="preserve">
+    <value>Search windows...</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="seconds." xml:space="preserve">
+    <value>seconds.</value>
+  </data>
+  <data name="Select a .db, .sqlite or .sqlite3 database." xml:space="preserve">
+    <value>Select a .db, .sqlite or .sqlite3 database.</value>
+  </data>
+  <data name="Select a network interface to start capture." xml:space="preserve">
+    <value>Select a network interface to start capture.</value>
+  </data>
+  <data name="Select a network interface to view and change its IP configuration." xml:space="preserve">
+    <value>Select a network interface to view and change its IP configuration.</value>
+  </data>
+  <data name="Select a project and revision to begin." xml:space="preserve">
+    <value>Select a project and revision to begin.</value>
+  </data>
+  <data name="Select a project and revision to continue." xml:space="preserve">
+    <value>Select a project and revision to continue.</value>
+  </data>
+  <data name="Select a role and enable the sections its users can access. Permissions are saved automatically." xml:space="preserve">
+    <value>Select a role and enable the sections its users can access. Permissions are saved automatically.</value>
+  </data>
+  <data name="Select a software component and press «Change file» to choose the file to upload." xml:space="preserve">
+    <value>Select a software component and press «Change file» to choose the file to upload.</value>
+  </data>
+  <data name="Select a source variable." xml:space="preserve">
+    <value>Select a source variable.</value>
+  </data>
+  <data name="Select a valid role." xml:space="preserve">
+    <value>Select a valid role.</value>
+  </data>
+  <data name="Select all" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="Select an available control variable (node 2)." xml:space="preserve">
+    <value>Select an available control variable (node 2).</value>
+  </data>
+  <data name="Select an element" xml:space="preserve">
+    <value>Select an element</value>
+  </data>
+  <data name="Select an image up to 2 MiB." xml:space="preserve">
+    <value>Select an image up to 2 MiB.</value>
+  </data>
+  <data name="Select an unencrypted BIN, HEX, H86 or MCS file." xml:space="preserve">
+    <value>Select an unencrypted BIN, HEX, H86 or MCS file.</value>
+  </data>
+  <data name="Select detected IP address" xml:space="preserve">
+    <value>Select detected IP address</value>
+  </data>
+  <data name="Select frame..." xml:space="preserve">
+    <value>Select frame...</value>
+  </data>
+  <data name="Select from detected IP addresses" xml:space="preserve">
+    <value>Select from detected IP addresses</value>
+  </data>
+  <data name="Select IMG images with their MD5 files, or an edf / sdf pair." xml:space="preserve">
+    <value>Select IMG images with their MD5 files, or an edf / sdf pair.</value>
+  </data>
+  <data name="Select interface..." xml:space="preserve">
+    <value>Select interface...</value>
+  </data>
+  <data name="Select only images and their .img.md5 files." xml:space="preserve">
+    <value>Select only images and their .img.md5 files.</value>
+  </data>
+  <data name="Select project" xml:space="preserve">
+    <value>Select project</value>
+  </data>
+  <data name="Select signals to display the trace" xml:space="preserve">
+    <value>Select signals to display the trace</value>
+  </data>
+  <data name="Select signals to plot. Use the scroll wheel to zoom and the legend to hide a signal." xml:space="preserve">
+    <value>Select signals to plot. Use the scroll wheel to zoom and the legend to hide a signal.</value>
+  </data>
+  <data name="Select the project to work with or import its database." xml:space="preserve">
+    <value>Select the project to work with or import its database.</value>
+  </data>
+  <data name="Select up to 32 files, maximum 512 MiB in total." xml:space="preserve">
+    <value>Select up to 32 files, maximum 512 MiB in total.</value>
+  </data>
+  <data name="Select variable to add" xml:space="preserve">
+    <value>Select variable to add</value>
+  </data>
+  <data name="Select, export to a file, or create a configuration" xml:space="preserve">
+    <value>Select, export to a file, or create a configuration</value>
+  </data>
+  <data name="Selected file" xml:space="preserve">
+    <value>Selected file</value>
+  </data>
+  <data name="Selected network interface" xml:space="preserve">
+    <value>Selected network interface</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Send 8A command" xml:space="preserve">
+    <value>Send 8A command</value>
+  </data>
+  <data name="Send command" xml:space="preserve">
+    <value>Send command</value>
+  </data>
+  <data name="Send command '{0}' to Control" xml:space="preserve">
+    <value>Send command '{0}' to Control</value>
+  </data>
+  <data name="Send command ({0})" xml:space="preserve">
+    <value>Send command ({0})</value>
+  </data>
+  <data name="Send command to Control" xml:space="preserve">
+    <value>Send command to Control</value>
+  </data>
+  <data name="Send configuration to device" xml:space="preserve">
+    <value>Send configuration to device</value>
+  </data>
+  <data name="Send failed: {0}" xml:space="preserve">
+    <value>Send failed: {0}</value>
+  </data>
+  <data name="Confirm8ACommandMessage" xml:space="preserve">
+    <value>Send firmware update command 0x8A to the device at {0}?
+</value>
+  </data>
+  <data name="Send only this frame to the network" xml:space="preserve">
+    <value>Send only this frame to the network</value>
+  </data>
+  <data name="Send packet to network" xml:space="preserve">
+    <value>Send packet to network</value>
+  </data>
+  <data name="Send test frame" xml:space="preserve">
+    <value>Send test frame</value>
+  </data>
+  <data name="Send to back" xml:space="preserve">
+    <value>Send to back</value>
+  </data>
+  <data name="Send to Control" xml:space="preserve">
+    <value>Send to Control</value>
+  </data>
+  <data name="Send to device" xml:space="preserve">
+    <value>Send to device</value>
+  </data>
+  <data name="send_scmd (SCMD command to Control)" xml:space="preserve">
+    <value>send_scmd (SCMD command to Control)</value>
+  </data>
+  <data name="Sending configuration…" xml:space="preserve">
+    <value>Sending configuration…</value>
+  </data>
+  <data name="Sending data" xml:space="preserve">
+    <value>Sending data</value>
+  </data>
+  <data name="Sending firmware update command 8A to the device…" xml:space="preserve">
+    <value>Sending firmware update command 8A to the device…</value>
+  </data>
+  <data name="Sending requires active monitoring and no firmware update in progress." xml:space="preserve">
+    <value>Sending requires active monitoring and no firmware update in progress.</value>
+  </data>
+  <data name="Sending reset command to cosmos_data.txt..." xml:space="preserve">
+    <value>Sending reset command to cosmos_data.txt...</value>
+  </data>
+  <data name="Sending..." xml:space="preserve">
+    <value>Sending...</value>
+  </data>
+  <data name="SENT" xml:space="preserve">
+    <value>SENT</value>
+  </data>
+  <data name="Sent {0} packet(s) successfully ({1} total bytes) in {2} ms." xml:space="preserve">
+    <value>Sent {0} packet(s) successfully ({1} total bytes) in {2} ms.</value>
+  </data>
+  <data name="SEPSA command transmitted to ControlManager (port 50001)" xml:space="preserve">
+    <value>SEPSA command transmitted to ControlManager (port 50001)</value>
+  </data>
+  <data name="SEPSA firmware update parameters (Control)" xml:space="preserve">
+    <value>SEPSA firmware update parameters (Control)</value>
+  </data>
+  <data name="SEPSA UDP port" xml:space="preserve">
+    <value>SEPSA UDP port</value>
+  </data>
+  <data name="SEPSA UDP port {0} (Node 2 - Control board)" xml:space="preserve">
+    <value>SEPSA UDP port {0} (Node 2 - Control board)</value>
+  </data>
+  <data name="SEPSA UDP: Port 50001" xml:space="preserve">
+    <value>SEPSA UDP: Port 50001</value>
+  </data>
+  <data name="Server IP (this interface)" xml:space="preserve">
+    <value>Server IP (this interface)</value>
+  </data>
+  <data name="Session analyser" xml:space="preserve">
+    <value>Session analyser</value>
+  </data>
+  <data name="Session loaded successfully." xml:space="preserve">
+    <value>Session loaded successfully.</value>
+  </data>
+  <data name="Session management" xml:space="preserve">
+    <value>Session management</value>
+  </data>
+  <data name="session_analysis.csv" xml:space="preserve">
+    <value>session_analysis.csv</value>
+  </data>
+  <data name="SessionAnalysisCsvHeader" xml:space="preserve">
+    <value>Session;Timestamp;Variable;Value
+</value>
+  </data>
+  <data name="Sessions" xml:space="preserve">
+    <value>Sessions</value>
+  </data>
+  <data name="Sessions to analyse" xml:space="preserve">
+    <value>Sessions to analyse</value>
+  </data>
+  <data name="sessions_Text" xml:space="preserve">
+    <value>sessions</value>
+  </data>
+  <data name="set_only (set without resetting)" xml:space="preserve">
+    <value>set_only (set without resetting)</value>
+  </data>
+  <data name="SFTP access and remote directory" xml:space="preserve">
+    <value>SFTP access and remote directory</value>
+  </data>
+  <data name="SFTP firmware update failed: {0}" xml:space="preserve">
+    <value>SFTP firmware update failed: {0}</value>
+  </data>
+  <data name="SFTP password" xml:space="preserve">
+    <value>SFTP password</value>
+  </data>
+  <data name="SFTP port" xml:space="preserve">
+    <value>SFTP port</value>
+  </data>
+  <data name="SFTP port 22, user '{0}', remote path '{1}'" xml:space="preserve">
+    <value>SFTP port 22, user '{0}', remote path '{1}'</value>
+  </data>
+  <data name="SFTP upload timed out." xml:space="preserve">
+    <value>SFTP upload timed out.</value>
+  </data>
+  <data name="SFTP username" xml:space="preserve">
+    <value>SFTP username</value>
+  </data>
+  <data name="SFTP: Port 22 (SSH)" xml:space="preserve">
+    <value>SFTP: Port 22 (SSH)</value>
+  </data>
+  <data name="Show player" xml:space="preserve">
+    <value>Show player</value>
+  </data>
+  <data name="Show sidebar" xml:space="preserve">
+    <value>Show sidebar</value>
+  </data>
+  <data name="Show signal value" xml:space="preserve">
+    <value>Show signal value</value>
+  </data>
+  <data name="Show variables" xml:space="preserve">
+    <value>Show variables</value>
+  </data>
+  <data name="Show/hide spare fields" xml:space="preserve">
+    <value>Show/hide spare fields</value>
+  </data>
+  <data name="Sign in" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Sign out" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Signal" xml:space="preserve">
+    <value>Signal</value>
+  </data>
+  <data name="Signal {0} exceeds its block boundaries." xml:space="preserve">
+    <value>Signal {0} exceeds its block boundaries.</value>
+  </data>
+  <data name="Signal name *" xml:space="preserve">
+    <value>Signal name *</value>
+  </data>
+  <data name="Signal node" xml:space="preserve">
+    <value>Signal node</value>
+  </data>
+  <data name="Signals" xml:space="preserve">
+    <value>Signals</value>
+  </data>
+  <data name="Signals (Session: {0})" xml:space="preserve">
+    <value>Signals (Session: {0})</value>
+  </data>
+  <data name="Signals added: {0} in the selected node" xml:space="preserve">
+    <value>Signals added: {0} in the selected node</value>
+  </data>
+  <data name="signals in this node" xml:space="preserve">
+    <value>signals in this node</value>
+  </data>
+  <data name="Signature (6 characters)" xml:space="preserve">
+    <value>Signature (6 characters)</value>
+  </data>
+  <data name="Signature:" xml:space="preserve">
+    <value>Signature:</value>
+  </data>
+  <data name="SIMULATION" xml:space="preserve">
+    <value>SIMULATION</value>
+  </data>
+  <data name="Size (bytes)" xml:space="preserve">
+    <value>Size (bytes)</value>
+  </data>
+  <data name="Size:" xml:space="preserve">
+    <value>Size:</value>
+  </data>
+  <data name="Size: {0} bytes · Variables: {1} · Control rules: {2}" xml:space="preserve">
+    <value>Size: {0} bytes · Variables: {1} · Control rules: {2}</value>
+  </data>
+  <data name="Sniffer (network)" xml:space="preserve">
+    <value>Sniffer (network)</value>
+  </data>
+  <data name="Sniffer active on '{0}'{1}" xml:space="preserve">
+    <value>Sniffer active on '{0}'{1}</value>
+  </data>
+  <data name="Sniffer filter updated: {0} (ComID: {1})" xml:space="preserve">
+    <value>Sniffer filter updated: {0} (ComID: {1})</value>
+  </data>
+  <data name="Sniffer stopped" xml:space="preserve">
+    <value>Sniffer stopped</value>
+  </data>
+  <data name="Socket error: {0}" xml:space="preserve">
+    <value>Socket error: {0}</value>
+  </data>
+  <data name="Socket not initialised." xml:space="preserve">
+    <value>Socket not initialised.</value>
+  </data>
+  <data name="Software component" xml:space="preserve">
+    <value>Software component</value>
+  </data>
+  <data name="Sorry, the content you are looking for does not exist." xml:space="preserve">
+    <value>Sorry, the content you are looking for does not exist.</value>
+  </data>
+  <data name="Sort by VarOffset (bits)" xml:space="preserve">
+    <value>Sort by VarOffset (bits)</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Source bit (0–15) *" xml:space="preserve">
+    <value>Source bit (0–15) *</value>
+  </data>
+  <data name="Source variable (bit)" xml:space="preserve">
+    <value>Source variable (bit)</value>
+  </data>
+  <data name="Source variable (optional for rtc_update)" xml:space="preserve">
+    <value>Source variable (optional for rtc_update)</value>
+  </data>
+  <data name="Source:" xml:space="preserve">
+    <value>Source:</value>
+  </data>
+  <data name="Spanish" xml:space="preserve">
+    <value>Spanish</value>
+  </data>
+  <data name="Spare fields hidden" xml:space="preserve">
+    <value>Spare fields hidden</value>
+  </data>
+  <data name="Spare fields shown" xml:space="preserve">
+    <value>Spare fields shown</value>
+  </data>
+  <data name="Specific bit (0–15)" xml:space="preserve">
+    <value>Specific bit (0–15)</value>
+  </data>
+  <data name="Specify a destination IP address." xml:space="preserve">
+    <value>Specify a destination IP address.</value>
+  </data>
+  <data name="Speed and timing" xml:space="preserve">
+    <value>Speed and timing</value>
+  </data>
+  <data name="Speed mode" xml:space="preserve">
+    <value>Speed mode</value>
+  </data>
+  <data name="Speed multiplier:" xml:space="preserve">
+    <value>Speed multiplier:</value>
+  </data>
+  <data name="Speed:" xml:space="preserve">
+    <value>Speed:</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Start / Stop / Reset subcommands" xml:space="preserve">
+    <value>Start / Stop / Reset subcommands</value>
+  </data>
+  <data name="Start date" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="Start monitoring" xml:space="preserve">
+    <value>Start monitoring</value>
+  </data>
+  <data name="Start monitoring to check that the control board responds." xml:space="preserve">
+    <value>Start monitoring to check that the control board responds.</value>
+  </data>
+  <data name="Start monitoring to send commands to Control." xml:space="preserve">
+    <value>Start monitoring to send commands to Control.</value>
+  </data>
+  <data name="Start pre-update monitoring" xml:space="preserve">
+    <value>Start pre-update monitoring</value>
+  </data>
+  <data name="START_Text" xml:space="preserve">
+    <value>START</value>
+  </data>
+  <data name="Starting communications transfer…" xml:space="preserve">
+    <value>Starting communications transfer…</value>
+  </data>
+  <data name="Starting firmware update" xml:space="preserve">
+    <value>Starting firmware update</value>
+  </data>
+  <data name="Starting SEPSA transfer to the control board on port 50001…" xml:space="preserve">
+    <value>Starting SEPSA transfer to the control board on port 50001…</value>
+  </data>
+  <data name="State text (first match)" xml:space="preserve">
+    <value>State text (first match)</value>
+  </data>
+  <data name="Static IP" xml:space="preserve">
+    <value>Static IP</value>
+  </data>
+  <data name="Static/Legacy" xml:space="preserve">
+    <value>Static/Legacy</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Status bit" xml:space="preserve">
+    <value>Status bit</value>
+  </data>
+  <data name="Status signal" xml:space="preserve">
+    <value>Status signal</value>
+  </data>
+  <data name="Status signal (color bits)" xml:space="preserve">
+    <value>Status signal (color bits)</value>
+  </data>
+  <data name="Step (1 frame)" xml:space="preserve">
+    <value>Step (1 frame)</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Stop DHCP server" xml:space="preserve">
+    <value>Stop DHCP server</value>
+  </data>
+  <data name="Stop monitoring" xml:space="preserve">
+    <value>Stop monitoring</value>
+  </data>
+  <data name="STOP_Text" xml:space="preserve">
+    <value>STOP</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="STOPPED_Text" xml:space="preserve">
+    <value>STOPPED</value>
+  </data>
+  <data name="Stopping background monitoring…" xml:space="preserve">
+    <value>Stopping background monitoring…</value>
+  </data>
+  <data name="Stopping monitoring…" xml:space="preserve">
+    <value>Stopping monitoring…</value>
+  </data>
+  <data name="Stroke width (px)" xml:space="preserve">
+    <value>Stroke width (px)</value>
+  </data>
+  <data name="Style:" xml:space="preserve">
+    <value>Style:</value>
+  </data>
+  <data name="Subcommand (Sub Cmd) *" xml:space="preserve">
+    <value>Subcommand (Sub Cmd) *</value>
+  </data>
+  <data name="Subnet ({0})" xml:space="preserve">
+    <value>Subnet ({0})</value>
+  </data>
+  <data name="Subnet mask" xml:space="preserve">
+    <value>Subnet mask</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="Surge arrester" xml:space="preserve">
+    <value>Surge arrester</value>
+  </data>
+  <data name="Swapping to" xml:space="preserve">
+    <value>Swapping to</value>
+  </data>
+  <data name="Switch to dark theme" xml:space="preserve">
+    <value>Switch to dark theme</value>
+  </data>
+  <data name="Switch to English" xml:space="preserve">
+    <value>Switch to English</value>
+  </data>
+  <data name="Switch to light theme" xml:space="preserve">
+    <value>Switch to light theme</value>
+  </data>
+  <data name="Switch to Spanish" xml:space="preserve">
+    <value>Switch to Spanish</value>
+  </data>
+  <data name="Synoptic view" xml:space="preserve">
+    <value>Synoptic view</value>
+  </data>
+  <data name="Synoptic view saved successfully" xml:space="preserve">
+    <value>Synoptic view saved successfully</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="System / Cannot be deleted" xml:space="preserve">
+    <value>System / Cannot be deleted</value>
+  </data>
+  <data name="System firmware update" xml:space="preserve">
+    <value>System firmware update</value>
+  </data>
+  <data name="System software" xml:space="preserve">
+    <value>System software</value>
+  </data>
+  <data name="System variables" xml:space="preserve">
+    <value>System variables</value>
+  </data>
+  <data name="Target device IP address" xml:space="preserve">
+    <value>Target device IP address</value>
+  </data>
+  <data name="Target: control (node 2). Requires active monitoring." xml:space="preserve">
+    <value>Target: control (node 2). Requires active monitoring.</value>
+  </data>
+  <data name="TCP (Connection + Payload)" xml:space="preserve">
+    <value>TCP (Connection + Payload)</value>
+  </data>
+  <data name="TCP only" xml:space="preserve">
+    <value>TCP only</value>
+  </data>
+  <data name="Terminal" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="Terminal line" xml:space="preserve">
+    <value>Terminal line</value>
+  </data>
+  <data name="Test actions" xml:space="preserve">
+    <value>Test actions</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Text / hex dump" xml:space="preserve">
+    <value>Text / hex dump</value>
+  </data>
+  <data name="Text for value {0}" xml:space="preserve">
+    <value>Text for value {0}</value>
+  </data>
+  <data name="Text size (%)" xml:space="preserve">
+    <value>Text size (%)</value>
+  </data>
+  <data name="That revision already exists. Choose another version; existing revisions are never overwritten." xml:space="preserve">
+    <value>That revision already exists. Choose another version; existing revisions are never overwritten.</value>
+  </data>
+  <data name="The active draft has changed. Reopen branding settings." xml:space="preserve">
+    <value>The active draft has changed. Reopen branding settings.</value>
+  </data>
+  <data name="The active project has changed. Reopen branding settings." xml:space="preserve">
+    <value>The active project has changed. Reopen branding settings.</value>
+  </data>
+  <data name="The active project has changed. Your form remains open so you can review or copy unsaved changes." xml:space="preserve">
+    <value>The active project has changed. Your form remains open so you can review or copy unsaved changes.</value>
+  </data>
+  <data name="The active revision has changes. You can publish them above, keep the draft to resume later, or cancel." xml:space="preserve">
+    <value>The active revision has changes. You can publish them above, keep the draft to resume later, or cancel.</value>
+  </data>
+  <data name="The administrator retains full access." xml:space="preserve">
+    <value>The administrator retains full access.</value>
+  </data>
+  <data name="The administrator retains full access. Administration and synoptic editing are restricted to this role." xml:space="preserve">
+    <value>The administrator retains full access. Administration and synoptic editing are restricted to this role.</value>
+  </data>
+  <data name="The backend will execute" xml:space="preserve">
+    <value>The backend will execute</value>
+  </data>
+  <data name="The base URL cannot be empty." xml:space="preserve">
+    <value>The base URL cannot be empty.</value>
+  </data>
+  <data name="The chart will appear here after running the analysis." xml:space="preserve">
+    <value>The chart will appear here after running the analysis.</value>
+  </data>
+  <data name="The CMFX contains no nodes with configured control events." xml:space="preserve">
+    <value>The CMFX contains no nodes with configured control events.</value>
+  </data>
+  <data name="The CMFX event header is missing failReg." xml:space="preserve">
+    <value>The CMFX event header is missing failReg.</value>
+  </data>
+  <data name="The CMFX must specify a RAM or FLASH download." xml:space="preserve">
+    <value>The CMFX must specify a RAM or FLASH download.</value>
+  </data>
+  <data name="The configuration will take effect immediately." xml:space="preserve">
+    <value>The configuration will take effect immediately.</value>
+  </data>
+  <data name="The control device rejected the SEPSA firmware update command." xml:space="preserve">
+    <value>The control device rejected the SEPSA firmware update command.</value>
+  </data>
+  <data name="The control device reported a data transfer error." xml:space="preserve">
+    <value>The control device reported a data transfer error.</value>
+  </data>
+  <data name="The control device reported a flash erase error." xml:space="preserve">
+    <value>The control device reported a flash erase error.</value>
+  </data>
+  <data name="The control device reported a flash write error." xml:space="preserve">
+    <value>The control device reported a flash write error.</value>
+  </data>
+  <data name="The control device reported a verification error." xml:space="preserve">
+    <value>The control device reported a verification error.</value>
+  </data>
+  <data name="The control device reported completion before the transfer finished." xml:space="preserve">
+    <value>The control device reported completion before the transfer finished.</value>
+  </data>
+  <data name="The control variable ID is required." xml:space="preserve">
+    <value>The control variable ID is required.</value>
+  </data>
+  <data name="The DAT is empty or has an incomplete header." xml:space="preserve">
+    <value>The DAT is empty or has an incomplete header.</value>
+  </data>
+  <data name="The database exceeds 100 MiB." xml:space="preserve">
+    <value>The database exceeds 100 MiB.</value>
+  </data>
+  <data name="The database is corrupt." xml:space="preserve">
+    <value>The database is corrupt.</value>
+  </data>
+  <data name="The database is empty." xml:space="preserve">
+    <value>The database is empty.</value>
+  </data>
+  <data name="The destination dataset variable is required." xml:space="preserve">
+    <value>The destination dataset variable is required.</value>
+  </data>
+  <data name="The Development environment shouldn't be enabled for deployed applications." xml:space="preserve">
+    <value>The Development environment shouldn't be enabled for deployed applications.</value>
+  </data>
+  <data name="The device cancelled the communications update." xml:space="preserve">
+    <value>The device cancelled the communications update.</value>
+  </data>
+  <data name="The device channel is active. It will pause during the firmware update to transfer frames." xml:space="preserve">
+    <value>The device channel is active. It will pause during the firmware update to transfer frames.</value>
+  </data>
+  <data name="The device denied the firmware update: {0}" xml:space="preserve">
+    <value>The device denied the firmware update: {0}</value>
+  </data>
+  <data name="The device did not announce SFTP access." xml:space="preserve">
+    <value>The device did not announce SFTP access.</value>
+  </data>
+  <data name="The device did not confirm transfer completion." xml:space="preserve">
+    <value>The device did not confirm transfer completion.</value>
+  </data>
+  <data name="The device did not respond with a valid block at address {0} after five attempts." xml:space="preserve">
+    <value>The device did not respond with a valid block at address {0} after five attempts.</value>
+  </data>
+  <data name="The device will check for files in /mnt/artifacts/update and begin the firmware update." xml:space="preserve">
+    <value>The device will check for files in /mnt/artifacts/update and begin the firmware update.</value>
+  </data>
+  <data name="The DHCP server is already running." xml:space="preserve">
+    <value>The DHCP server is already running.</value>
+  </data>
+  <data name="The draft database is missing. Check the .Working folder before continuing." xml:space="preserve">
+    <value>The draft database is missing. Check the .Working folder before continuing.</value>
+  </data>
+  <data name="The draft state is invalid. It is preserved for recovery." xml:space="preserve">
+    <value>The draft state is invalid. It is preserved for recovery.</value>
+  </data>
+  <data name="The event node does not belong to the imported signals." xml:space="preserve">
+    <value>The event node does not belong to the imported signals.</value>
+  </data>
+  <data name="The file" xml:space="preserve">
+    <value>The file</value>
+  </data>
+  <data name="The file contains no valid frames." xml:space="preserve">
+    <value>The file contains no valid frames.</value>
+  </data>
+  <data name="The file has no &lt;node_t&gt; structure." xml:space="preserve">
+    <value>The file has no &lt;node_t&gt; structure.</value>
+  </data>
+  <data name="The file is not an APS Monitor database." xml:space="preserve">
+    <value>The file is not an APS Monitor database.</value>
+  </data>
+  <data name="The firmware file is empty." xml:space="preserve">
+    <value>The firmware file is empty.</value>
+  </data>
+  <data name="The folder must be inside the projects directory." xml:space="preserve">
+    <value>The folder must be inside the projects directory.</value>
+  </data>
+  <data name="The form has changes that have not been saved to the draft. Leave and lose these changes?" xml:space="preserve">
+    <value>The form has changes that have not been saved to the draft. Leave and lose these changes?</value>
+  </data>
+  <data name="The HEX file contains no data or has no end record." xml:space="preserve">
+    <value>The HEX file contains no data or has no end record.</value>
+  </data>
+  <data name="The HEX file contains overlapping addresses." xml:space="preserve">
+    <value>The HEX file contains overlapping addresses.</value>
+  </data>
+  <data name="The identity shown in the monitor header." xml:space="preserve">
+    <value>The identity shown in the monitor header.</value>
+  </data>
+  <data name="The image exceeds 2 MiB." xml:space="preserve">
+    <value>The image exceeds 2 MiB.</value>
+  </data>
+  <data name="The InfluxDB transmission limits are invalid." xml:space="preserve">
+    <value>The InfluxDB transmission limits are invalid.</value>
+  </data>
+  <data name="The InfluxDB URL is invalid." xml:space="preserve">
+    <value>The InfluxDB URL is invalid.</value>
+  </data>
+  <data name="The list refreshes automatically when folders are added or removed." xml:space="preserve">
+    <value>The list refreshes automatically when folders are added or removed.</value>
+  </data>
+  <data name="The log exceeds the 50 MB limit." xml:space="preserve">
+    <value>The log exceeds the 50 MB limit.</value>
+  </data>
+  <data name="The name and listening IP are required." xml:space="preserve">
+    <value>The name and listening IP are required.</value>
+  </data>
+  <data name="The name must contain 1 to {0} characters." xml:space="preserve">
+    <value>The name must contain 1 to {0} characters.</value>
+  </data>
+  <data name="The new revision must be later than the source revision." xml:space="preserve">
+    <value>The new revision must be later than the source revision.</value>
+  </data>
+  <data name="The node signature must contain six ASCII characters." xml:space="preserve">
+    <value>The node signature must contain six ASCII characters.</value>
+  </data>
+  <data name="The payload field is empty." xml:space="preserve">
+    <value>The payload field is empty.</value>
+  </data>
+  <data name="The payload is empty." xml:space="preserve">
+    <value>The payload is empty.</value>
+  </data>
+  <data name="The project is shared by all monitor users. Changing it disconnects the device and closes open playback sessions." xml:space="preserve">
+    <value>The project is shared by all monitor users. Changing it disconnects the device and closes open playback sessions.</value>
+  </data>
+  <data name="The projects folder cannot contain links to other paths." xml:space="preserve">
+    <value>The projects folder cannot contain links to other paths.</value>
+  </data>
+  <data name="The range uses the entire DAT by default. Select variables or digital bits." xml:space="preserve">
+    <value>The range uses the entire DAT by default. Select variables or digital bits.</value>
+  </data>
+  <data name="The received JSON is invalid: {0}" xml:space="preserve">
+    <value>The received JSON is invalid: {0}</value>
+  </data>
+  <data name="The role does not exist." xml:space="preserve">
+    <value>The role does not exist.</value>
+  </data>
+  <data name="The role must contain 1 to 40 characters: letters, numbers, spaces, hyphens or underscores." xml:space="preserve">
+    <value>The role must contain 1 to 40 characters: letters, numbers, spaces, hyphens or underscores.</value>
+  </data>
+  <data name="The rule ID is required." xml:space="preserve">
+    <value>The rule ID is required.</value>
+  </data>
+  <data name="The saved event structure is invalid." xml:space="preserve">
+    <value>The saved event structure is invalid.</value>
+  </data>
+  <data name="The selected project is no longer available." xml:space="preserve">
+    <value>The selected project is no longer available.</value>
+  </data>
+  <data name="The session has been paused by the server." xml:space="preserve">
+    <value>The session has been paused by the server.</value>
+  </data>
+  <data name="The shared draft will no longer be used and all users will return to a copy of the saved revision. The discarded draft will be archived." xml:space="preserve">
+    <value>The shared draft will no longer be used and all users will return to a copy of the saved revision. The discarded draft will be archived.</value>
+  </data>
+  <data name="The signature must contain six alphanumeric ASCII characters." xml:space="preserve">
+    <value>The signature must contain six alphanumeric ASCII characters.</value>
+  </data>
+  <data name="The source revision has changed" xml:space="preserve">
+    <value>The source revision has changed</value>
+  </data>
+  <data name="The source revision has changed outside the application. The draft is preserved; restore the source before publishing." xml:space="preserve">
+    <value>The source revision has changed outside the application. The draft is preserved; restore the source before publishing.</value>
+  </data>
+  <data name="The start date must be before the end date." xml:space="preserve">
+    <value>The start date must be before the end date.</value>
+  </data>
+  <data name="The subcommand must be between 0000 and FFFF hexadecimal." xml:space="preserve">
+    <value>The subcommand must be between 0000 and FFFF hexadecimal.</value>
+  </data>
+  <data name="The username is already registered" xml:space="preserve">
+    <value>The username is already registered</value>
+  </data>
+  <data name="The variable ID is required." xml:space="preserve">
+    <value>The variable ID is required.</value>
+  </data>
+  <data name="The variable requires an integer value." xml:space="preserve">
+    <value>The variable requires an integer value.</value>
+  </data>
+  <data name="The version must use a format such as 0.1 or 1.2.3." xml:space="preserve">
+    <value>The version must use a format such as 0.1 or 1.2.3.</value>
+  </data>
+  <data name="The window does not exist" xml:space="preserve">
+    <value>The window does not exist</value>
+  </data>
+  <data name="The window is inactive" xml:space="preserve">
+    <value>The window is inactive</value>
+  </data>
+  <data name="Their samples cannot be plotted." xml:space="preserve">
+    <value>Their samples cannot be plotted.</value>
+  </data>
+  <data name="There are no configuration changes to publish." xml:space="preserve">
+    <value>There are no configuration changes to publish.</value>
+  </data>
+  <data name="There are no frames in the playlist." xml:space="preserve">
+    <value>There are no frames in the playlist.</value>
+  </data>
+  <data name="There are pending changes. Create a new revision or keep the draft before switching." xml:space="preserve">
+    <value>There are pending changes. Create a new revision or keep the draft before switching.</value>
+  </data>
+  <data name="There is no active project." xml:space="preserve">
+    <value>There is no active project.</value>
+  </data>
+  <data name="These FPGA signals have not been added:" xml:space="preserve">
+    <value>These FPGA signals have not been added:</value>
+  </data>
+  <data name="This action resets the accumulated energy counters (" xml:space="preserve">
+    <value>This action resets the accumulated energy counters (</value>
+  </data>
+  <data name="This draft has already been published. Reload the page to edit the new revision." xml:space="preserve">
+    <value>This draft has already been published. Reload the page to edit the new revision.</value>
+  </data>
+  <data name="This draft has been discarded. Reload the revision." xml:space="preserve">
+    <value>This draft has been discarded. Reload the revision.</value>
+  </data>
+  <data name="This revision already has a database. Enter a new version to preserve the existing one." xml:space="preserve">
+    <value>This revision already has a database. Enter a new version to preserve the existing one.</value>
+  </data>
+  <data name="This version has pending changes. Create the next revision to preserve them as a final version." xml:space="preserve">
+    <value>This version has pending changes. Create the next revision to preserve them as a final version.</value>
+  </data>
+  <data name="Three-phase" xml:space="preserve">
+    <value>Three-phase</value>
+  </data>
+  <data name="through the SEPSA protocol (UDP 50001) and a direct datagram (UDP 50003)." xml:space="preserve">
+    <value>through the SEPSA protocol (UDP 50001) and a direct datagram (UDP 50003).</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Time offset (h)" xml:space="preserve">
+    <value>Time offset (h)</value>
+  </data>
+  <data name="Time variable (time_var)" xml:space="preserve">
+    <value>Time variable (time_var)</value>
+  </data>
+  <data name="Time zone" xml:space="preserve">
+    <value>Time zone</value>
+  </data>
+  <data name="TIME:" xml:space="preserve">
+    <value>TIME:</value>
+  </data>
+  <data name="Timed out waiting for command 8A acknowledgement (5 s)." xml:space="preserve">
+    <value>Timed out waiting for command 8A acknowledgement (5 s).</value>
+  </data>
+  <data name="Timed out. The firmware update result has not been confirmed." xml:space="preserve">
+    <value>Timed out. The firmware update result has not been confirmed.</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="to apply the mode change immediately." xml:space="preserve">
+    <value>to apply the mode change immediately.</value>
+  </data>
+  <data name="to begin." xml:space="preserve">
+    <value>to begin.</value>
+  </data>
+  <data name="to listen for TRDP network traffic." xml:space="preserve">
+    <value>to listen for TRDP network traffic.</value>
+  </data>
+  <data name="to load a file" xml:space="preserve">
+    <value>to load a file</value>
+  </data>
+  <data name="Toggle data byte order (standard TRDP IEC 61375 big-endian vs little-endian)" xml:space="preserve">
+    <value>Toggle data byte order (standard TRDP IEC 61375 big-endian vs little-endian)</value>
+  </data>
+  <data name="Total bit offset (byte × 8 + bit)" xml:space="preserve">
+    <value>Total bit offset (byte × 8 + bit)</value>
+  </data>
+  <data name="Total frames:" xml:space="preserve">
+    <value>Total frames:</value>
+  </data>
+  <data name="Trace block" xml:space="preserve">
+    <value>Trace block</value>
+  </data>
+  <data name="Transfer in progress." xml:space="preserve">
+    <value>Transfer in progress.</value>
+  </data>
+  <data name="Transferring block {0} of {1} ({2:F0}%)" xml:space="preserve">
+    <value>Transferring block {0} of {1} ({2:F0}%)</value>
+  </data>
+  <data name="Transformer" xml:space="preserve">
+    <value>Transformer</value>
+  </data>
+  <data name="Transmission destination and output adapter" xml:space="preserve">
+    <value>Transmission destination and output adapter</value>
+  </data>
+  <data name="Transmission period / interval between consecutive transmissions to Control in milliseconds" xml:space="preserve">
+    <value>Transmission period / interval between consecutive transmissions to Control in milliseconds</value>
+  </data>
+  <data name="TRDP backend" xml:space="preserve">
+    <value>TRDP backend</value>
+  </data>
+  <data name="TRDP configuration" xml:space="preserve">
+    <value>TRDP configuration</value>
+  </data>
+  <data name="TRDP configurations" xml:space="preserve">
+    <value>TRDP configurations</value>
+  </data>
+  <data name="TRDP frame ({0} B){1}" xml:space="preserve">
+    <value>TRDP frame ({0} B){1}</value>
+  </data>
+  <data name="TRDP sniffer (network capture)" xml:space="preserve">
+    <value>TRDP sniffer (network capture)</value>
+  </data>
+  <data name="TRDP UDP filter reset (showing all frames)." xml:space="preserve">
+    <value>TRDP UDP filter reset (showing all frames).</value>
+  </data>
+  <data name="Trigger" xml:space="preserve">
+    <value>Trigger</value>
+  </data>
+  <data name="Trigger *" xml:space="preserve">
+    <value>Trigger *</value>
+  </data>
+  <data name="Trigger and source" xml:space="preserve">
+    <value>Trigger and source</value>
+  </data>
+  <data name="TX {0}. Execution not confirmed." xml:space="preserve">
+    <value>TX {0}. Execution not confirmed.</value>
+  </data>
+  <data name="TX CMD {0} · sent, execution not confirmed" xml:space="preserve">
+    <value>TX CMD {0} · sent, execution not confirmed</value>
+  </data>
+  <data name="TYPE" xml:space="preserve">
+    <value>TYPE</value>
+  </data>
+  <data name="Type *" xml:space="preserve">
+    <value>Type *</value>
+  </data>
+  <data name="Type / protocol" xml:space="preserve">
+    <value>Type / protocol</value>
+  </data>
+  <data name="Type to search..." xml:space="preserve">
+    <value>Type to search...</value>
+  </data>
+  <data name="Type_Text" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="UDP (Datagram)" xml:space="preserve">
+    <value>UDP (Datagram)</value>
+  </data>
+  <data name="UDP failed ({0}) and HTTP {1}: {2}" xml:space="preserve">
+    <value>UDP failed ({0}) and HTTP {1}: {2}</value>
+  </data>
+  <data name="UDP filter active: '{0}' (ComID: {1})" xml:space="preserve">
+    <value>UDP filter active: '{0}' (ComID: {1})</value>
+  </data>
+  <data name="UDP only" xml:space="preserve">
+    <value>UDP only</value>
+  </data>
+  <data name="UDP socket error: {0}" xml:space="preserve">
+    <value>UDP socket error: {0}</value>
+  </data>
+  <data name="Unable to calculate TRDP CRC: {0}" xml:space="preserve">
+    <value>Unable to calculate TRDP CRC: {0}</value>
+  </data>
+  <data name="Unable to configure DHCP: {0}" xml:space="preserve">
+    <value>Unable to configure DHCP: {0}</value>
+  </data>
+  <data name="Unable to configure IP: {0}" xml:space="preserve">
+    <value>Unable to configure IP: {0}</value>
+  </data>
+  <data name="Unable to connect to restart ecnmanager on {0}." xml:space="preserve">
+    <value>Unable to connect to restart ecnmanager on {0}.</value>
+  </data>
+  <data name="Unable to connect UDP socket: {0}" xml:space="preserve">
+    <value>Unable to connect UDP socket: {0}</value>
+  </data>
+  <data name="Unable to create the role. Check that its name is unique." xml:space="preserve">
+    <value>Unable to create the role. Check that its name is unique.</value>
+  </data>
+  <data name="Unable to deserialise the snapshot response." xml:space="preserve">
+    <value>Unable to deserialise the snapshot response.</value>
+  </data>
+  <data name="Unable to deserialise WS frame: {0}" xml:space="preserve">
+    <value>Unable to deserialise WS frame: {0}</value>
+  </data>
+  <data name="Unable to download from {0}:{1}: {2}" xml:space="preserve">
+    <value>Unable to download from {0}:{1}: {2}</value>
+  </data>
+  <data name="Unable to enumerate interfaces: {0}" xml:space="preserve">
+    <value>Unable to enumerate interfaces: {0}</value>
+  </data>
+  <data name="Unable to enumerate Npcap interfaces: {0}" xml:space="preserve">
+    <value>Unable to enumerate Npcap interfaces: {0}</value>
+  </data>
+  <data name="Unable to execute reset on {0}: {1}" xml:space="preserve">
+    <value>Unable to execute reset on {0}: {1}</value>
+  </data>
+  <data name="Unable to import the file. Check that it is a valid APS Monitor database no larger than 100 MiB." xml:space="preserve">
+    <value>Unable to import the file. Check that it is a valid APS Monitor database no larger than 100 MiB.</value>
+  </data>
+  <data name="Unable to import the project database" xml:space="preserve">
+    <value>Unable to import the project database</value>
+  </data>
+  <data name="Unable to initialise network socket: {0}" xml:space="preserve">
+    <value>Unable to initialise network socket: {0}</value>
+  </data>
+  <data name="Unable to load {0}: {1}" xml:space="preserve">
+    <value>Unable to load {0}: {1}</value>
+  </data>
+  <data name="Unable to load capture block: {0}" xml:space="preserve">
+    <value>Unable to load capture block: {0}</value>
+  </data>
+  <data name="Unable to load event signals: {0}" xml:space="preserve">
+    <value>Unable to load event signals: {0}</value>
+  </data>
+  <data name="Unable to load project {ProjectId}" xml:space="preserve">
+    <value>Unable to load project {ProjectId}</value>
+  </data>
+  <data name="Unable to load role permissions." xml:space="preserve">
+    <value>Unable to load role permissions.</value>
+  </data>
+  <data name="Unable to load signals: {0}" xml:space="preserve">
+    <value>Unable to load signals: {0}</value>
+  </data>
+  <data name="Unable to load the chart. Check the connection and select the signals again." xml:space="preserve">
+    <value>Unable to load the chart. Check the connection and select the signals again.</value>
+  </data>
+  <data name="Unable to load the project. Check its database and try again." xml:space="preserve">
+    <value>Unable to load the project. Check its database and try again.</value>
+  </data>
+  <data name="Unable to open DAT: {0}" xml:space="preserve">
+    <value>Unable to open DAT: {0}</value>
+  </data>
+  <data name="Unable to open port 67 (possible conflict with another DHCP service): {0}" xml:space="preserve">
+    <value>Unable to open port 67 (possible conflict with another DHCP service): {0}</value>
+  </data>
+  <data name="Unable to open the file. Check that it is a text file no larger than 50 MB." xml:space="preserve">
+    <value>Unable to open the file. Check that it is a text file no larger than 50 MB.</value>
+  </data>
+  <data name="Unable to open the selector automatically. Follow the link to continue." xml:space="preserve">
+    <value>Unable to open the selector automatically. Follow the link to continue.</value>
+  </data>
+  <data name="Unable to process file: {0}" xml:space="preserve">
+    <value>Unable to process file: {0}</value>
+  </data>
+  <data name="Unable to read the current configuration: {0}" xml:space="preserve">
+    <value>Unable to read the current configuration: {0}</value>
+  </data>
+  <data name="Unable to read Wireshark capture: {0}" xml:space="preserve">
+    <value>Unable to read Wireshark capture: {0}</value>
+  </data>
+  <data name="Unable to refresh the home dashboard; retrying." xml:space="preserve">
+    <value>Unable to refresh the home dashboard; retrying.</value>
+  </data>
+  <data name="Unable to refresh the list. Please try again." xml:space="preserve">
+    <value>Unable to refresh the list. Please try again.</value>
+  </data>
+  <data name="Unable to refresh the project catalogue" xml:space="preserve">
+    <value>Unable to refresh the project catalogue</value>
+  </data>
+  <data name="Unable to render the TRDP view: {0}" xml:space="preserve">
+    <value>Unable to render the TRDP view: {0}</value>
+  </data>
+  <data name="Unable to restore the project. Select an existing project in the configured folder." xml:space="preserve">
+    <value>Unable to restore the project. Select an existing project in the configured folder.</value>
+  </data>
+  <data name="Unable to retrieve configuration (SFTP/HTTP): {0}" xml:space="preserve">
+    <value>Unable to retrieve configuration (SFTP/HTTP): {0}</value>
+  </data>
+  <data name="Unable to retrieve snapshot: {0}" xml:space="preserve">
+    <value>Unable to retrieve snapshot: {0}</value>
+  </data>
+  <data name="Unable to save configuration: {0}" xml:space="preserve">
+    <value>Unable to save configuration: {0}</value>
+  </data>
+  <data name="Unable to save JSON: {0}" xml:space="preserve">
+    <value>Unable to save JSON: {0}</value>
+  </data>
+  <data name="Unable to save the permission. Please try again." xml:space="preserve">
+    <value>Unable to save the permission. Please try again.</value>
+  </data>
+  <data name="Unable to save: {0}" xml:space="preserve">
+    <value>Unable to save: {0}</value>
+  </data>
+  <data name="Unable to send command 8A over UDP: {0}" xml:space="preserve">
+    <value>Unable to send command 8A over UDP: {0}</value>
+  </data>
+  <data name="Unable to send command: {0}" xml:space="preserve">
+    <value>Unable to send command: {0}</value>
+  </data>
+  <data name="Unable to send command: {0} / {1}" xml:space="preserve">
+    <value>Unable to send command: {0} / {1}</value>
+  </data>
+  <data name="Unable to send frame [{0:X2}]: {1}" xml:space="preserve">
+    <value>Unable to send frame [{0:X2}]: {1}</value>
+  </data>
+  <data name="Unable to send frame #{0}: {1}" xml:space="preserve">
+    <value>Unable to send frame #{0}: {1}</value>
+  </data>
+  <data name="Unable to send the command to Control." xml:space="preserve">
+    <value>Unable to send the command to Control.</value>
+  </data>
+  <data name="Unable to send; check monitoring and the monitor log." xml:space="preserve">
+    <value>Unable to send; check monitoring and the monitor log.</value>
+  </data>
+  <data name="Unable to start DHCP: {0}" xml:space="preserve">
+    <value>Unable to start DHCP: {0}</value>
+  </data>
+  <data name="Unable to start network capture: {0}" xml:space="preserve">
+    <value>Unable to start network capture: {0}</value>
+  </data>
+  <data name="Unable to start TRDP UDP streaming: {0}" xml:space="preserve">
+    <value>Unable to start TRDP UDP streaming: {0}</value>
+  </data>
+  <data name="Unable to update the project schema." xml:space="preserve">
+    <value>Unable to update the project schema.</value>
+  </data>
+  <data name="Unable to write to InfluxDB. The pending batch will be retried." xml:space="preserve">
+    <value>Unable to write to InfluxDB. The pending batch will be retried.</value>
+  </data>
+  <data name="Unexpected SEPSA status received from Control: 0x{0:X2}." xml:space="preserve">
+    <value>Unexpected SEPSA status received from Control: 0x{0:X2}.</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="Unknown error" xml:space="preserve">
+    <value>Unknown error</value>
+  </data>
+  <data name="Unsubscribed from TRDP dataset." xml:space="preserve">
+    <value>Unsubscribed from TRDP dataset.</value>
+  </data>
+  <data name="Unsupported format. Select a PNG, JPG or WebP image." xml:space="preserve">
+    <value>Unsupported format. Select a PNG, JPG or WebP image.</value>
+  </data>
+  <data name="Unsupported signal type: {0}." xml:space="preserve">
+    <value>Unsupported signal type: {0}.</value>
+  </data>
+  <data name="Unsupported variable type or value: {0}." xml:space="preserve">
+    <value>Unsupported variable type or value: {0}.</value>
+  </data>
+  <data name="Update confirmed. {0}" xml:space="preserve">
+    <value>Update confirmed. {0}</value>
+  </data>
+  <data name="Update denied by the device: {0}" xml:space="preserve">
+    <value>Update denied by the device: {0}</value>
+  </data>
+  <data name="Update firmware" xml:space="preserve">
+    <value>Update firmware</value>
+  </data>
+  <data name="updated through SFTP and the service restarted to apply the changes." xml:space="preserve">
+    <value>updated through SFTP and the service restarted to apply the changes.</value>
+  </data>
+  <data name="Upload a .dat file to analyse frames and view signal values" xml:space="preserve">
+    <value>Upload a .dat file to analyse frames and view signal values</value>
+  </data>
+  <data name="Uploading {0} to {1} through SFTP…" xml:space="preserve">
+    <value>Uploading {0} to {1} through SFTP…</value>
+  </data>
+  <data name="Uploading files through SFTP…" xml:space="preserve">
+    <value>Uploading files through SFTP…</value>
+  </data>
+  <data name="Use 16-bit data" xml:space="preserve">
+    <value>Use 16-bit data</value>
+  </data>
+  <data name="Use default image" xml:space="preserve">
+    <value>Use default image</value>
+  </data>
+  <data name="Use the scroll wheel to zoom and the legend to hide series." xml:space="preserve">
+    <value>Use the scroll wheel to zoom and the legend to hide series.</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="User created successfully" xml:space="preserve">
+    <value>User created successfully</value>
+  </data>
+  <data name="User deleted successfully" xml:space="preserve">
+    <value>User deleted successfully</value>
+  </data>
+  <data name="User list" xml:space="preserve">
+    <value>User list</value>
+  </data>
+  <data name="User management" xml:space="preserve">
+    <value>User management</value>
+  </data>
+  <data name="User updated successfully" xml:space="preserve">
+    <value>User updated successfully</value>
+  </data>
+  <data name="User with access to /mnt/artifacts (e.g. root)" xml:space="preserve">
+    <value>User with access to /mnt/artifacts (e.g. root)</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Users with other roles" xml:space="preserve">
+    <value>Users with other roles</value>
+  </data>
+  <data name="VALUE" xml:space="preserve">
+    <value>VALUE</value>
+  </data>
+  <data name="VALUE / BITS" xml:space="preserve">
+    <value>VALUE / BITS</value>
+  </data>
+  <data name="Value bit (optional)" xml:space="preserve">
+    <value>Value bit (optional)</value>
+  </data>
+  <data name="Value list (comma-separated)" xml:space="preserve">
+    <value>Value list (comma-separated)</value>
+  </data>
+  <data name="Value offset" xml:space="preserve">
+    <value>Value offset</value>
+  </data>
+  <data name="Value outside the {0} range." xml:space="preserve">
+    <value>Value outside the {0} range.</value>
+  </data>
+  <data name="Value outside the FLOAT32 range." xml:space="preserve">
+    <value>Value outside the FLOAT32 range.</value>
+  </data>
+  <data name="Value to add on rising edge *" xml:space="preserve">
+    <value>Value to add on rising edge *</value>
+  </data>
+  <data name="Value to write" xml:space="preserve">
+    <value>Value to write</value>
+  </data>
+  <data name="Value_Lowercase" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Value, text and visibility" xml:space="preserve">
+    <value>Value, text and visibility</value>
+  </data>
+  <data name="Values" xml:space="preserve">
+    <value>Values</value>
+  </data>
+  <data name="Values (comma-separated)" xml:space="preserve">
+    <value>Values (comma-separated)</value>
+  </data>
+  <data name="Variable modification" xml:space="preserve">
+    <value>Variable modification</value>
+  </data>
+  <data name="Variable type" xml:space="preserve">
+    <value>Variable type</value>
+  </data>
+  <data name="Variable unavailable" xml:space="preserve">
+    <value>Variable unavailable</value>
+  </data>
+  <data name="Variable value signal" xml:space="preserve">
+    <value>Variable value signal</value>
+  </data>
+  <data name="Variables in dataset '{0}' ordered by VarOffset (bits)." xml:space="preserve">
+    <value>Variables in dataset '{0}' ordered by VarOffset (bits).</value>
+  </data>
+  <data name="Variables to compare (calculate the largest value)" xml:space="preserve">
+    <value>Variables to compare (calculate the largest value)</value>
+  </data>
+  <data name="VarOffset (bits) *" xml:space="preserve">
+    <value>VarOffset (bits) *</value>
+  </data>
+  <data name="Verifying..." xml:space="preserve">
+    <value>Verifying...</value>
+  </data>
+  <data name="Vertical contactor" xml:space="preserve">
+    <value>Vertical contactor</value>
+  </data>
+  <data name="Vertical line" xml:space="preserve">
+    <value>Vertical line</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="View chart" xml:space="preserve">
+    <value>View chart</value>
+  </data>
+  <data name="View live" xml:space="preserve">
+    <value>View live</value>
+  </data>
+  <data name="Visibility" xml:space="preserve">
+    <value>Visibility</value>
+  </data>
+  <data name="Visibility bit" xml:space="preserve">
+    <value>Visibility bit</value>
+  </data>
+  <data name="Visibility signal" xml:space="preserve">
+    <value>Visibility signal</value>
+  </data>
+  <data name="Visual style" xml:space="preserve">
+    <value>Visual style</value>
+  </data>
+  <data name="VOLUME" xml:space="preserve">
+    <value>VOLUME</value>
+  </data>
+  <data name="Wait for the connection or transfer to finish before changing projects." xml:space="preserve">
+    <value>Wait for the connection or transfer to finish before changing projects.</value>
+  </data>
+  <data name="Waiting for network traffic..." xml:space="preserve">
+    <value>Waiting for network traffic...</value>
+  </data>
+  <data name="Waiting for samples" xml:space="preserve">
+    <value>Waiting for samples</value>
+  </data>
+  <data name="Waiting for TRDP frame data..." xml:space="preserve">
+    <value>Waiting for TRDP frame data...</value>
+  </data>
+  <data name="WARNING: {0} FAULTS" xml:space="preserve">
+    <value>WARNING: {0} FAULTS</value>
+  </data>
+  <data name="WebSocket connection failed: {0}" xml:space="preserve">
+    <value>WebSocket connection failed: {0}</value>
+  </data>
+  <data name="Welcome, {0}" xml:space="preserve">
+    <value>Welcome, {0}</value>
+  </data>
+  <data name="When enabled, only frames matching the selected ComID are shown" xml:space="preserve">
+    <value>When enabled, only frames matching the selected ComID are shown</value>
+  </data>
+  <data name="when the TRDP engine processes the control frame." xml:space="preserve">
+    <value>when the TRDP engine processes the control frame.</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Will read" xml:space="preserve">
+    <value>Will read</value>
+  </data>
+  <data name="Window '{0}' duplicated successfully" xml:space="preserve">
+    <value>Window '{0}' duplicated successfully</value>
+  </data>
+  <data name="Window name" xml:space="preserve">
+    <value>Window name</value>
+  </data>
+  <data name="Windows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Windows (total)" xml:space="preserve">
+    <value>Windows (total)</value>
+  </data>
+  <data name="Wireshark frame #{0}" xml:space="preserve">
+    <value>Wireshark frame #{0}</value>
+  </data>
+  <data name="Wireshark packet player" xml:space="preserve">
+    <value>Wireshark packet player</value>
+  </data>
+  <data name="Wireshark packet player &amp; Packet Sender" xml:space="preserve">
+    <value>Wireshark packet player &amp; Packet Sender</value>
+  </data>
+  <data name="Wireshark PCAP player" xml:space="preserve">
+    <value>Wireshark PCAP player</value>
+  </data>
+  <data name="Wireshark player" xml:space="preserve">
+    <value>Wireshark player</value>
+  </data>
+  <data name="Working in a persistent temporary copy. The saved revision is protected." xml:space="preserve">
+    <value>Working in a persistent temporary copy. The saved revision is protected.</value>
+  </data>
+  <data name="WS read error: {0}" xml:space="preserve">
+    <value>WS read error: {0}</value>
+  </data>
+  <data name="WS subscription sent for dataset '{0}' (ComID: {1})" xml:space="preserve">
+    <value>WS subscription sent for dataset '{0}' (ComID: {1})</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="You are not authorised to view this window" xml:space="preserve">
+    <value>You are not authorised to view this window</value>
+  </data>
+  <data name="You do not have permission to access this page. Contact the administrator." xml:space="preserve">
+    <value>You do not have permission to access this page. Contact the administrator.</value>
+  </data>
+  <data name="You need configuration editing permissions to publish or discard a draft." xml:space="preserve">
+    <value>You need configuration editing permissions to publish or discard a draft.</value>
+  </data>
+</root>

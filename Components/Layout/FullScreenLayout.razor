@@ -19,11 +19,12 @@
         <div class="mt-auto px-4 py-4 d-flex align-center user-footer">
             <AuthorizeView>
                 <Authorized>
-                    <div>
+                    <div class="user-info">
                         <MudText Typo="Typo.body2" Class="fw-bold">@context.User.Identity?.Name</MudText>
-                        <MudText Typo="Typo.caption" Class="text-muted">@(context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">@MonitorLocalization.RoleName(context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</MudText>
                     </div>
                     <MudSpacer />
+                    <MonitorLanguageToggle />
                     <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" OnClick="HandleLogout" />
                 </Authorized>
             </AuthorizeView>
@@ -46,6 +47,8 @@
     .user-footer {
         border-top: 1px solid var(--mud-palette-lines-default);
     }
+    .user-footer .user-info { min-width: 0; }
+    .user-footer .user-info .mud-typography { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .text-muted {
         color: var(--mud-palette-text-secondary) !important;
     }

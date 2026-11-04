@@ -5,7 +5,7 @@
     <TitleContent>
         <div class="d-flex align-center gap-2">
             <MudIcon Icon="@Icons.Material.Filled.Hub" Color="Color.Info" />
-            <MudText Typo="Typo.h6">@(Network.Name == "" ? "Nueva Red TRDP" : $"Editar Red – {Network.Name}")</MudText>
+            <MudText Typo="Typo.h6">@(Network.Name == "" ? Ui["New TRDP network"] : Ui["Edit network – {0}", Network.Name])</MudText>
         </div>
     </TitleContent>
     <DialogContent>
@@ -13,15 +13,15 @@
             <!-- Basic info -->
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Network.Name"
-                              Label="Nombre de red *"
+                              Label="@Ui["Network name *"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                              Required="true" Placeholder="p.ej. aps1_r1" />
+                              Required="true" RequiredError="@Ui["Required"]" Placeholder="E.g. aps1_r1" />
             </MudItem>
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="Network.ReceivedIp"
-                              Label="IP de escucha (received_ip) *"
+                              Label="@Ui["Listening IP (received_ip) *"]"
                               Variant="Variant.Outlined" Margin="Margin.Dense" FullWidth="true"
-                              Required="true" Placeholder="10.0.68.98" />
+                              Required="true" RequiredError="@Ui["Required"]" Placeholder="10.0.68.98" />
             </MudItem>
 
             <MudItem xs="12"><MudDivider /></MudItem>
@@ -33,7 +33,7 @@
                         <MudIcon Icon="@Icons.Material.Filled.Upload" Size="Size.Small" Class="mr-1" />Publishers
                     </MudText>
                     <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info"
-                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddPublisher">Añadir</MudButton>
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddPublisher">@Ui["Add"]</MudButton>
                 </div>
 
                 @foreach (var (pub, idx) in Network.Publishers.Select((p, i) => (p, i)))
@@ -41,11 +41,11 @@
                     <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="pub.Name" Label="Nombre" Variant="Variant.Outlined"
+                                <MudTextField @bind-Value="pub.Name" Label="@Ui["Name"]" Variant="Variant.Outlined"
                                               Margin="Margin.Dense" FullWidth="true" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="pub.Ip" Label="IP multicast" Variant="Variant.Outlined"
+                                <MudTextField @bind-Value="pub.Ip" Label="@Ui["Multicast IP"]" Variant="Variant.Outlined"
                                               Margin="Margin.Dense" FullWidth="true" Placeholder="239.255.4.98" />
                             </MudItem>
                             <MudItem xs="12" sm="4">
@@ -57,7 +57,7 @@
                                               Margin="Margin.Dense" FullWidth="true" Placeholder="TelemetryAPS" />
                             </MudItem>
                             <MudItem xs="12" sm="3">
-                                <MudNumericField @bind-Value="pub.Interval" Label="Intervalo (µs)" Variant="Variant.Outlined"
+                                <MudNumericField @bind-Value="pub.Interval" Label="@Ui["Interval (µs)"]" Variant="Variant.Outlined"
                                                  Margin="Margin.Dense" FullWidth="true" Min="0" />
                             </MudItem>
                             <MudItem xs="12" sm="1" Class="d-flex align-center justify-end">
@@ -78,7 +78,7 @@
                         <MudIcon Icon="@Icons.Material.Filled.Download" Size="Size.Small" Class="mr-1" />Subscribers
                     </MudText>
                     <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
-                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddSubscriber">Añadir</MudButton>
+                               StartIcon="@Icons.Material.Filled.Add" OnClick="AddSubscriber">@Ui["Add"]</MudButton>
                 </div>
 
                 @foreach (var (sub, idx) in Network.Subscribers.Select((s, i) => (s, i)))
@@ -86,11 +86,11 @@
                     <MudPaper Elevation="0" Class="pa-3 mb-2" Style="background:var(--mud-palette-surface); border:1px solid var(--mud-palette-lines-default); border-radius:8px;">
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="sub.Name" Label="Nombre" Variant="Variant.Outlined"
+                                <MudTextField @bind-Value="sub.Name" Label="@Ui["Name"]" Variant="Variant.Outlined"
                                               Margin="Margin.Dense" FullWidth="true" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="sub.Ip" Label="IP multicast" Variant="Variant.Outlined"
+                                <MudTextField @bind-Value="sub.Ip" Label="@Ui["Multicast IP"]" Variant="Variant.Outlined"
                                               Margin="Margin.Dense" FullWidth="true" Placeholder="239.255.0.16" />
                             </MudItem>
                             <MudItem xs="12" sm="5">
@@ -112,9 +112,9 @@
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">@Ui["Cancel"]</MudButton>
         <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="Submit"
-                   StartIcon="@Icons.Material.Filled.Save">Guardar</MudButton>
+                   StartIcon="@Icons.Material.Filled.Save">@Ui["Save"]</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -135,7 +135,7 @@
     {
         if (string.IsNullOrWhiteSpace(Network.Name) || string.IsNullOrWhiteSpace(Network.ReceivedIp))
         {
-            Snackbar.Add("El nombre y la IP de escucha son obligatorios.", Severity.Warning);
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Text("The name and listening IP are required."), Severity.Warning);
             return;
         }
         MudDialog.Close(DialogResult.Ok(Network));

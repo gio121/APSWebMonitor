@@ -15,4 +15,5 @@
     <Compile Include="../../Services/SepsaProtocolClient.cs" Link="SepsaProtocolClient.cs" />
     <Compile Include="../../Services/TlsSecurityService.cs" Link="TlsSecurityService.cs" />
   </ItemGroup>
+  <Import Project="../LocalizationResources.props" />
 </Project>

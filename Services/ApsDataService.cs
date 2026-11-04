@@ -103,7 +103,7 @@ public class ApsDataService
     {
         var incoming = importedSignals.ToList();
         if (incoming.Any(s => string.IsNullOrWhiteSpace(s.Tag)))
-            throw new ArgumentException("Las señales importadas deben tener un keyname.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Imported signals must have a keyname."));
 
         using var context = await _dbContextFactory.CreateDbContextAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -141,7 +141,7 @@ public class ApsDataService
             await context.SaveChangesAsync();
             foreach (var config in eventConfigurations)
             {
-                if (!nodes.Contains(config.Node)) throw new ArgumentException("El nodo de eventos no pertenece a las señales importadas.");
+                if (!nodes.Contains(config.Node)) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The event node does not belong to the imported signals."));
                 context.ImportedControlEventConfigurations.Add(new()
                 {
                     NodeNumber = config.Node,
@@ -164,7 +164,7 @@ public class ApsDataService
         foreach (var row in saved)
         {
             var layout = System.Text.Json.JsonSerializer.Deserialize<ControlEventConfig>(row.ConfigurationJson)
-                ?? throw new InvalidDataException("La estructura de eventos guardada no es válida.");
+                ?? throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The saved event structure is invalid."));
             var bound = ControlEventsParser.BindSignals(layout, signals);
             if (bound is not null) result.Add(bound);
         }

@@ -5,6 +5,9 @@ using System.Text;
 using System.Xml.Linq;
 using ApsMonitor.Services;
 
+System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+
 int checks = 0;
 void Check(bool condition, string message) { if (!condition) throw new Exception(message); checks++; }
 void Reject(Action action, string message) { try { action(); } catch (InvalidDataException) { checks++; return; } throw new Exception(message); }
@@ -30,6 +33,16 @@ var xml = $"""
     <FPGA_STATUS>{Ref("status", 0)}</FPGA_STATUS></event_trace></node_t></root>
     """;
 var config = ControlEventsParser.LoadConfig(Encoding.UTF8.GetBytes(xml)).Single();
+var bilingual = XDocument.Parse(xml);
+XElement EnglishLabel(string text) => new("localized_string_t", new XElement("langid", "en-GB"), new XElement("stringvalue", text));
+bilingual.Descendants("sw").First().Add(new XElement("description", EnglishLabel("Control unit")));
+bilingual.Descendants("value_element_t").First().Element("description")!.Add(EnglishLabel("Failure register"));
+bilingual.Descendants("value_description").First().Add(EnglishLabel("Test fault"));
+var englishConfig = ControlEventsParser.LoadConfig(bilingual).Single();
+Check(englishConfig.Name == "Control unit", "Prefer English node descriptions when importing CMFX.");
+Check(englishConfig.Values["failReg"].Name == "Failure register", "Prefer English signal descriptions over earlier Spanish content.");
+Check(englishConfig.Values["cfails_ac"].Labels[7] == "Test fault", "Prefer English enumeration labels for fault descriptions.");
+Check(englishConfig.Values["status"].Labels[0] == "Marcha", "Preserve original descriptions when English is unavailable.");
 var mixed = XDocument.Parse(xml);
 mixed.Root!.Add(new XElement("node_t", new XElement("event_trace",
     new XElement("num_event_registers", 495), new XElement("eventdata", new XElement("data_block_t",

@@ -46,7 +46,7 @@ public sealed class SepsaProtocolClient
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(baseUrl))
-            throw new ArgumentException("La URL base no puede estar vacia.", nameof(baseUrl));
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The base URL cannot be empty."), nameof(baseUrl));
 
         var requestUri = BuildEndpoint(baseUrl);
         var request = new SepsaPayloadDto(frame.ToArray().Select(b => (int)b).ToArray());

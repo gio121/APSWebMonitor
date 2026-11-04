@@ -3,9 +3,9 @@
 
 @if (_navigationUnavailable)
 {
-    <p>No se pudo abrir el selector automáticamente. Pulsa el enlace para continuar.</p>
+    <p>@Ui["Unable to open the selector automatically. Follow the link to continue."]</p>
 }
-<a href="/proyectos" target="_top">Abrir selector de proyectos</a>
+<a href="/proyectos" target="_top">@Ui["Open project selector"]</a>
 
 @code {
     [Parameter] public bool Replace { get; set; } = true;

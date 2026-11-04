@@ -35,7 +35,7 @@ public sealed partial class ProjectDatabaseService
     }
 
     public IDbContextFactory<ApsDbContext> CaptureFactory() => new DraftDbContextFactory(
-        Current ?? throw new InvalidOperationException("Selecciona un proyecto y una revisión para continuar."), this);
+        Current ?? throw new InvalidOperationException(ApsMonitor.Resources.MonitorResources.Text("Select a project and revision to continue.")), this);
 
     public IReadOnlyList<ProjectDirectory> GetCatalog()
     {
@@ -76,7 +76,7 @@ public sealed partial class ProjectDatabaseService
         project, revision);
 
     public ProjectDatabase Find(string id) => GetProjects().SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase))
-        ?? throw new ArgumentException("El proyecto seleccionado ya no está disponible.");
+        ?? throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The selected project is no longer available."));
 
     private ProjectDatabase ReadName(ProjectDatabase project)
     {
@@ -101,13 +101,13 @@ public sealed partial class ProjectDatabaseService
         projectName = ValidateFolder(projectName);
         revision = ValidateFolder(revision);
         if (!Version.TryParse(revision, out _))
-            throw new ArgumentException("La versión debe tener un formato como 0.1 o 1.2.3.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The version must use a format such as 0.1 or 1.2.3."));
         if (!IsDatabase(fileName))
-            throw new ArgumentException("Selecciona una base de datos .db, .sqlite o .sqlite3.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Select a .db, .sqlite or .sqlite3 database."));
         var revisionDirectory = Path.Combine(_directory, projectName, "Revisions", revision);
         EnsureLocalDirectory(revisionDirectory);
         if (Directory.Exists(revisionDirectory) && Directory.EnumerateFiles(revisionDirectory).Any(IsDatabase))
-            throw new ArgumentException("Esta revisión ya tiene una base de datos. Indica una versión nueva para conservar la existente.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("This revision already has a database. Enter a new version to preserve the existing one."));
         var path = Path.Combine(revisionDirectory, "aps.db");
         var uploadDirectory = Path.Combine(_directory, ".uploads");
         EnsureLocalDirectory(uploadDirectory);
@@ -123,10 +123,10 @@ public sealed partial class ProjectDatabaseService
                 while ((read = await source.ReadAsync(buffer, token)) > 0)
                 {
                     length += read;
-                    if (length > MaximumDatabaseBytes) throw new ArgumentException("La base de datos supera 100 MiB.");
+                    if (length > MaximumDatabaseBytes) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The database exceeds 100 MiB."));
                     await output.WriteAsync(buffer.AsMemory(0, read), token);
                 }
-                if (length == 0) throw new ArgumentException("La base de datos está vacía.");
+                if (length == 0) throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The database is empty."));
             }
             var project = FromPath(temporary, projectName, revision);
             await PrepareAsync(project, token);
@@ -151,7 +151,7 @@ public sealed partial class ProjectDatabaseService
         if (value.Length is 0 or > 80 || value is "." or ".." || value.EndsWith('.') ||
             value.Any(c => char.IsControl(c) || "<>:\"/\\|?*".Contains(c)) ||
             new[] { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" }.Contains(device, StringComparer.OrdinalIgnoreCase))
-            throw new ArgumentException("Indica un nombre de proyecto y una versión válidos, sin rutas ni caracteres especiales de archivo.");
+            throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("Enter a valid project name and version without paths or special file characters."));
         return value;
     }
 
@@ -160,10 +160,10 @@ public sealed partial class ProjectDatabaseService
         for (var current = new DirectoryInfo(directory); current is not null; current = current.Parent)
         {
             if (current.Exists && IsLink(current.FullName))
-                throw new ArgumentException("La carpeta de proyectos no puede contener enlaces a otras rutas.");
+                throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The projects folder cannot contain links to other paths."));
             if (string.Equals(current.FullName, _directory, StringComparison.OrdinalIgnoreCase)) return;
         }
-        throw new ArgumentException("La carpeta debe estar dentro de la ruta de proyectos.");
+        throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The folder must be inside the projects directory."));
     }
 
     public static async Task PrepareAsync(ProjectDatabase project, CancellationToken token = default)
@@ -174,10 +174,10 @@ public sealed partial class ProjectDatabaseService
         {
             command.CommandText = "PRAGMA quick_check";
             if (!string.Equals(await command.ExecuteScalarAsync(token) as string, "ok", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("La base de datos está dañada.");
+                throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The database is corrupt."));
             command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('Signals', 'Windows', 'Commands', 'Events')";
             if (Convert.ToInt64(await command.ExecuteScalarAsync(token)) != 4)
-                throw new ArgumentException("El archivo no es una base de datos de APS Monitor.");
+                throw new ArgumentException(ApsMonitor.Resources.MonitorResources.Text("The file is not an APS Monitor database."));
             // Imported standalone databases must not retain uncheckpointed WAL data.
             command.CommandText = "PRAGMA journal_mode=DELETE";
             await command.ExecuteScalarAsync(token);
@@ -220,7 +220,7 @@ public sealed partial class ProjectDatabaseService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "No se pudo recuperar el proyecto. Selecciona un proyecto existente en la carpeta configurada.");
+            _logger.LogWarning(ex, ApsMonitor.Resources.MonitorResources.Text("Unable to restore the project. Select an existing project in the configured folder."));
         }
     }
     internal void Activate(ProjectDatabase project)

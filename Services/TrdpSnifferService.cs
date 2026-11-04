@@ -22,7 +22,7 @@ public class TrdpSnifferDevice
     {
         get
         {
-            var ip = string.IsNullOrWhiteSpace(IpAddress) ? "Sin IP asignada" : IpAddress;
+            var ip = string.IsNullOrWhiteSpace(IpAddress) ? ApsMonitor.Resources.MonitorResources.Text("No IP address assigned") : IpAddress;
             return $"{Name} — {ip} ({Description})";
         }
     }
@@ -117,7 +117,7 @@ public sealed class TrdpSnifferService : IDisposable
         }
         catch (Exception ex)
         {
-            LastError = $"Error al enumerar interfaces Npcap: {ex.Message}";
+            LastError = ApsMonitor.Resources.MonitorResources.Format("Unable to enumerate Npcap interfaces: {0}", ex.Message);
             OnStatusMessage?.Invoke(LastError);
         }
 
@@ -169,7 +169,7 @@ public sealed class TrdpSnifferService : IDisposable
 
                 if (dev == null)
                 {
-                    LastError = "No se encontró ningún dispositivo de captura Npcap disponible.";
+                    LastError = ApsMonitor.Resources.MonitorResources.Text("No Npcap capture device available.");
                     OnStatusMessage?.Invoke(LastError);
                     return (false, LastError);
                 }
@@ -203,15 +203,15 @@ public sealed class TrdpSnifferService : IDisposable
                 IsCapturing = true;
                 OnCaptureStateChanged?.Invoke(true);
 
-                var filterMsg = TargetComId > 0 ? $" (Filtro ComID: {TargetComId})" : " (Todas las tramas)";
-                var status = $"Sniffer activo en '{ActiveDeviceName}'{filterMsg}";
+                var filterMsg = TargetComId > 0 ? ApsMonitor.Resources.MonitorResources.Format(" (ComID filter: {0})", TargetComId) : ApsMonitor.Resources.MonitorResources.Text(" (All frames)");
+                var status = ApsMonitor.Resources.MonitorResources.Format("Sniffer active on '{0}'{1}", ActiveDeviceName, filterMsg);
                 OnStatusMessage?.Invoke(status);
 
                 return (true, status);
             }
             catch (Exception ex)
             {
-                LastError = $"Error al iniciar captura en red: {ex.Message}";
+                LastError = ApsMonitor.Resources.MonitorResources.Format("Unable to start network capture: {0}", ex.Message);
                 StopCaptureInternal();
                 OnStatusMessage?.Invoke(LastError);
                 return (false, LastError);
@@ -246,7 +246,7 @@ public sealed class TrdpSnifferService : IDisposable
         {
             StopCaptureInternal();
             OnCaptureStateChanged?.Invoke(false);
-            OnStatusMessage?.Invoke("Sniffer de red detenido.");
+            OnStatusMessage?.Invoke(ApsMonitor.Resources.MonitorResources.Text("Network sniffer stopped."));
         }
     }
 

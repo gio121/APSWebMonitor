@@ -13,7 +13,7 @@
     <MudDrawer Class="monitor-sidebar" @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Variant="DrawerVariant.Persistent">
         <div class="px-4 py-4 d-flex align-center justify-space-between logo-header">
             <ProjectIdentity />
-            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Inherit" Size="Size.Small" OnClick="@(() => _drawerOpen = false)" Title="Ocultar panel" />
+            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Inherit" Size="Size.Small" OnClick="@(() => _drawerOpen = false)" Title="@Ui["Hide sidebar"]" />
         </div>
         
         <NavMenu />
@@ -22,11 +22,12 @@
         <div class="mt-auto px-4 py-4 d-flex align-center user-footer">
             <AuthorizeView>
                 <Authorized>
-                    <div>
+                    <div class="user-info">
                         <MudText Typo="Typo.body2" Class="fw-bold">@context.User.Identity?.Name</MudText>
-                        <MudText Typo="Typo.caption" Class="text-muted">@(context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "")</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">@MonitorLocalization.RoleName(context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</MudText>
                     </div>
                     <MudSpacer />
+                    <MonitorLanguageToggle />
                     <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Size="Size.Small" OnClick="HandleLogout" />
                 </Authorized>
             </AuthorizeView>
@@ -37,7 +38,7 @@
         @if (!_drawerOpen)
         {
             <div class="px-4 pt-2">
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => _drawerOpen = true)" Title="Mostrar panel lateral" />
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => _drawerOpen = true)" Title="@Ui["Show sidebar"]" />
             </div>
         }
         <div class="@(_sessionState.IsLoaded ? "px-8 pt-4 pb-24" : "px-8 pt-4")">
@@ -55,6 +56,8 @@
     .user-footer {
         border-top: 1px solid var(--mud-palette-lines-default);
     }
+    .user-footer .user-info { min-width: 0; }
+    .user-footer .user-info .mud-typography { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .text-muted {
         color: var(--mud-palette-text-secondary) !important;
     }

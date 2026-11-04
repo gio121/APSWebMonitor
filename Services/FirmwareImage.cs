@@ -9,11 +9,11 @@ public static class FirmwareImage
 
     public static byte[] Decode(string name, byte[] content, uint flashOffset)
     {
-        if (content.Length is 0 or > MaximumBytes) throw new InvalidDataException("Fichero vacío o superior a 16 MiB.");
+        if (content.Length is 0 or > MaximumBytes) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("File is empty or exceeds 16 MiB."));
         string extension = Path.GetExtension(name).ToLowerInvariant();
         if (extension == ".bin") return content.ToArray();
         if (extension is not (".hex" or ".h86" or ".mcs"))
-            throw new InvalidDataException("Seleccione un fichero BIN, HEX, H86 o MCS sin cifrar.");
+            throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("Select an unencrypted BIN, HEX, H86 or MCS file."));
 
         using var reader = new StringReader(Encoding.ASCII.GetString(content));
         var segments = new List<(int Offset, byte[] Data)>();
@@ -39,7 +39,7 @@ public static class FirmwareImage
                     if (count == 0) break;
                     ulong absolute = addressBase + address;
                     if (absolute < flashOffset || absolute - flashOffset + (uint)count > MaximumBytes)
-                        throw new InvalidDataException($"Dirección fuera del rango de memoria en línea {lineNumber}. Revise el desplazamiento de flash.");
+                        throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Format("Address outside the memory range on line {0}. Check the flash offset.", lineNumber));
                     int offset = (int)(absolute - flashOffset);
                     segments.Add((offset, record.AsSpan(4, count).ToArray()));
                     length = Math.Max(length, offset + count);
@@ -53,7 +53,7 @@ public static class FirmwareImage
                 default: throw Invalid(lineNumber);
             }
         }
-        if (!eof || length == 0) throw new InvalidDataException("El fichero HEX no contiene datos o no tiene registro de fin.");
+        if (!eof || length == 0) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The HEX file contains no data or has no end record."));
         var image = new byte[length];
         Array.Fill(image, (byte)0xFF);
         var written = new System.Collections.BitArray(length);
@@ -61,12 +61,12 @@ public static class FirmwareImage
             for (int i = 0; i < segment.Data.Length; i++)
             {
                 int position = segment.Offset + i;
-                if (written[position]) throw new InvalidDataException("El fichero HEX contiene direcciones solapadas.");
+                if (written[position]) throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The HEX file contains overlapping addresses."));
                 written[position] = true;
                 image[position] = segment.Data[i];
             }
         return image;
     }
 
-    private static InvalidDataException Invalid(int line) => new($"Registro Intel HEX inválido en línea {line} (formato, tipo o checksum).");
+    private static InvalidDataException Invalid(int line) => new(ApsMonitor.Resources.MonitorResources.Format("Invalid Intel HEX record on line {0} (format, type or checksum).", line));
 }

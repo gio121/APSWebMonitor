@@ -67,7 +67,7 @@ public static class ApsLogClient
             var count = await stream.ReadAsync(buffer, readTimeout.Token);
             if (count == 0) break;
             if (output.Length + count > MaxFileBytes)
-                throw new InvalidDataException("El log supera el límite de 50 MB.");
+                throw new InvalidDataException(ApsMonitor.Resources.MonitorResources.Text("The log exceeds the 50 MB limit."));
             output.Write(buffer, 0, count);
         }
         return output.ToArray();
