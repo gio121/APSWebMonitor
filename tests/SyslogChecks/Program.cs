@@ -36,6 +36,32 @@ Check(SyslogParser.MatchesDateRange(iso, iso.Date, iso.Date), "Inclusive date bo
 Check(!SyslogParser.MatchesDateRange(iso, new DateTime(2026, 7, 1), null), "Exclude out-of-range dates.");
 Check(SyslogParser.MatchesDateRange(entries[0], new DateTime(2026, 7, 1), null), "Keep entries without full dates like frmLog.");
 
+// Verify Ed25519 PEM + Encrypted PKCS#8 Key loading if APSComms Credentials directory is accessible
+const string wslCredsDir = @"\\wsl.localhost\Ubuntu-24.04\home\build\APSComms\Credentials";
+if (Directory.Exists(wslCredsDir))
+{
+    var tls = new TlsSecurityService();
+    tls.LoadRootCa(File.ReadAllBytes(Path.Combine(wslCredsDir, "sepsa_aps_rootCA.pem")), "sepsa_aps_rootCA.pem");
+    Check(tls.HasRootCa && tls.RootCaSubject.Contains("SepsaMedha"), "Load Ed25519 Root CA");
+
+    tls.LoadClientCertificatePem(
+        File.ReadAllBytes(Path.Combine(wslCredsDir, "sepsa_aps_log_reader.pem")),
+        File.ReadAllBytes(Path.Combine(wslCredsDir, "sepsa_aps_log_reader.key")),
+        "sepsaEDP",
+        "sepsa_aps_log_reader.pem + sepsa_aps_log_reader.key");
+    Check(tls.HasClientCertificate && tls.ClientKeyAlgorithm == "Ed25519" && tls.ClientCertSubject.Contains("APS Log Reader"),
+        "Load Ed25519 Log Reader PEM + Encrypted Key");
+
+    tls.LoadClientCertificatePem(
+        File.ReadAllBytes(Path.Combine(wslCredsDir, "sepsa_aps_supertool.pem")),
+        File.ReadAllBytes(Path.Combine(wslCredsDir, "sepsa_aps_supertool.key")),
+        "sepsaEDP",
+        "sepsa_aps_supertool.pem + sepsa_aps_supertool.key");
+    Check(tls.HasClientCertificate && tls.ClientKeyAlgorithm == "Ed25519" && tls.ClientCertSubject.Contains("APS Supertool"),
+        "Load Ed25519 Supertool PEM + Encrypted Key");
+    Console.WriteLine("Ed25519 PEM + Encrypted PKCS#8 Key checks passed.");
+}
+
 using var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, ApsLogClient.Port);
 listener.Start();
 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));

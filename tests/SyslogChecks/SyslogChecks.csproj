@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <Compile Include="../../Services/SyslogParser.cs" Link="SyslogParser.cs" />
     <Compile Include="../../Services/ApsLogClient.cs" Link="ApsLogClient.cs" />
     <Compile Include="../../Services/SepsaProtocolClient.cs" Link="SepsaProtocolClient.cs" />

@@ -18,7 +18,7 @@
                     <div>
                         <MudText Typo="Typo.subtitle2" Class="fw-bold">Modo de Transporte Activo</MudText>
                         <MudText Typo="Typo.caption" Class="text-muted">
-                            Conmuta todas las comunicaciones del monitor entre el protocolo clásico y TLS 1.2 / 1.3.
+                            Conmuta todas las comunicaciones del monitor entre el protocolo clásico y TLS 1.2 / 1.3 (Ed25519 / ECDSA / RSA).
                         </MudText>
                     </div>
                     <MudChip T="string"
@@ -45,6 +45,27 @@
                         Modo Seguro (TLS / mTLS)
                     </MudButton>
                 </div>
+
+                @if (CanAutoLoadWslCredentials)
+                {
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-2 mt-3 pt-2" style="border-top: 1px dashed var(--mud-palette-lines-default);">
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Carga rápida desde <code>APSComms/Credentials</code>:
+                        </MudText>
+                        <div class="d-flex gap-2">
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Success"
+                                       StartIcon="@Icons.Material.Filled.Bolt"
+                                       OnClick="@(() => LoadWslPreset("sepsa_aps_supertool"))">
+                                Perfil Supertool (mTLS)
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Info"
+                                       StartIcon="@Icons.Material.Filled.Article"
+                                       OnClick="@(() => LoadWslPreset("sepsa_aps_log_reader"))">
+                                Perfil Log Reader (mTLS)
+                            </MudButton>
+                        </div>
+                    </div>
+                }
             </MudPaper>
 
             <!-- Puertos TLS y Validación del Servidor -->
@@ -122,7 +143,7 @@
                     <div>
                         <MudText Typo="Typo.subtitle2" Class="fw-bold">Certificado de Cliente para mTLS (Mutual TLS)</MudText>
                         <MudText Typo="Typo.caption" Class="text-muted">
-                            Requerido por servicios mTLS de APSComms (<code>CN=APS Supertool</code>, <code>CN=APS Log Reader</code>, etc.).
+                            Requerido por servicios mTLS de APSComms (<code>CN=APS Supertool</code>, <code>CN=APS Log Reader</code>, Ed25519).
                         </MudText>
                     </div>
                     @if (TlsSecurity.HasClientCertificate)
@@ -138,32 +159,13 @@
                 @if (TlsSecurity.HasClientCertificate)
                 {
                     <MudAlert Severity="Severity.Success" Dense="true" Class="mb-3">
-                        <div><strong>Archivo:</strong> @TlsSecurity.ClientCertFileName</div>
+                        <div><strong>Archivo:</strong> @TlsSecurity.ClientCertFileName (@TlsSecurity.ClientKeyAlgorithm)</div>
                         <div><strong>Subject:</strong> @TlsSecurity.ClientCertSubject</div>
                         <div style="font-family: monospace; font-size: 0.72rem;"><strong>SHA-1:</strong> @TlsSecurity.ClientCertThumbprint</div>
                     </MudAlert>
                 }
 
                 <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pt-3">
-                    <MudTabPanel Text="Formato PKCS#12 (.pfx / .p12)">
-                        <MudGrid Spacing="2" Class="align-center">
-                            <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_pfxPassword"
-                                              Label="Contraseña del PFX (opcional)"
-                                              InputType="InputType.Password"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense" />
-                            </MudItem>
-                            <MudItem xs="12" sm="6">
-                                <label class="tls-upload-btn w-100 justify-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Class="mr-1" />
-                                    <span>Subir .pfx / .p12</span>
-                                    <InputFile OnChange="OnClientPfxSelected" accept=".pfx,.p12" />
-                                </label>
-                            </MudItem>
-                        </MudGrid>
-                    </MudTabPanel>
-
                     <MudTabPanel Text="Formato PEM (.pem + .key)">
                         <MudGrid Spacing="2" Class="align-center">
                             <MudItem xs="12" sm="6">
@@ -195,6 +197,25 @@
                                            OnClick="ApplyPemClientCertificate">
                                     Vincular PEM + KEY
                                 </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="Formato PKCS#12 (.pfx / .p12)">
+                        <MudGrid Spacing="2" Class="align-center">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_pfxPassword"
+                                              Label="Contraseña del PFX (opcional)"
+                                              InputType="InputType.Password"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <label class="tls-upload-btn w-100 justify-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Class="mr-1" />
+                                    <span>Subir .pfx / .p12</span>
+                                    <InputFile OnChange="OnClientPfxSelected" accept=".pfx,.p12" />
+                                </label>
                             </MudItem>
                         </MudGrid>
                     </MudTabPanel>
@@ -264,6 +285,9 @@
     [CascadingParameter]
     private IMudDialogInstance? MudDialog { get; set; }
 
+    private const string WslCredentialsPath = @"\\wsl.localhost\Ubuntu-24.04\home\build\APSComms\Credentials";
+    private bool CanAutoLoadWslCredentials => Directory.Exists(WslCredentialsPath);
+
     private string _pfxPassword = "";
     private string _pemKeyPassword = "";
     private byte[]? _pemCertBytes;
@@ -274,6 +298,35 @@
     private bool _testingConnection;
     private bool _testResultSuccess;
     private string? _testResultMessage;
+
+    private void LoadWslPreset(string prefix)
+    {
+        try
+        {
+            var rootCaPath = Path.Combine(WslCredentialsPath, "sepsa_aps_rootCA.pem");
+            var certPath = Path.Combine(WslCredentialsPath, $"{prefix}.pem");
+            var keyPath = Path.Combine(WslCredentialsPath, $"{prefix}.key");
+            var pwdPath = Path.Combine(WslCredentialsPath, "sepsa_aps_rootCA.password");
+
+            if (File.Exists(rootCaPath))
+            {
+                TlsSecurity.LoadRootCa(File.ReadAllBytes(rootCaPath), "sepsa_aps_rootCA.pem");
+            }
+
+            var password = File.Exists(pwdPath) ? File.ReadAllText(pwdPath).Trim() : "sepsaEDP";
+            TlsSecurity.LoadClientCertificatePem(
+                File.ReadAllBytes(certPath),
+                File.ReadAllBytes(keyPath),
+                password,
+                $"{prefix}.pem + {prefix}.key");
+            TlsSecurity.UseTls = true;
+            Snackbar.Add($"Perfil mTLS '{prefix}' ({TlsSecurity.ClientKeyAlgorithm}) cargado correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error cargando perfil '{prefix}': {ex.Message}", Severity.Error);
+        }
+    }
 
     private void SetTlsMode(bool useTls)
     {
@@ -367,7 +420,7 @@
                 string.IsNullOrWhiteSpace(_pemKeyPassword) ? null : _pemKeyPassword,
                 $"{_pemCertName} + {_pemKeyName}");
             TlsSecurity.UseTls = true;
-            Snackbar.Add("Certificado y clave privada mTLS vinculados correctamente.", Severity.Success);
+            Snackbar.Add($"Certificado mTLS ({TlsSecurity.ClientKeyAlgorithm}) vinculado correctamente.", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -419,4 +472,3 @@
 
     private void Close() => MudDialog?.Close();
 }
-
