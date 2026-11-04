@@ -59,6 +59,40 @@ if (Directory.Exists(wslCredsDir))
         "sepsa_aps_supertool.pem + sepsa_aps_supertool.key");
     Check(tls.HasClientCertificate && tls.ClientKeyAlgorithm == "Ed25519" && tls.ClientCertSubject.Contains("APS Supertool"),
         "Load Ed25519 Supertool PEM + Encrypted Key");
+
+    // Test real OpenSSL 3 TLS 1.3 mTLS handshake with Ed25519 server & client certificates
+    var psi = new System.Diagnostics.ProcessStartInfo("wsl",
+        "-d Ubuntu-24.04 -e openssl s_server -accept 0.0.0.0:18443 -tls1_3 -Verify 1 " +
+        "-CAfile /home/build/APSComms/Credentials/sepsa_aps_rootCA.pem " +
+        "-cert /home/build/APSComms/Credentials/sepsa_aps_comms_system.pem " +
+        "-key /home/build/APSComms/Credentials/sepsa_aps_comms_system.key " +
+        "-pass pass:sepsaEDP -www -naccept 1")
+    {
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false
+    };
+    using var sServer = System.Diagnostics.Process.Start(psi)!;
+    while (true)
+    {
+        var line = await sServer.StandardOutput.ReadLineAsync();
+        if (line == null || line.Contains("ACCEPT"))
+            break;
+    }
+    try
+    {
+        tls.AllowUntrustedServerCertificate = false;
+        using var httpClient = tls.CreateHttpClient(TimeSpan.FromSeconds(5));
+        using var resp = await httpClient.GetAsync("https://127.0.0.1:18443/");
+        var body = await resp.Content.ReadAsStringAsync();
+        Check(resp.IsSuccessStatusCode && body.Contains("TLSv1.3"), "OpenSSL 3 TLS 1.3 Ed25519 mTLS handshake over HTTPS");
+        Console.WriteLine("OpenSSL 3 TLS 1.3 Ed25519 mTLS handshake succeeded!");
+    }
+    finally
+    {
+        try { if (!sServer.HasExited) sServer.Kill(); } catch { }
+    }
+
     Console.WriteLine("Ed25519 PEM + Encrypted PKCS#8 Key checks passed.");
 }
 
