@@ -1,11 +1,13 @@
 using ApsMonitor.Models;
 using System.Buffers;
+using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 namespace ApsMonitor.Services;
 
 /// <summary>
-/// Servicio que decodifica archivos .dat de sesión binaria.
+/// Servicio que decodifica archivos .dat de sesión binaria y sesiones JSON del Buffer Circular.
 /// Cada trama es una secuencia de bytes consecutivos sin cabecera.
 /// Intervalo entre tramas: 2ms. Byte order: Little Endian.
 /// </summary>
@@ -14,15 +16,23 @@ public class SessionParserService
     private const double FRAME_INTERVAL_MS = 2.0;
 
     /// <summary>
-    /// Decodifica todas las tramas del stream .dat que viene en formato texto con timestamps.
-    /// </summary>
-    /// <summary>
-    /// Decodifica todas las tramas del stream .dat de forma altamente eficiente.
+    /// Decodifica todas las tramas del stream .dat (o .json del buffer circular) de forma altamente eficiente.
     /// </summary>
     public SessionDataset? Parse(byte[] fileData, List<Signal> signals)
     {
         if (signals == null || signals.Count == 0 || fileData == null || fileData.Length == 0)
             return null;
+
+        // Auto-detectar si el archivo es una sesión JSON exportada desde el Buffer Circular
+        for (int idx = 0; idx < fileData.Length; idx++)
+        {
+            byte b = fileData[idx];
+            if (b == (byte)' ' || b == (byte)'\t' || b == (byte)'\r' || b == (byte)'\n')
+                continue;
+            if (b == (byte)'{')
+                return ParseCircularJson(fileData, signals);
+            break;
+        }
 
         // 1. Pre-agrupar señales por nodo para optimizar la búsqueda
         var signalsByNode = signals
@@ -44,7 +54,6 @@ public class SessionParserService
         var dataset = new SessionDataset(frameCount, signals.Select(s => s.Id).ToList());
         
         ReadOnlySpan<byte> span = fileData;
-        int currentFramePos = 0;
         DateTime? startTime = null;
 
         // Mantener los últimos valores conocidos para propagar el snapshot
@@ -79,54 +88,9 @@ public class SessionParserService
                             // 5. Convertir Hex a Bytes rápidamente sin Split
                             byte[] frameData = ParseHex(hexPart);
 
-                            if (frameData.Length >= 7) // Trama de respuesta (Control/Comms)
+                            if (TryAppendFrameSnapshot(frameData, timestamp, ref startTime, nodeSizes, signalsByNode, dataset, currentValues, currentRawValues, ref processedFrames))
                             {
-                                int payloadLength = frameData.Length - 7;
-                                if (payloadLength >= 0)
-                                {
-                                    // Identificar Nodo por tamaño de payload
-                                    int? matchingNode = null;
-                                    int minDiff = int.MaxValue;
-                                    foreach (var kvp in nodeSizes)
-                                    {
-                                        // Buscar la mejor coincidencia sin obligar a que la trama sea mayor al máximo
-                                        int diff = Math.Abs(payloadLength - kvp.Value);
-                                        if (diff < minDiff) 
-                                        { 
-                                            minDiff = diff; 
-                                            matchingNode = kvp.Key; 
-                                        }
-                                    }
-
-                                    if (matchingNode.HasValue && signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
-                                    {
-                                        // Extraer datos usando el buffer de 6 bytes de cabecera omitidos
-                                        foreach (var sig in nodeSignals)
-                                        {
-                                            int offset = sig.BytePosicion + 6;
-                                            if (offset + GetByteSize(sig.TipoVariable) <= frameData.Length)
-                                            {
-                                                double rawValue = ReadValue(frameData, offset, sig.TipoVariable);
-                                                double physValue = ApsCalculationUtils.CalculatePhysical(rawValue, sig.Escala, sig.Offset);
-                                                
-                                                int sigIdx = dataset.SignalIdToIndex[sig.Id];
-                                                currentValues[sigIdx] = physValue;
-                                                currentRawValues[sigIdx] = rawValue;
-                                            }
-                                        }
-
-                                        // Guardar snapshot actual en el dataset (todas las tramas)
-                                        dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
-                                        dataset.AbsoluteTimestamps[processedFrames] = timestamp;
-                                        
-                                        for (int s = 0; s < dataset.SignalCount; s++)
-                                        {
-                                            dataset.Values[processedFrames, s] = currentValues[s];
-                                            dataset.RawValues[processedFrames, s] = currentRawValues[s];
-                                        }
-                                        processedFrames++;
-                                    }
-                                }
+                                // Snapshot registrado
                             }
                         }
                     }
@@ -139,7 +103,194 @@ public class SessionParserService
         }
 
         // Ordenar y ajustar el dataset para que sea cronológico y no tenga huecos
-        return SortAndTrimDataset(dataset, processedFrames);
+        var trimmed = SortAndTrimDataset(dataset, processedFrames);
+        return trimmed.FrameCount > 0 ? trimmed : null;
+    }
+
+    public SessionDataset? ParseCircularJson(byte[] jsonData, List<Signal> signals)
+    {
+        try
+        {
+            var doc = JsonSerializer.Deserialize<CircularDownloadedSessionDto>(jsonData, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (doc?.Frames == null || doc.Frames.Count == 0)
+                return null;
+
+            return ParseCircularFrames(doc.Frames, signals);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public SessionDataset? ParseCircularFrames(IReadOnlyList<CircularFrameDto> frames, List<Signal> signals)
+    {
+        if (frames == null || frames.Count == 0 || signals == null || signals.Count == 0)
+            return null;
+
+        var signalsByNode = signals
+            .GroupBy(s => s.NodoNumero)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var nodeSizes = signalsByNode.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Max(s => s.BytePosicion + GetByteSize(s.TipoVariable))
+        );
+
+        var dataset = new SessionDataset(frames.Count, signals.Select(s => s.Id).ToList());
+        DateTime? startTime = null;
+        double[] currentValues = new double[signals.Count];
+        double[] currentRawValues = new double[signals.Count];
+        int processedFrames = 0;
+
+        foreach (var f in frames)
+        {
+            if (string.IsNullOrWhiteSpace(f.PayloadHex))
+                continue;
+
+            // Priorizar tramas de control/PTE que contienen respuestas SEPSA de nodos;
+            // si el filtro es "all", descartar tramas puras TRDP para evitar falsos positivos por tamaño
+            var src = (f.Source ?? string.Empty).Trim().ToLowerInvariant();
+            if (src is "trdp_rx" or "trdp_tx" or "control_tx")
+                continue;
+
+            byte[] frameData = ParseHex(Encoding.ASCII.GetBytes(f.PayloadHex));
+            DateTime timestamp = CircularBufferClientService.TimestampUsToLocalDateTime(f.TimestampUs);
+            if (timestamp == DateTime.MinValue)
+                timestamp = DateTime.Now;
+
+            TryAppendFrameSnapshot(frameData, timestamp, ref startTime, nodeSizes, signalsByNode, dataset, currentValues, currentRawValues, ref processedFrames);
+        }
+
+        // Si no se encontró ninguna trama de control pero había tramas con otro origen, intentar con todas
+        if (processedFrames == 0)
+        {
+            foreach (var f in frames)
+            {
+                if (string.IsNullOrWhiteSpace(f.PayloadHex))
+                    continue;
+
+                byte[] frameData = ParseHex(Encoding.ASCII.GetBytes(f.PayloadHex));
+                DateTime timestamp = CircularBufferClientService.TimestampUsToLocalDateTime(f.TimestampUs);
+                if (timestamp == DateTime.MinValue)
+                    timestamp = DateTime.Now;
+
+                TryAppendFrameSnapshot(frameData, timestamp, ref startTime, nodeSizes, signalsByNode, dataset, currentValues, currentRawValues, ref processedFrames);
+            }
+        }
+
+        var trimmed = SortAndTrimDataset(dataset, processedFrames);
+        return trimmed.FrameCount > 0 ? trimmed : null;
+    }
+
+    public byte[] ConvertCircularFramesToDatBytes(IReadOnlyList<CircularFrameDto> frames)
+    {
+        if (frames == null || frames.Count == 0)
+            return Array.Empty<byte>();
+
+        var sb = new StringBuilder(frames.Count * 80);
+        foreach (var f in frames)
+        {
+            if (string.IsNullOrWhiteSpace(f.PayloadHex))
+                continue;
+
+            var src = (f.Source ?? string.Empty).Trim().ToLowerInvariant();
+            if (src is "trdp_rx" or "trdp_tx")
+                continue;
+
+            var dt = CircularBufferClientService.TimestampUsToLocalDateTime(f.TimestampUs);
+            if (dt == DateTime.MinValue)
+                dt = DateTime.Now;
+
+            sb.Append(dt.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture))
+              .Append(';')
+              .Append(f.PayloadHex.Trim().ToUpperInvariant())
+              .Append("\r\n");
+        }
+
+        // Fallback si todas las tramas eran TRDP
+        if (sb.Length == 0)
+        {
+            foreach (var f in frames)
+            {
+                if (string.IsNullOrWhiteSpace(f.PayloadHex))
+                    continue;
+                var dt = CircularBufferClientService.TimestampUsToLocalDateTime(f.TimestampUs);
+                if (dt == DateTime.MinValue)
+                    dt = DateTime.Now;
+
+                sb.Append(dt.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture))
+                  .Append(';')
+                  .Append(f.PayloadHex.Trim().ToUpperInvariant())
+                  .Append("\r\n");
+            }
+        }
+
+        return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    private static bool TryAppendFrameSnapshot(
+        byte[] frameData,
+        DateTime timestamp,
+        ref DateTime? startTime,
+        Dictionary<int, int> nodeSizes,
+        Dictionary<int, List<Signal>> signalsByNode,
+        SessionDataset dataset,
+        double[] currentValues,
+        double[] currentRawValues,
+        ref int processedFrames)
+    {
+        if (frameData.Length < 7)
+            return false;
+
+        int payloadLength = frameData.Length - 7;
+        if (payloadLength < 0)
+            return false;
+
+        int? matchingNode = null;
+        int minDiff = int.MaxValue;
+        foreach (var kvp in nodeSizes)
+        {
+            int diff = Math.Abs(payloadLength - kvp.Value);
+            if (diff < minDiff)
+            {
+                minDiff = diff;
+                matchingNode = kvp.Key;
+            }
+        }
+
+        if (!matchingNode.HasValue || !signalsByNode.TryGetValue(matchingNode.Value, out var nodeSignals))
+            return false;
+
+        startTime ??= timestamp;
+
+        foreach (var sig in nodeSignals)
+        {
+            int offset = sig.BytePosicion + 6;
+            if (offset + GetByteSize(sig.TipoVariable) <= frameData.Length)
+            {
+                double rawValue = ReadValue(frameData, offset, sig.TipoVariable);
+                double physValue = ApsCalculationUtils.CalculatePhysical(rawValue, sig.Escala, sig.Offset);
+
+                int sigIdx = dataset.SignalIdToIndex[sig.Id];
+                currentValues[sigIdx] = physValue;
+                currentRawValues[sigIdx] = rawValue;
+            }
+        }
+
+        dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
+        dataset.AbsoluteTimestamps[processedFrames] = timestamp;
+
+        for (int s = 0; s < dataset.SignalCount; s++)
+        {
+            dataset.Values[processedFrames, s] = currentValues[s];
+            dataset.RawValues[processedFrames, s] = currentRawValues[s];
+        }
+        processedFrames++;
+        return true;
     }
 
     private SessionDataset SortAndTrimDataset(SessionDataset old, int count)
@@ -194,7 +345,7 @@ public class SessionParserService
         int resIdx = 0;
         for (int i = 0; i < hexSpan.Length; i++)
         {
-            if (IsHexChar(hexSpan[i]))
+            if (IsHexChar(hexSpan[i]) && i + 1 < hexSpan.Length)
             {
                 result[resIdx++] = (byte)((HexVal(hexSpan[i]) << 4) | HexVal(hexSpan[i+1]));
                 i += 2;

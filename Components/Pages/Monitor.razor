@@ -8,13 +8,24 @@
 @inject MonitorStateService MonitorState
 @inject ApsDataService DataService
 @inject InfluxWriterService InfluxWriter
+@inject IDialogService DialogService
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
     <MudText Typo="Typo.h5" Class="fw-bold">Monitor en Tiempo Real</MudText>
-    <MudChip T="string" Color="@(MonitorState.IsConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
-        @(MonitorState.IsConnected ? "Conectado" : "Desconectado")
-    </MudChip>
+    <div class="d-flex align-center gap-2">
+        <MudChip T="string"
+                 Color="@(MonitorState.UseTls ? Color.Info : Color.Default)"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 OnClick="OpenTlsSettingsDialogAsync"
+                 Icon="@(MonitorState.UseTls ? Icons.Material.Filled.EnhancedEncryption : Icons.Material.Filled.SettingsEthernet)">
+            @MonitorState.TlsSecurity.ModeDisplayName
+        </MudChip>
+        <MudChip T="string" Color="@(MonitorState.IsConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Small">
+            @(MonitorState.IsConnected ? "Conectado" : "Desconectado")
+        </MudChip>
+    </div>
 </div>
 
 @* <MudPaper Class="pa-3 mb-4" Elevation="0">
@@ -34,13 +45,49 @@
     <!-- Configuración Card -->
     <MudItem xs="12" md="4">
         <MudPaper Class="pa-4 h-100 configuration-panel" Elevation="0">
-            <MudText Typo="Typo.subtitle2" Class="text-muted mb-4 d-flex align-center">
-                <MudIcon Icon="@Icons.Material.Filled.SettingsEthernet" Size="Size.Small" Class="mr-2" />
-                CONFIGURACIÓN DE RED
-            </MudText>
+            <div class="d-flex justify-space-between align-center mb-3">
+                <MudText Typo="Typo.subtitle2" Class="text-muted d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.SettingsEthernet" Size="Size.Small" Class="mr-2" />
+                    CONFIGURACIÓN DE RED
+                </MudText>
+                <MudIconButton Icon="@(MonitorState.UseTls ? Icons.Material.Filled.EnhancedEncryption : Icons.Material.Filled.Security)"
+                               Color="@(MonitorState.UseTls ? Color.Success : Color.Default)"
+                               Size="Size.Small"
+                               Title="Configurar TLS / mTLS y Certificados"
+                               OnClick="OpenTlsSettingsDialogAsync" />
+            </div>
+
+            <div class="d-flex align-center justify-space-between mb-3 pa-2 rounded" style="background: rgba(59,130,246,0.06); border: 1px solid var(--mud-palette-lines-default);">
+                <div class="d-flex align-center gap-2">
+                    <MudIcon Icon="@(MonitorState.UseTls ? Icons.Material.Filled.Lock : Icons.Material.Filled.LockOpen)"
+                             Size="Size.Small"
+                             Color="@(MonitorState.UseTls ? Color.Success : Color.Default)" />
+                    <div>
+                        <MudText Typo="Typo.caption" Class="fw-bold d-block">Modo de Comunicación</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">@MonitorState.TlsSecurity.ModeDisplayName</MudText>
+                    </div>
+                </div>
+                <div class="d-flex align-center gap-1">
+                    <MudSwitch T="bool"
+                               Value="@MonitorState.TlsSecurity.UseTls"
+                               ValueChanged="@(val => MonitorState.TlsSecurity.UseTls = val)"
+                               Color="Color.Success"
+                               Label="TLS" />
+                    <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Primary" OnClick="OpenTlsSettingsDialogAsync">
+                        Certificados
+                    </MudButton>
+                </div>
+            </div>
 
             <MudTextField @bind-Value="MonitorState.IpAddress" Label="Dirección IP de la Tarjeta" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="Ej: 192.168.1.100" Disabled="@MonitorState.IsConnected" />
-            <MudTextField @bind-Value="MonitorState.Port" Label="Puerto UDP ControlManager" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="50001" Disabled="@MonitorState.IsConnected" />
+            @if (MonitorState.UseTls)
+            {
+                <MudNumericField T="int" @bind-Value="MonitorState.TlsSecurity.HttpsApiPort" Label="Puerto HTTPS API (TLS/mTLS)" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Min="1" Max="65535" Disabled="@MonitorState.IsConnected" />
+            }
+            else
+            {
+                <MudTextField @bind-Value="MonitorState.Port" Label="Puerto UDP ControlManager" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-3 custom-input" Placeholder="50001" Disabled="@MonitorState.IsConnected" />
+            }
             <MudTextField @bind-Value="MonitorState.PayloadHex" Label="Payload SEPSA" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4 custom-input" Placeholder="Ej: 00 00 00 00 00 00 00" />
 
             <MudButton Variant="Variant.Filled" Color="@(MonitorState.IsConnected ? Color.Error : Color.Success)" FullWidth="true" OnClick="ToggleConnection" Class="fw-bold" Disabled="@MonitorState.IsConnecting">
@@ -609,6 +656,12 @@ else
     private string _searchString = "";
     private bool _isSending = false;
     private bool _isLoadingSignals = false;
+
+    private async Task OpenTlsSettingsDialogAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<TlsSettingsDialog>("Seguridad de Comunicaciones", options);
+    }
 
     private Func<SignalValue, bool> _quickFilter => x =>
     {

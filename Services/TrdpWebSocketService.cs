@@ -10,10 +10,12 @@ namespace ApsMonitor.Services;
 /// <summary>
 /// Servicio cliente de streaming en tiempo real de tramas TRDP.
 /// Comunicación primaria: UDP nativo (heartbeat a puerto 50003 de la placa y recepción de tramas en puerto 50002).
-/// Comunicación secundaria/fallback: WebSocket (ws://<HOST>:8080/ws/trdp).
+/// Comunicación secundaria / modo TLS: WebSocket (ws://<HOST>:8080/ws/trdp o wss://<HOST>:8080/ws/trdp).
 /// </summary>
 public sealed class TrdpWebSocketService : IAsyncDisposable
 {
+    private readonly TlsSecurityService? _tlsSecurity;
+
     // WebSocket fallback state
     private ClientWebSocket? _webSocket;
     private Task? _wsReceiveTask;
@@ -22,6 +24,11 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
     // UDP state
     private CancellationTokenSource? _sessionCts;
     public bool IsUdpStreaming { get; private set; } = true;
+
+    public TrdpWebSocketService(TlsSecurityService? tlsSecurity = null)
+    {
+        _tlsSecurity = tlsSecurity;
+    }
 
     // State
     public bool IsConnected => IsUdpStreaming ? (_sessionCts != null && !_sessionCts.IsCancellationRequested) : (_webSocket?.State == WebSocketState.Open);
@@ -64,17 +71,21 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
     /// <summary>
     /// Normaliza host/IP a URI websocket (ej: "192.168.15.1:8080" -> "ws://192.168.15.1:8080/ws/trdp")
     /// </summary>
-    public static Uri BuildWebSocketUri(string deviceHost)
+    public static Uri BuildWebSocketUri(string deviceHost, bool forceTls = false, int defaultPort = 8080)
     {
         var s = deviceHost.Trim();
+        bool isSecure = forceTls ||
+                        s.StartsWith("wss://", StringComparison.OrdinalIgnoreCase) ||
+                        s.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
         s = s.Replace("http://", "", StringComparison.OrdinalIgnoreCase)
              .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
              .Replace("ws://", "", StringComparison.OrdinalIgnoreCase)
              .Replace("wss://", "", StringComparison.OrdinalIgnoreCase)
              .TrimEnd('/');
         if (!s.Contains(':'))
-            s += ":8080";
-        return new Uri($"ws://{s}/ws/trdp");
+            s += $":{defaultPort}";
+        return new Uri($"{(isSecure ? "wss" : "ws")}://{s}/ws/trdp");
     }
 
     /// <summary>
@@ -279,7 +290,7 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Modo Fallback WebSocket (ws://<HOST>:8080/ws/trdp)
+    // Modo Fallback WebSocket (ws://<HOST>:8080/ws/trdp o wss://)
     // ─────────────────────────────────────────────────────────────────────────
 
     private async Task ConnectWebSocketAsync(string deviceHost, CancellationToken ct)
@@ -287,17 +298,24 @@ public sealed class TrdpWebSocketService : IAsyncDisposable
         try
         {
             IsUdpStreaming = false;
-            var uri = BuildWebSocketUri(deviceHost);
+            bool useTls = _tlsSecurity?.UseTls == true ||
+                          deviceHost.Trim().StartsWith("wss://", StringComparison.OrdinalIgnoreCase);
+            int port = _tlsSecurity?.HttpsApiPort ?? 8080;
+            var uri = BuildWebSocketUri(deviceHost, useTls, port);
             ConnectedHost = uri.ToString();
 
             _webSocket = new ClientWebSocket();
             _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            if (uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase) && _tlsSecurity != null)
+            {
+                _tlsSecurity.ConfigureWebSocketOptions(_webSocket.Options);
+            }
             _sessionCts = new CancellationTokenSource();
 
             await _webSocket.ConnectAsync(uri, ct);
 
             OnConnectionStateChanged?.Invoke(true);
-            OnStatusMessage?.Invoke($"Conectado a WebSocket TRDP ({uri.Host})");
+            OnStatusMessage?.Invoke($"Conectado a WebSocket TRDP ({uri})");
 
             _wsReceiveTask = Task.Run(() => ReceiveWsLoopAsync(_sessionCts.Token), _sessionCts.Token);
 

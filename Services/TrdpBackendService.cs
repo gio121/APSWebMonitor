@@ -11,12 +11,13 @@ namespace ApsMonitor.Services;
 /// <summary>
 /// Servicio de comunicación para configuración TRDP y comandos hacia la tarjeta de comunicaciones.
 /// Implementa gestión de configuración mediante SFTP (puerto 22), reinicio de servicio por SSH / ControlManager,
-/// y envío de comandos SEPSA por UDP (puerto 50001 habitual de comms), con fallback a HTTP si se requiere.
+/// y envío de comandos SEPSA por UDP (puerto 50001 habitual de comms) o HTTPS/mTLS (/api/send) cuando TLS está activo.
 /// </summary>
 public sealed class TrdpBackendService
 {
     private readonly IHttpClientFactory _factory;
     private readonly TrdpConfigService  _configService;
+    private readonly TlsSecurityService? _tlsSecurity;
 
     private record SftpCredential(string User, string Password);
 
@@ -27,10 +28,14 @@ public sealed class TrdpBackendService
         new("update", "38I3jf/(Rihs959.fe9L0ra93nf")
     };
 
-    public TrdpBackendService(IHttpClientFactory factory, TrdpConfigService configService)
+    public TrdpBackendService(
+        IHttpClientFactory factory,
+        TrdpConfigService configService,
+        TlsSecurityService? tlsSecurity = null)
     {
         _factory       = factory;
         _configService = configService;
+        _tlsSecurity   = tlsSecurity;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -51,6 +56,14 @@ public sealed class TrdpBackendService
 
     private HttpClient CreateClient(string deviceBaseUrl)
     {
+        if (_tlsSecurity is { UseTls: true })
+        {
+            var tlsClient = _tlsSecurity.CreateHttpClient(TimeSpan.FromSeconds(10));
+            var baseUrl = _tlsSecurity.BuildHttpBaseUrl(deviceBaseUrl, _tlsSecurity.HttpsApiPort);
+            tlsClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+            return tlsClient;
+        }
+
         var client = _factory.CreateClient("TrdpBackend");
         client.BaseAddress = NormalizeBase(deviceBaseUrl);
         client.Timeout     = TimeSpan.FromSeconds(10);
@@ -71,7 +84,7 @@ public sealed class TrdpBackendService
         return new Uri(s.TrimEnd('/') + "/", UriKind.Absolute);
     }
 
-    // ── A. GET current config (SFTP primario con fallback a HTTP) ───────────
+    // ── A. GET current config (SFTP primario con fallback a HTTP/HTTPS) ─────
 
     /// <summary>
     /// Lee la configuración activa de /mnt/artifacts/ecnmanager.json o /etc/sepsa/ecnmanager.json mediante SFTP.
@@ -119,7 +132,7 @@ public sealed class TrdpBackendService
         }
         catch { }
 
-        // 2. Fallback HTTP si SFTP no responde o no está disponible
+        // 2. Fallback HTTP / HTTPS si SFTP no responde o no está disponible
         try
         {
             using var client   = CreateClient(deviceBaseUrl);
@@ -137,7 +150,7 @@ public sealed class TrdpBackendService
         }
     }
 
-    // ── B. POST config (SFTP primario con fallback a HTTP) ──────────────────
+    // ── B. POST config (SFTP primario con fallback a HTTP/HTTPS) ────────────
 
     /// <summary>
     /// Envía la configuración TRDP al dispositivo mediante SFTP en /mnt/artifacts/ecnmanager.json.
@@ -200,7 +213,7 @@ public sealed class TrdpBackendService
         }
         catch { }
 
-        // 2. Fallback HTTP
+        // 2. Fallback HTTP / HTTPS
         try
         {
             using var content  = new StringContent(finalJson, System.Text.Encoding.UTF8, "application/json");
@@ -220,7 +233,7 @@ public sealed class TrdpBackendService
             }
 
             return TrdpBackendResult<TrdpSaveResponse>.Ok(
-                parsed ?? new TrdpSaveResponse("ok", "Configuración guardada (HTTP fallback)", false));
+                parsed ?? new TrdpSaveResponse("ok", "Configuración guardada (HTTP/HTTPS fallback)", false));
         }
         catch (Exception ex)
         {
@@ -282,7 +295,7 @@ public sealed class TrdpBackendService
                     new TrdpSaveResponse("ok", $"Modo cambiado a {(useDynamicMapping ? "Dinámico" : "Estático/Legacy")}", restartService));
             }
 
-            // Fallback HTTP
+            // Fallback HTTP / HTTPS
             var payload = JsonSerializer.Serialize(
                 new { use_dynamic_mapping = useDynamicMapping, restart_service = restartService },
                 TrdpJsonOptions.Default);
@@ -337,10 +350,11 @@ public sealed class TrdpBackendService
         }
     }
 
-    // ── E. Send Command (UDP a ControlManager puerto 50001) ─────────────────
+    // ── E. Send Command (UDP a ControlManager puerto 50001 o HTTPS mTLS) ────
 
     /// <summary>
-    /// Envía una trama de comando directamente hacia el ControlManager a través de UDP en el puerto 50001 habitual.
+    /// Envía una trama de comando hacia el ControlManager a través de HTTPS/mTLS (/api/send) cuando TLS está activo,
+    /// o por UDP en el puerto 50001 habitual en modo tradicional.
     /// </summary>
     public async Task<TrdpBackendResult<string>> SendCommandAsync(
         string deviceBaseUrl,
@@ -348,6 +362,14 @@ public sealed class TrdpBackendService
         CancellationToken ct = default)
     {
         var host = ExtractHost(deviceBaseUrl);
+
+        if (_tlsSecurity is { UseTls: true })
+        {
+            var tlsRes = await _tlsSecurity.SendSepsaFrameOverTlsAsync(host, payload, ct);
+            if (tlsRes.IsSuccess)
+                return TrdpBackendResult<string>.Ok($"Comando enviado exitosamente por {_tlsSecurity.ModeDisplayName} ({tlsRes.Endpoint})");
+            return TrdpBackendResult<string>.Fail($"Error {_tlsSecurity.ModeDisplayName}: {tlsRes.Error}");
+        }
 
         try
         {
@@ -394,7 +416,7 @@ public sealed class TrdpBackendService
 
     /// <summary>
     /// Envía la orden de reseteo a 0 de contadores y datos acumulados (cosmos_data.txt)
-    /// hacia la placa mediante trama SEPSA (UDP 50001), datagrama directo (50003) y/o SSH.
+    /// hacia la placa mediante trama SEPSA (TLS o UDP 50001), datagrama directo (50003) y/o SSH.
     /// </summary>
     public async Task<TrdpBackendResult<string>> ResetCosmosDataAsync(string deviceUrlOrHost, CancellationToken ct = default)
     {
@@ -404,6 +426,29 @@ public sealed class TrdpBackendService
 
         bool success = false;
         string detail = "";
+
+        // Trama SEPSA 0x2A (ResetLockout): AA 07 00 03 01 2A DF
+        byte[] frameSepsa = new byte[] { 0xAA, 0x07, 0x00, 0x03, 0x01, 0x2A, 0xDF };
+        // Trama SEPSA 0x8B (FileCommandByName cmd 0x05): AA 08 00 03 01 8B 05 46
+        byte[] frame8b = new byte[] { 0xAA, 0x08, 0x00, 0x03, 0x01, 0x8B, 0x05, 0x46 };
+
+        if (_tlsSecurity is { UseTls: true })
+        {
+            try
+            {
+                var r1 = await _tlsSecurity.SendSepsaFrameOverTlsAsync(host, frameSepsa, ct);
+                var r2 = await _tlsSecurity.SendSepsaFrameOverTlsAsync(host, frame8b, ct);
+                if (r1.IsSuccess || r2.IsSuccess)
+                {
+                    success = true;
+                    detail = $"Comando SEPSA transmitido por {_tlsSecurity.ModeDisplayName}";
+                }
+            }
+            catch (Exception ex)
+            {
+                detail = $"TLS: {ex.Message}";
+            }
+        }
 
         // 1. Trama SEPSA ResetLockout (0x2A) y FileCommandByName (0x8B con 0x05) por UDP puerto 50001
         try
@@ -422,20 +467,17 @@ public sealed class TrdpBackendService
                 ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
             }
 
-            // Trama SEPSA 0x2A (ResetLockout): AA 07 00 03 01 2A DF
-            byte[] frameSepsa = new byte[] { 0xAA, 0x07, 0x00, 0x03, 0x01, 0x2A, 0xDF };
             await udp.SendAsync(frameSepsa, frameSepsa.Length, new IPEndPoint(ip, 50001));
-
-            // Trama SEPSA 0x8B (FileCommandByName cmd 0x05): AA 08 00 03 01 8B 05 46
-            byte[] frame8b = new byte[] { 0xAA, 0x08, 0x00, 0x03, 0x01, 0x8B, 0x05, 0x46 };
             await udp.SendAsync(frame8b, frame8b.Length, new IPEndPoint(ip, 50001));
 
             success = true;
-            detail = "Comando SEPSA transmitido a ControlManager (puerto 50001)";
+            if (string.IsNullOrEmpty(detail))
+                detail = "Comando SEPSA transmitido a ControlManager (puerto 50001)";
         }
         catch (Exception ex)
         {
-            detail = $"UDP 50001: {ex.Message}";
+            if (string.IsNullOrEmpty(detail))
+                detail = $"UDP 50001: {ex.Message}";
         }
 
         // 2. Datagrama directo "RSTC" a ECNManager en puerto 50003
@@ -513,7 +555,7 @@ public sealed class TrdpBackendService
 
     // ── Private helpers ────────────────────────────────────────────────────
 
-    private static async Task<bool> RestartEcnManagerServiceAsync(string host, SftpCredential cred, CancellationToken ct)
+    private async Task<bool> RestartEcnManagerServiceAsync(string host, SftpCredential cred, CancellationToken ct)
     {
         bool restarted = false;
 
@@ -530,6 +572,29 @@ public sealed class TrdpBackendService
         }
         catch { }
 
+        // Trama SEPSA 0x8B con comando 'R' (0x52)
+        byte[] frame = new byte[8];
+        frame[0] = 0xAA; // Sync
+        frame[1] = 0x08; // Length LSB
+        frame[2] = 0x00; // Length MSB
+        frame[3] = 0x03; // Dest: CommsBoard
+        frame[4] = 0x01; // Source: PIU
+        frame[5] = 0x8B; // RequestFrameType: FileCommandByName
+        frame[6] = 0x52; // 'R' = Reload / Restart
+        byte chk = 0;
+        for (int i = 0; i < 7; i++) chk += frame[i];
+        frame[7] = chk;
+
+        if (_tlsSecurity is { UseTls: true })
+        {
+            try
+            {
+                var tlsRes = await _tlsSecurity.SendSepsaFrameOverTlsAsync(host, frame, ct);
+                if (tlsRes.IsSuccess) restarted = true;
+            }
+            catch { }
+        }
+
         // 2. Vía comando SEPSA FileCommandByName (0x8B) a ControlManager por UDP puerto 50001
         try
         {
@@ -545,23 +610,6 @@ public sealed class TrdpBackendService
                 var addresses = await Dns.GetHostAddressesAsync(host, ct);
                 ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork) ?? addresses[0];
             }
-
-            // Trama SEPSA 0x8B con comando 'R' (0x52)
-            // Header: sync(0xAA) [1 byte], length(0x0008 LE) [2 bytes], dest(0x03 Comms) [1 byte], src(0x01 PIU) [1 byte], req(0x8B) [1 byte]
-            // Payload: 'R' (0x52) [1 byte]
-            // Checksum: sum of bytes 0..6 % 256 [1 byte]
-            // Total: 8 bytes
-            byte[] frame = new byte[8];
-            frame[0] = 0xAA; // Sync
-            frame[1] = 0x08; // Length LSB
-            frame[2] = 0x00; // Length MSB
-            frame[3] = 0x03; // Dest: CommsBoard
-            frame[4] = 0x01; // Source: PIU
-            frame[5] = 0x8B; // RequestFrameType: FileCommandByName
-            frame[6] = 0x52; // 'R' = Reload / Restart
-            byte chk = 0;
-            for (int i = 0; i < 7; i++) chk += frame[i];
-            frame[7] = chk;
 
             await udp.SendAsync(frame, frame.Length, new IPEndPoint(ip, 50001));
             restarted = true;

@@ -8,6 +8,7 @@
 @inject ApsDataService DataService
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @implements IAsyncDisposable
 
 <PageTitle>Eventos de control</PageTitle>
@@ -17,6 +18,12 @@
         <MudText Typo="Typo.body2" Color="Color.Secondary">Registros de averías y trazas del equipo</MudText>
     </div>
     <div class="d-flex flex-wrap gap-2">
+        <MudButton Variant="Variant.Outlined"
+                   Color="@(MonitorState.UseTls ? Color.Success : Color.Default)"
+                   StartIcon="@(MonitorState.UseTls ? Icons.Material.Filled.EnhancedEncryption : Icons.Material.Filled.SettingsEthernet)"
+                   OnClick="OpenTlsSettingsDialogAsync">
+            @MonitorState.TlsSecurity.ModeDisplayName
+        </MudButton>
         <MudButton OnClick="RefreshSignalsAsync" Disabled="@_busy" StartIcon="@Icons.Material.Filled.Refresh">Actualizar señales</MudButton>
         <label class="control-file-button @(_configs.Count == 0 ? "unavailable" : "")">Abrir Fichero eventos<InputFile OnChange="OpenDatAsync" accept=".dat" disabled="@(_busy || _configs.Count == 0)" aria-label="Abrir DAT de eventos de control" /></label>
         <MudButton OnClick="DownloadOriginalAsync" Disabled="@(_dat is null || _busy)" StartIcon="@Icons.Material.Filled.Download">Guardar DAT</MudButton>
@@ -31,7 +38,9 @@
             </MudSelect>
         </MudItem>
         <MudItem xs="12" md="4">
-            <MudText Typo="Typo.body2" Class="mt-2">Equipo: @MonitorState.IpAddress · UDP @MonitorState.Port</MudText>
+            <MudText Typo="Typo.body2" Class="mt-2">
+                Equipo: @MonitorState.IpAddress · @(MonitorState.UseTls ? $"HTTPS mTLS {MonitorState.TlsSecurity.HttpsApiPort}" : $"UDP {MonitorState.Port}")
+            </MudText>
             <MudText Typo="Typo.caption">Señales añadidas: @(CurrentConfig?.Values.Count ?? 0) en el nodo seleccionado</MudText>
         </MudItem>
         <MudItem xs="12" md="3" Class="d-flex align-center gap-2">
@@ -154,7 +163,20 @@
         await stream.CopyToAsync(buffer, _operation.Token);
         return buffer.ToArray();
     }
-    protected override async Task OnInitializedAsync() => await RefreshSignalsAsync();
+
+    protected override async Task OnInitializedAsync()
+    {
+        MonitorState.OnStateChanged += OnMonitorStateChanged;
+        await RefreshSignalsAsync();
+    }
+
+    private void OnMonitorStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task OpenTlsSettingsDialogAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<TlsSettingsDialog>("Seguridad de Comunicaciones", options);
+    }
 
     private async Task RefreshSignalsAsync()
     {
@@ -259,6 +281,7 @@
     private async Task DownloadOriginalAsync() { if (_dat is not null) await JS.InvokeVoidAsync("apsMonitor.downloadBase64File", _fileName, "application/octet-stream", Convert.ToBase64String(_dat)); }
     public async ValueTask DisposeAsync()
     {
+        MonitorState.OnStateChanged -= OnMonitorStateChanged;
         _disposed = true; _operation?.Cancel();
         if (_chartDrawn) try { await JS.InvokeVoidAsync("controlEvents.dispose", "controlEventsChart"); } catch (JSDisconnectedException) { } catch (TaskCanceledException) { }
     }

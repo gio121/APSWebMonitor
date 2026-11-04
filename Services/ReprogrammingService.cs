@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,7 +17,8 @@ public sealed record CommunicationsFile(string Name, byte[] Content);
 public sealed class ReprogrammingService(
     MonitorStateService monitor, 
     ISftpFirmwareUploader sftpUploader,
-    SepsaProtocolClient? sepsaClient = null)
+    SepsaProtocolClient? sepsaClient = null,
+    TlsSecurityService? tlsSecurity = null)
 {
     private ReprogrammingProgress _state = new("Listo.", 0, false);
     public ReprogrammingProgress State => _state;
@@ -31,15 +32,21 @@ public sealed class ReprogrammingService(
 
     public async Task UploadControlAsync(ReprogrammingTarget target, bool fpga, string signature, byte[] image, int blockSize = 128)
     {
-        if (image == null || image.Length == 0) throw new ArgumentException("El archivo de firmware estÃ¡ vacÃ­o.");
-        if (blockSize is < 1 or > 4096) throw new ArgumentException("TamaÃ±o de bloque no vÃ¡lido.");
+        if (image == null || image.Length == 0) throw new ArgumentException("El archivo de firmware está vacío.");
+        if (blockSize is < 1 or > 4096) throw new ArgumentException("Tamaño de bloque no válido.");
         int blocks = (image.Length + blockSize - 1) / blockSize;
         byte[] pending = ReprogrammingProtocol.Start(2, fpga, blocks);
         _ = ReprogrammingProtocol.Block(2, fpga, signature, image, blockSize, 0);
 
+        if (tlsSecurity is { UseTls: true })
+        {
+            await RunTlsControlUploadAsync(target, fpga, signature, image, blockSize, blocks, pending);
+            return;
+        }
+
         await RunAsync(target, fpga ? TimeSpan.FromMinutes(12) : TimeSpan.FromMinutes(35), async (udp, token) =>
         {
-            Report("Iniciando transferencia SEPSA a la tarjeta de control en puerto 50001â€¦", 0);
+            Report("Iniciando transferencia SEPSA a la tarjeta de control en puerto 50001…", 0);
             await udp.SendAsync(pending, token);
 
             int processState = 0; // 0 = inicio / borrado flash, 1 = enviando bloques, 2 = flash ocupada
@@ -56,7 +63,7 @@ public sealed class ReprogrammingService(
                 {
                     // Si expira el timeout y no estamos en espera de escritura/borrado (processState != 2):
                     // - En inicio (0): re-enviar Start solo tras 15-20 segundos de espera.
-                    // - En bloques (1): re-enviar el Ãºltimo bloque pendiente tras 10 segundos.
+                    // - En bloques (1): re-enviar el último bloque pendiente tras 10 segundos.
                     if (processState == 0 && (DateTime.UtcNow - lastSent).TotalSeconds >= 15)
                     {
                         await udp.SendAsync(pending, token);
@@ -70,14 +77,14 @@ public sealed class ReprogrammingService(
                     continue;
                 }
 
-                // Ignorar tramas periÃ³dicas de telemetrÃ­a de monitorizaciÃ³n recibidas mientras se cambia de estado
+                // Ignorar tramas periódicas de telemetría de monitorización recibidas mientras se cambia de estado
                 if (ReprogrammingProtocol.IsMonitoringOrTelemetryResponse(response))
                 {
                     continue;
                 }
 
                 if (ReprogrammingProtocol.IsErrorResponse(response, 2))
-                    throw new IOException("El equipo de control rechazÃ³ el comando SEPSA de reprogramaciÃ³n.");
+                    throw new IOException("El equipo de control rechazó el comando SEPSA de reprogramación.");
 
                 if (!ReprogrammingProtocol.TryReadStatus(response, 2, out ushort index, out byte status))
                     continue;
@@ -85,8 +92,8 @@ public sealed class ReprogrammingService(
                 switch (status)
                 {
                     case 0 or 4:
-                        // PeticiÃ³n de bloque index.
-                        // Si index >= blocks, Block(...) rellenarÃ¡ con 0xFF (sendFFBlock heredado de SepsaCtlNet)
+                        // Petición de bloque index.
+                        // Si index >= blocks, Block(...) rellenará con 0xFF (sendFFBlock heredado de SepsaCtlNet)
                         pending = ReprogrammingProtocol.Block(2, fpga, signature, image, blockSize, index);
                         await udp.SendAsync(pending, token);
                         lastSent = DateTime.UtcNow;
@@ -97,35 +104,128 @@ public sealed class ReprogrammingService(
                         break;
 
                     case 1 or 2:
-                        // GrabaciÃ³n o borrado de flash en progreso. En SepsaCtlNet processState = 2 (espera pasiva).
+                        // Grabación o borrado de flash en progreso. En SepsaCtlNet processState = 2 (espera pasiva).
                         processState = 2;
                         if (sentBlocks.Count >= blocks)
                         {
-                            Report("Fichero transferido. Verificando y grabando memoria flashâ€¦", 99);
+                            Report("Fichero transferido. Verificando y grabando memoria flash…", 99);
                         }
                         else
                         {
                             double currentPercent = Math.Min(99.0, 100.0 * sentBlocks.Count / blocks);
-                            Report($"Equipo procesando memoria flash ({currentPercent:F0}%)â€¦", currentPercent);
+                            Report($"Equipo procesando memoria flash ({currentPercent:F0}%)…", currentPercent);
                         }
                         break;
 
                     case 0x80:
                         if (sentBlocks.Count >= blocks)
                         {
-                            Report("ReprogramaciÃ³n de control confirmada con Ã©xito por el equipo.", 100, false, true);
+                            Report("Reprogramación de control confirmada con éxito por el equipo.", 100, false, true);
                             return;
                         }
-                        throw new IOException("El equipo de control indicÃ³ finalizaciÃ³n prematura antes de completar la transferencia.");
+                        throw new IOException("El equipo de control indicó finalización prematura antes de completar la transferencia.");
 
-                    case 0x08: throw new IOException("El equipo de control indicÃ³ un error de transferencia de datos.");
-                    case 0x10 or 0x90: throw new IOException("El equipo de control indicÃ³ un error de verificaciÃ³n.");
-                    case 0x20 or 0xA0: throw new IOException("El equipo de control indicÃ³ un error de borrado de memoria flash.");
-                    case 0x40 or 0xC0: throw new IOException("El equipo de control indicÃ³ un error de grabaciÃ³n en memoria flash.");
+                    case 0x08: throw new IOException("El equipo de control indicó un error de transferencia de datos.");
+                    case 0x10 or 0x90: throw new IOException("El equipo de control indicó un error de verificación.");
+                    case 0x20 or 0xA0: throw new IOException("El equipo de control indicó un error de borrado de memoria flash.");
+                    case 0x40 or 0xC0: throw new IOException("El equipo de control indicó un error de grabación en memoria flash.");
                     default: throw new IOException($"Estado SEPSA inesperado recibido de control: 0x{status:X2}.");
                 }
             }
         });
+    }
+
+    private async Task RunTlsControlUploadAsync(
+        ReprogrammingTarget target,
+        bool fpga,
+        string signature,
+        byte[] image,
+        int blockSize,
+        int blocks,
+        byte[] pending)
+    {
+        if (tlsSecurity is null)
+            throw new InvalidOperationException("Servicio TLS no disponible.");
+        if (!monitor.TryBeginReprogramming())
+            throw new InvalidOperationException("Ya existe una reprogramación en curso.");
+
+        try
+        {
+            Report("Deteniendo monitorización de fondo…", 0);
+            await monitor.WaitForMonitoringStoppedAsync();
+            Report($"Iniciando transferencia SEPSA por TLS/mTLS hacia https://{target.Address}:{tlsSecurity.HttpsApiPort}/api/send…", 0);
+
+            using var cts = new CancellationTokenSource(fpga ? TimeSpan.FromMinutes(12) : TimeSpan.FromMinutes(35));
+            var token = cts.Token;
+            var sentBlocks = new HashSet<ushort>();
+
+            while (!token.IsCancellationRequested)
+            {
+                var res = await tlsSecurity.SendSepsaFrameOverTlsAsync(target.Address, pending, token);
+                if (!res.IsSuccess || res.Payload.Length == 0)
+                {
+                    await Task.Delay(500, token);
+                    continue;
+                }
+
+                var response = res.Payload;
+                if (ReprogrammingProtocol.IsMonitoringOrTelemetryResponse(response))
+                    continue;
+
+                if (ReprogrammingProtocol.IsErrorResponse(response, 2))
+                    throw new IOException("El equipo de control rechazó el comando SEPSA de reprogramación.");
+
+                if (!ReprogrammingProtocol.TryReadStatus(response, 2, out ushort index, out byte status))
+                    continue;
+
+                switch (status)
+                {
+                    case 0 or 4:
+                        pending = ReprogrammingProtocol.Block(2, fpga, signature, image, blockSize, index);
+                        if (index < blocks) sentBlocks.Add(index);
+                        double percent = Math.Min(99.0, 100.0 * Math.Min((int)index, blocks) / blocks);
+                        Report($"Transfiriendo bloque [TLS] {Math.Min(index + 1, blocks)} de {blocks} ({percent:F0}%)", percent);
+                        break;
+
+                    case 1 or 2:
+                        if (sentBlocks.Count >= blocks)
+                            Report("Fichero transferido [TLS]. Verificando y grabando memoria flash…", 99);
+                        else
+                        {
+                            double currentPercent = Math.Min(99.0, 100.0 * sentBlocks.Count / blocks);
+                            Report($"Equipo procesando memoria flash [TLS] ({currentPercent:F0}%)…", currentPercent);
+                        }
+                        await Task.Delay(500, token);
+                        break;
+
+                    case 0x80:
+                        if (sentBlocks.Count >= blocks)
+                        {
+                            Report("Reprogramación de control por TLS confirmada con éxito por el equipo.", 100, false, true);
+                            return;
+                        }
+                        throw new IOException("El equipo de control indicó finalización prematura antes de completar la transferencia.");
+
+                    case 0x08: throw new IOException("El equipo de control indicó un error de transferencia de datos.");
+                    case 0x10 or 0x90: throw new IOException("El equipo de control indicó un error de verificación.");
+                    case 0x20 or 0xA0: throw new IOException("El equipo de control indicó un error de borrado de memoria flash.");
+                    case 0x40 or 0xC0: throw new IOException("El equipo de control indicó un error de grabación en memoria flash.");
+                    default: throw new IOException($"Estado SEPSA inesperado recibido de control: 0x{status:X2}.");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Report("Tiempo de espera agotado. No se ha confirmado el resultado de la reprogramación.", State.Percent, false);
+        }
+        catch (Exception ex)
+        {
+            Report($"Reprogramación no completada: {ex.Message}", State.Percent, false);
+        }
+        finally
+        {
+            monitor.EndReprogramming();
+        }
     }
 
     public async Task UploadCommunicationsAsync(ReprogrammingTarget target, int sftpPort = 22,
@@ -219,12 +319,30 @@ public sealed class ReprogrammingService(
     /// <summary>
     /// Envía el comando SEPSA 0x8A (FileCommandByIndex) para disparar la reprogramación de comunicaciones
     /// comprobando si existen archivos en /mnt/artifacts/update.
-    /// Utiliza primero la API HTTP si está disponible, o un socket UDP directo al puerto 50001 como respaldo.
+    /// Utiliza primero TLS/mTLS si está activo, luego la API HTTP si está disponible, o un socket UDP directo al puerto 50001 como respaldo.
     /// </summary>
     private async Task<(bool Success, string Message)> SendReprogramming8ACommandInternalAsync(
         ReprogrammingTarget target, CancellationToken token)
     {
         byte[] requestFrame = ReprogrammingProtocol.FileCommand8ARequest();
+
+        // 0. Si el modo TLS / mTLS está activo, enviar por HTTPS mTLS a /api/send
+        if (tlsSecurity is { UseTls: true })
+        {
+            try
+            {
+                var tlsRes = await tlsSecurity.SendSepsaFrameOverTlsAsync(target.Address, requestFrame, token);
+                if (tlsRes.IsSuccess && tlsRes.Payload.Length > 0 &&
+                    ReprogrammingProtocol.TryRead8AResponse(tlsRes.Payload, out bool startingTls, out string messageTls))
+                {
+                    return (startingTls, messageTls);
+                }
+            }
+            catch
+            {
+                // Continuar al fallback si falla
+            }
+        }
 
         // 1. Intentar a través del cliente HTTP de Sepsa (WebMonitorBackend API /api/send en puerto 8080)
         if (sepsaClient != null)

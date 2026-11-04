@@ -1,0 +1,422 @@
+@inject TlsSecurityService TlsSecurity
+@inject MonitorStateService MonitorState
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(TlsSecurity.UseTls ? Icons.Material.Filled.EnhancedEncryption : Icons.Material.Filled.LockOpen)"
+                     Color="@(TlsSecurity.UseTls ? Color.Success : Color.Warning)" />
+            <MudText Typo="Typo.h6" Class="fw-bold">Seguridad de Comunicaciones (Tradicional / TLS / mTLS)</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3" style="max-height: 75vh; overflow-y: auto; padding-right: 4px;">
+            <!-- Selector de Modo Principal -->
+            <MudPaper Class="pa-3" Outlined="true" Style="border-radius: 8px;">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold">Modo de Transporte Activo</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Conmuta todas las comunicaciones del monitor entre el protocolo clásico y TLS 1.2 / 1.3.
+                        </MudText>
+                    </div>
+                    <MudChip T="string"
+                             Color="@(TlsSecurity.UseTls ? Color.Success : Color.Default)"
+                             Variant="Variant.Filled"
+                             Size="Size.Small">
+                        @TlsSecurity.ModeDisplayName
+                    </MudChip>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <MudButton Variant="@(!TlsSecurity.UseTls ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.SettingsEthernet"
+                               OnClick="@(() => SetTlsMode(false))">
+                        Modo Tradicional (UDP / HTTP / TCP)
+                    </MudButton>
+                    <MudButton Variant="@(TlsSecurity.UseTls ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Success"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Security"
+                               OnClick="@(() => SetTlsMode(true))">
+                        Modo Seguro (TLS / mTLS)
+                    </MudButton>
+                </div>
+            </MudPaper>
+
+            <!-- Puertos TLS y Validación del Servidor -->
+            <MudPaper Class="pa-3" Outlined="true" Style="border-radius: 8px;">
+                <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2">Puertos y Verificación del Servidor</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="int" @bind-Value="TlsSecurity.HttpsApiPort"
+                                         Label="Puerto HTTPS / WSS API"
+                                         Min="1" Max="65535"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="MonitorManager (8080)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="int" @bind-Value="TlsSecurity.LogGatewayTlsPort"
+                                         Label="Puerto HTTPS LogGateway"
+                                         Min="1" Max="65535"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="APS LogGateway (16801)" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="int" @bind-Value="TlsSecurity.RecoveryAgentTlsPort"
+                                         Label="Puerto HTTPS Recovery"
+                                         Min="1" Max="65535"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="RecoveryAgent (16800)" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudSwitch T="bool"
+                           @bind-Value="TlsSecurity.AllowUntrustedServerCertificate"
+                           Color="Color.Info"
+                           Class="mt-2"
+                           Label="Permitir certificados autofirmados o CA de placa sin coincidencia estricta de hostname" />
+            </MudPaper>
+
+            <!-- Certificado Root CA -->
+            <MudPaper Class="pa-3" Outlined="true" Style="border-radius: 8px;">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-2">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold">Certificado Root CA de la Placa (Opcional)</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Ej: <code>sepsa_aps_rootCA.pem</code> para verificar la identidad TLS de la tarjeta APSComms.
+                        </MudText>
+                    </div>
+                    @if (TlsSecurity.HasRootCa)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.DeleteOutline"
+                                   OnClick="ClearRootCa">
+                            Quitar CA
+                        </MudButton>
+                    }
+                </div>
+
+                @if (TlsSecurity.HasRootCa)
+                {
+                    <MudAlert Severity="Severity.Success" Dense="true" Class="mb-2">
+                        <div><strong>Archivo:</strong> @TlsSecurity.RootCaFileName</div>
+                        <div><strong>Subject:</strong> @TlsSecurity.RootCaSubject</div>
+                        <div style="font-family: monospace; font-size: 0.72rem;"><strong>SHA-1:</strong> @TlsSecurity.RootCaThumbprint</div>
+                    </MudAlert>
+                }
+
+                <label class="tls-upload-btn">
+                    <MudIcon Icon="@Icons.Material.Filled.UploadFile" Size="Size.Small" Class="mr-1" />
+                    <span>Cargar Root CA (.pem / .crt / .cer)</span>
+                    <InputFile OnChange="OnRootCaFileSelected" accept=".pem,.crt,.cer,.der" />
+                </label>
+            </MudPaper>
+
+            <!-- Certificado de Cliente (mTLS) -->
+            <MudPaper Class="pa-3" Outlined="true" Style="border-radius: 8px;">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-2">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold">Certificado de Cliente para mTLS (Mutual TLS)</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Requerido por servicios mTLS de APSComms (<code>CN=APS Supertool</code>, <code>CN=APS Log Reader</code>, etc.).
+                        </MudText>
+                    </div>
+                    @if (TlsSecurity.HasClientCertificate)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.DeleteOutline"
+                                   OnClick="ClearClientCert">
+                            Quitar Cert. Cliente
+                        </MudButton>
+                    }
+                </div>
+
+                @if (TlsSecurity.HasClientCertificate)
+                {
+                    <MudAlert Severity="Severity.Success" Dense="true" Class="mb-3">
+                        <div><strong>Archivo:</strong> @TlsSecurity.ClientCertFileName</div>
+                        <div><strong>Subject:</strong> @TlsSecurity.ClientCertSubject</div>
+                        <div style="font-family: monospace; font-size: 0.72rem;"><strong>SHA-1:</strong> @TlsSecurity.ClientCertThumbprint</div>
+                    </MudAlert>
+                }
+
+                <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pt-3">
+                    <MudTabPanel Text="Formato PKCS#12 (.pfx / .p12)">
+                        <MudGrid Spacing="2" Class="align-center">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_pfxPassword"
+                                              Label="Contraseña del PFX (opcional)"
+                                              InputType="InputType.Password"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <label class="tls-upload-btn w-100 justify-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Class="mr-1" />
+                                    <span>Subir .pfx / .p12</span>
+                                    <InputFile OnChange="OnClientPfxSelected" accept=".pfx,.p12" />
+                                </label>
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+
+                    <MudTabPanel Text="Formato PEM (.pem + .key)">
+                        <MudGrid Spacing="2" Class="align-center">
+                            <MudItem xs="12" sm="6">
+                                <label class="tls-upload-btn w-100 justify-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Class="mr-1" />
+                                    <span>@(string.IsNullOrEmpty(_pemCertName) ? "1. Certificado (.pem/.crt)" : _pemCertName)</span>
+                                    <InputFile OnChange="OnClientPemCertSelected" accept=".pem,.crt,.cer" />
+                                </label>
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <label class="tls-upload-btn w-100 justify-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.VpnKey" Size="Size.Small" Class="mr-1" />
+                                    <span>@(string.IsNullOrEmpty(_pemKeyName) ? "2. Clave Privada (.key/.pem)" : _pemKeyName)</span>
+                                    <InputFile OnChange="OnClientPemKeySelected" accept=".key,.pem" />
+                                </label>
+                            </MudItem>
+                            <MudItem xs="12" sm="8">
+                                <MudTextField @bind-Value="_pemKeyPassword"
+                                              Label="Contraseña de la clave privada (si está cifrada)"
+                                              InputType="InputType.Password"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           FullWidth="true"
+                                           Disabled="@(_pemCertBytes == null || _pemKeyBytes == null)"
+                                           OnClick="ApplyPemClientCertificate">
+                                    Vincular PEM + KEY
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudPaper>
+
+            <!-- Prueba de conectividad TLS -->
+            <MudPaper Class="pa-3" Outlined="true" Style="border-radius: 8px;">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold">Diagnóstico de Conexión</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">
+                            Destino actual: <strong>@MonitorState.IpAddress</strong>
+                        </MudText>
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               Disabled="@_testingConnection"
+                               StartIcon="@Icons.Material.Filled.NetworkCheck"
+                               OnClick="TestTlsConnectionAsync">
+                        @(_testingConnection ? "Probando..." : "Probar Conexión con la Placa")
+                    </MudButton>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_testResultMessage))
+                {
+                    <MudAlert Severity="@(_testResultSuccess ? Severity.Success : Severity.Warning)" Dense="true" Class="mt-2">
+                        @_testResultMessage
+                    </MudAlert>
+                }
+            </MudPaper>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close">Cerrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .tls-upload-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 14px;
+        border: 1px solid var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .tls-upload-btn:hover {
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+    .tls-upload-btn input[type="file"] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private string _pfxPassword = "";
+    private string _pemKeyPassword = "";
+    private byte[]? _pemCertBytes;
+    private string _pemCertName = "";
+    private byte[]? _pemKeyBytes;
+    private string _pemKeyName = "";
+
+    private bool _testingConnection;
+    private bool _testResultSuccess;
+    private string? _testResultMessage;
+
+    private void SetTlsMode(bool useTls)
+    {
+        TlsSecurity.UseTls = useTls;
+        Snackbar.Add(
+            useTls
+                ? $"Modo seguro activado ({TlsSecurity.ModeDisplayName})."
+                : "Modo tradicional activado (UDP / HTTP / TCP).",
+            useTls ? Severity.Success : Severity.Info);
+    }
+
+    private async Task OnRootCaFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            await using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            TlsSecurity.LoadRootCa(ms.ToArray(), e.File.Name);
+            Snackbar.Add($"Root CA '{e.File.Name}' cargado correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar Root CA: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ClearRootCa()
+    {
+        TlsSecurity.ClearRootCa();
+        Snackbar.Add("Certificado Root CA eliminado.", Severity.Info);
+    }
+
+    private async Task OnClientPfxSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            await using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            TlsSecurity.LoadClientCertificatePfx(ms.ToArray(), _pfxPassword, e.File.Name);
+            TlsSecurity.UseTls = true;
+            Snackbar.Add($"Certificado de cliente mTLS '{e.File.Name}' cargado.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar certificado PFX/P12: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnClientPemCertSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            await using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _pemCertBytes = ms.ToArray();
+            _pemCertName = e.File.Name;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error leyendo certificado PEM: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OnClientPemKeySelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            await using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _pemKeyBytes = ms.ToArray();
+            _pemKeyName = e.File.Name;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error leyendo clave privada: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ApplyPemClientCertificate()
+    {
+        if (_pemCertBytes == null || _pemKeyBytes == null) return;
+        try
+        {
+            TlsSecurity.LoadClientCertificatePem(
+                _pemCertBytes,
+                _pemKeyBytes,
+                string.IsNullOrWhiteSpace(_pemKeyPassword) ? null : _pemKeyPassword,
+                $"{_pemCertName} + {_pemKeyName}");
+            TlsSecurity.UseTls = true;
+            Snackbar.Add("Certificado y clave privada mTLS vinculados correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al vincular PEM + KEY: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ClearClientCert()
+    {
+        TlsSecurity.ClearClientCertificate();
+        _pemCertBytes = null;
+        _pemKeyBytes = null;
+        _pemCertName = "";
+        _pemKeyName = "";
+        Snackbar.Add("Certificado de cliente eliminado.", Severity.Info);
+    }
+
+    private async Task TestTlsConnectionAsync()
+    {
+        _testingConnection = true;
+        _testResultMessage = null;
+        try
+        {
+            var host = TlsSecurityService.ExtractHost(MonitorState.IpAddress);
+            using var client = TlsSecurity.CreateHttpClient(TimeSpan.FromSeconds(5));
+            var scheme = TlsSecurity.UseTls ? "https" : "http";
+            var apiUrl = $"{scheme}://{host}:{TlsSecurity.HttpsApiPort}/api/status";
+
+            using var resp = await client.GetAsync(apiUrl);
+            if (resp.IsSuccessStatusCode)
+            {
+                _testResultSuccess = true;
+                _testResultMessage = $"Conexión {scheme.ToUpperInvariant()} exitosa con {apiUrl} (HTTP {(int)resp.StatusCode}).";
+                return;
+            }
+            _testResultSuccess = false;
+            _testResultMessage = $"Respuesta recibida de {apiUrl}: HTTP {(int)resp.StatusCode}.";
+        }
+        catch (Exception ex)
+        {
+            _testResultSuccess = false;
+            _testResultMessage = $"No se pudo conectar con {MonitorState.IpAddress}: {ex.Message}";
+        }
+        finally
+        {
+            _testingConnection = false;
+        }
+    }
+
+    private void Close() => MudDialog?.Close();
+}
+

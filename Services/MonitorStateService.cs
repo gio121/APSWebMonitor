@@ -7,7 +7,8 @@ namespace ApsMonitor.Services;
 
 /// <summary>
 /// Servicio Singleton que mantiene el estado de la monitorización en tiempo real.
-/// Se comunica habitualmente por UDP (puerto 50001) directamente con ControlManager de la tarjeta de comunicaciones.
+/// Se comunica habitualmente por UDP (puerto 50001) en modo tradicional, o por HTTPS/mTLS (/api/send en puerto 8080)
+/// cuando el modo seguro TLS está activado.
 /// </summary>
 public class MonitorStateService : IDisposable
 {
@@ -15,6 +16,9 @@ public class MonitorStateService : IDisposable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly SepsaProtocolClient _sepsaClient;
     private readonly InfluxWriterService _influx;
+    private readonly TlsSecurityService _tlsSecurity;
+    public TlsSecurityService TlsSecurity => _tlsSecurity;
+    public bool UseTls => _tlsSecurity.UseTls;
     public string? SessionId { get; private set; }
     private long _lastTimestampNs;
 
@@ -62,7 +66,7 @@ public class MonitorStateService : IDisposable
         try
         {
             await WaitForMonitoringStoppedAsync();
-            return await ApsControlEventsClient.DownloadAsync(address, port, config, progress, token);
+            return await ApsControlEventsClient.DownloadAsync(address, port, config, progress, token, _tlsSecurity);
         }
         finally
         {
@@ -101,7 +105,16 @@ public class MonitorStateService : IDisposable
         {
             if (IsReprogramming || IsDownloadingControlEvents || _changingProject) throw new OperationCanceledException("Transferencia en curso.");
 
-            // 1. Envío directo por UDP a ControlManager (puerto 50001 habitual en proyectos de comms)
+            // Modo TLS / mTLS: Envío cifrado a través de HTTPS POST /api/send
+            if (_tlsSecurity.UseTls)
+            {
+                var tlsResult = await _tlsSecurity.SendSepsaFrameOverTlsAsync(targetAddress, frame, token);
+                if (tlsResult.IsSuccess && !token.IsCancellationRequested && IsConnected && targetAddress == IpAddress)
+                    _connectionHealth.Observe(tlsResult.Payload);
+                return tlsResult;
+            }
+
+            // 1. Modo Tradicional: Envío directo por UDP a ControlManager (puerto 50001 habitual en proyectos de comms)
             if (_udpClient != null)
             {
                 try
@@ -181,11 +194,17 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public event Action? OnStateChanged;
 
-    public MonitorStateService(IHttpClientFactory httpClientFactory, IServiceScopeFactory scopeFactory, InfluxWriterService influx)
+    public MonitorStateService(
+        IHttpClientFactory httpClientFactory,
+        IServiceScopeFactory scopeFactory,
+        InfluxWriterService influx,
+        TlsSecurityService? tlsSecurity = null)
     {
         _httpClientFactory = httpClientFactory;
         _scopeFactory = scopeFactory;
         _influx = influx;
+        _tlsSecurity = tlsSecurity ?? new TlsSecurityService();
+        _tlsSecurity.OnChanged += NotifyStateChanged;
 
         // Crear el cliente SEPSA usando el factory (compatible con Singleton)
         var httpClient = _httpClientFactory.CreateClient("SepsaMonitor");
@@ -226,15 +245,22 @@ public class MonitorStateService : IDisposable
             IsConnected = true;
             IsConnecting = false;
 
-            int targetPort = int.TryParse(Port, out var p) ? p : 50001;
-            AddLog("Sistema", $"Conectado a ControlManager UDP en {IpAddress}:{targetPort}. Listo para enviar/recibir.", false, false);
+            if (_tlsSecurity.UseTls)
+            {
+                AddLog("Sistema", $"Conectado en modo {_tlsSecurity.ModeDisplayName} hacia https://{IpAddress}:{_tlsSecurity.HttpsApiPort}/api/send.", false, false);
+            }
+            else
+            {
+                int targetPort = int.TryParse(Port, out var p) ? p : 50001;
+                AddLog("Sistema", $"Conectado a ControlManager UDP en {IpAddress}:{targetPort}. Listo para enviar/recibir.", false, false);
+            }
             NotifyStateChanged();
         }
         catch (Exception ex)
         {
             IsConnecting = false;
             IsConnected = false;
-            AddLog("Error", $"Error al conectar socket UDP: {ex.Message}", false, true);
+            AddLog("Error", $"Error al conectar: {ex.Message}", false, true);
             NotifyStateChanged();
         }
     }
@@ -296,7 +322,8 @@ public class MonitorStateService : IDisposable
             SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
             _monitoringCts = new CancellationTokenSource();
 
-            AddLog("Sistema", "Monitorización continua iniciada: enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
+            string transportLabel = _tlsSecurity.UseTls ? $"TLS ({_tlsSecurity.ModeDisplayName})" : "UDP";
+            AddLog("Sistema", $"Monitorización continua iniciada ({transportLabel}): enviando tramas 1A y 1D alternadas cada 100ms.", false, false);
             NotifyStateChanged();
 
             _monitoringTask = RunMonitoringLoopAsync(_monitoringCts.Token, SessionId);
@@ -359,7 +386,7 @@ public class MonitorStateService : IDisposable
 
     /// <summary>
     /// Envía un comando SEPSA al Control Board (start/stop/reset).
-    /// Construye un apsCommandFrame con frameType y subCmd y lo envía por UDP.
+    /// Construye un apsCommandFrame con frameType y subCmd y lo envía por UDP o HTTPS/mTLS.
     /// El envío es "fire-and-forget": no confirma la ejecución del comando.
     /// Serializado entre intercambios de monitorización mediante _protocolGate.
     /// SubCmds conocidos: Stop AC=0x0005, Start AC=0x0006, Stop DC=0x0003, Start DC=0x0004,
@@ -390,11 +417,27 @@ public class MonitorStateService : IDisposable
         bool acquired = false;
         try
         {
-            if (!IsConnected || !IsMonitoring || IsReprogramming || _udpClient is null)
+            if (!IsConnected || !IsMonitoring || IsReprogramming || (!_tlsSecurity.UseTls && _udpClient is null))
                 throw new InvalidOperationException("El envío requiere monitorización activa y ninguna reprogramación en curso.");
             string address = IpAddress;
             if (!int.TryParse(Port, out int port) || port is < 1 or > 65535)
                 throw new InvalidOperationException("Puerto UDP de control no válido.");
+
+            if (_tlsSecurity.UseTls)
+            {
+                await _protocolGate.WaitAsync(token);
+                acquired = true;
+                if (!IsConnected || !IsMonitoring || IsReprogramming || address != IpAddress || Port != port.ToString())
+                    throw new InvalidOperationException("La monitorización se detuvo o cambió el destino antes del envío.");
+
+                var tlsRes = await _tlsSecurity.SendSepsaFrameOverTlsAsync(address, frame, token);
+                if (!tlsRes.IsSuccess)
+                    throw new InvalidOperationException($"Error TLS ({tlsRes.StatusCode}): {tlsRes.Error}");
+
+                AddLog("Comando", $"TX CMD [TLS] {SepsaProtocolClient.ToHex(frame)} · enviado por HTTPS/mTLS", true, false);
+                return true;
+            }
+
             if (!IPAddress.TryParse(address, out var ip))
                 ip = (await Dns.GetHostAddressesAsync(address, token)).First(a => a.AddressFamily == AddressFamily.InterNetwork);
 
@@ -469,7 +512,7 @@ public class MonitorStateService : IDisposable
                     AddLog("Trama", $"TX [{currentFrameType:X2}] {SepsaProtocolClient.ToHex(frame)}", true, false);
 
                     using var reqCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    reqCts.CancelAfter(500);
+                    reqCts.CancelAfter(_tlsSecurity.UseTls ? 1500 : 500);
 
                     var response = await SendFrameAsync(IpAddress, targetPort, frame, reqCts.Token);
                     if (response.IsSuccess)
@@ -489,7 +532,7 @@ public class MonitorStateService : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
-                    AddLog("Timeout", $"Sin respuesta en trama [{currentFrameType:X2}] tras 500ms", false, true);
+                    AddLog("Timeout", $"Sin respuesta en trama [{currentFrameType:X2}]", false, true);
                 }
                 catch (Exception ex)
                 {
@@ -647,6 +690,7 @@ public class MonitorStateService : IDisposable
 
     public void Dispose()
     {
+        _tlsSecurity.OnChanged -= NotifyStateChanged;
         StopMonitoring();
         _monitoringCts?.Dispose();
         try { _udpClient?.Dispose(); } catch { }

@@ -12,5 +12,6 @@
     <Compile Include="../../Services/ReprogrammingService.cs" Link="ReprogrammingService.cs" />
     <Compile Include="../../Services/SftpFirmwareUploader.cs" Link="SftpFirmwareUploader.cs" />
     <Compile Include="../../Services/SepsaProtocolClient.cs" Link="SepsaProtocolClient.cs" />
+    <Compile Include="../../Services/TlsSecurityService.cs" Link="TlsSecurityService.cs" />
   </ItemGroup>
 </Project>

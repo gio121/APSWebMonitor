@@ -45,9 +45,12 @@ builder.Services.AddScoped<SessionStateService>();
 builder.Services.AddScoped<MonitorThemeService>();
 builder.Services.AddScoped<SessionAnalyzerService>();
 builder.Services.AddScoped(sp => new TrdpConfigService(sp.GetRequiredService<ProjectDatabaseService>().CaptureFactory()));
+builder.Services.AddSingleton<TlsSecurityService>();
 builder.Services.AddHttpClient<SepsaProtocolClient>();
 builder.Services.AddHttpClient("SepsaMonitor"); // cliente nombrado para MonitorStateService (Singleton)
 builder.Services.AddHttpClient("TrdpBackend");  // cliente nombrado para TrdpBackendService
+builder.Services.AddHttpClient("CircularBuffer"); // cliente nombrado para CircularBufferClientService (puerto 8080)
+builder.Services.AddScoped<CircularBufferClientService>();
 builder.Services.AddScoped<TrdpBackendService>();
 builder.Services.AddScoped<TrdpWebSocketService>();
 builder.Services.AddScoped<TrdpPcapParserService>();

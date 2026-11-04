@@ -3,34 +3,472 @@
 @rendermode InteractiveServer
 @using ApsMonitor.Models
 @using ApsMonitor.Services
+@using System.Globalization
 @using System.Text
 @inject SessionStateService SessionState
+@inject MonitorStateService MonitorState
+@inject CircularBufferClientService CircularClient
 @inject ApsDataService DataService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @implements IDisposable
 
-<div class="d-flex justify-space-between align-center mb-4 mt-n2">
-    <MudText Typo="Typo.h5" Class="fw-bold">Gestión de Sesiones</MudText>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="AbrirSelectorDat" Disabled="@_isLoading">
-        @if (_isLoading)
+<div class="d-flex justify-space-between align-center mb-4 mt-n2 flex-wrap gap-2">
+    <div>
+        <MudText Typo="Typo.h5" Class="fw-bold">Gestión de Sesiones</MudText>
+        <MudText Typo="Typo.caption" Class="text-muted">Carga sesiones locales (.dat / .json) o consulta el buffer circular de tramas en placa (puerto 8080)</MudText>
+    </div>
+    <div class="d-flex align-center gap-2 flex-wrap">
+        <MudButton Variant="@(_showCircularPanel ? Variant.Filled : Variant.Outlined)"
+                   Color="Color.Info"
+                   StartIcon="@Icons.Material.Filled.Memory"
+                   OnClick="ToggleCircularPanel">
+            <span>Buffer Circular en Placa (8080)</span>
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="AbrirSelectorDat" Disabled="@_isLoading">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Procesando...</span>
+            }
+            else
+            {
+                <span>Cargar Nueva Sesión (.dat / .json)</span>
+            }
+        </MudButton>
+    </div>
+</div>
+
+@if (_showCircularPanel)
+{
+    <MudPaper Class="pa-4 mb-4 circular-panel" Elevation="0">
+        <!-- Barra de conexión al Buffer Circular (Puerto 8080) -->
+        <div class="d-flex justify-space-between align-center flex-wrap gap-3 mb-4 pb-3" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
+            <div class="d-flex align-center gap-2">
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Color="Color.Info" />
+                <div>
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold">Buffer Circular de Tramas (MonitorManager · API 8080)</MudText>
+                    <MudText Typo="Typo.caption" Class="text-muted">Selecciona de forma visual una franja temporal grabada en la placa para cargarla, descargarla o reproducirla</MudText>
+                </div>
+            </div>
+
+            <div class="d-flex align-center gap-2 flex-wrap">
+                <MudTextField @bind-Value="_boardHost"
+                              Label="IP / Host Placa"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Style="width: 175px;"
+                              Placeholder="192.168.15.1" />
+                <MudNumericField T="int"
+                                 @bind-Value="_boardHttpPort"
+                                 Label="Puerto HTTP"
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Min="1" Max="65535"
+                                 Style="width: 110px;" />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="FetchCircularSessionInfoAsync"
+                           Disabled="@_isFetchingBuffer">
+                    @if (_isFetchingBuffer)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Consultando...</span>
+                    }
+                    else
+                    {
+                        <span>Consultar Buffer</span>
+                    }
+                </MudButton>
+                <MudSwitch T="bool"
+                           Value="_autoRefreshBuffer"
+                           ValueChanged="OnAutoRefreshChanged"
+                           Color="Color.Success"
+                           Label="Auto (3s)"
+                           Class="ml-1" />
+                @if (_bufferInfo != null && _bufferInfo.TotalFrames > 0)
+                {
+                    <MudTooltip Text="Vaciar todos los bloques del buffer circular en placa">
+                        <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
+                                       Color="Color.Error"
+                                       Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="ClearCircularBufferAsync" />
+                    </MudTooltip>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_bufferError))
         {
-            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            <span>Procesando...</span>
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3 rounded-lg">
+                @_bufferError
+            </MudAlert>
+        }
+
+        @if (_bufferInfo == null)
+        {
+            <div class="pa-6 d-flex flex-column align-center justify-center text-center" style="border: 1px dashed var(--mud-palette-lines-default); border-radius: 10px;">
+                <MudIcon Icon="@Icons.Material.Filled.CloudSync" Color="Color.Info" Style="font-size: 48px;" Class="mb-2" />
+                <MudText Typo="Typo.subtitle1" Class="fw-bold">Conecta con el Buffer Circular de la placa</MudText>
+                <MudText Typo="Typo.body2" Class="text-muted mb-3">Pulsa «Consultar Buffer» para obtener los registros disponibles, el tiempo grabado y la línea temporal en <code>http://@(_boardHost):@(_boardHttpPort)/api/session/info</code>.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Refresh" OnClick="FetchCircularSessionInfoAsync" Disabled="@_isFetchingBuffer">
+                    Consultar Ahora
+                </MudButton>
+            </div>
+        }
+        else if (_bufferInfo.TotalFrames == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="rounded-lg">
+                El buffer circular en <strong>@(_boardHost):@(_boardHttpPort)</strong> está operativo pero actualmente no contiene tramas grabadas (0 registros).
+            </MudAlert>
         }
         else
         {
-            <span>Cargar Nueva Sesión (.dat)</span>
+            <!-- 1. Tarjetas de resumen de lo grabado -->
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3 h-100 stat-subcard" Elevation="0">
+                        <div class="d-flex justify-space-between align-center mb-1">
+                            <MudText Typo="Typo.caption" Class="text-muted fw-bold">REGISTROS EXISTENTES</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">@_bufferInfo.TotalBlocks bloques</MudChip>
+                        </div>
+                        <MudText Typo="Typo.h5" Class="fw-bold mb-2">@_bufferInfo.TotalFrames.ToString("N0") <span style="font-size:0.85rem; font-weight:normal;" class="text-muted">tramas</span></MudText>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="source-badge badge-ctrl-rx" title="Control RX (Respuestas Control → Comms)">Ctrl RX: @_bufferInfo.CountsBySource.ControlRx.ToString("N0")</span>
+                            <span class="source-badge badge-ctrl-tx" title="Control TX (Comandos a Control)">Ctrl TX: @_bufferInfo.CountsBySource.ControlTx.ToString("N0")</span>
+                            <span class="source-badge badge-trdp-rx" title="TRDP RX">TRDP RX: @_bufferInfo.CountsBySource.TrdpRx.ToString("N0")</span>
+                            <span class="source-badge badge-trdp-tx" title="TRDP TX">TRDP TX: @_bufferInfo.CountsBySource.TrdpTx.ToString("N0")</span>
+                            <span class="source-badge badge-pte-rx" title="PTE RX">PTE RX: @_bufferInfo.CountsBySource.PteRx.ToString("N0")</span>
+                            <span class="source-badge badge-pte-tx" title="PTE TX">PTE TX: @_bufferInfo.CountsBySource.PteTx.ToString("N0")</span>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3 h-100 stat-subcard" Elevation="0">
+                        <div class="d-flex justify-space-between align-center mb-1">
+                            <MudText Typo="Typo.caption" Class="text-muted fw-bold">TIEMPO GRABADO Y MEMORIA</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">Compresión @(_bufferInfo.CompressionRatio.ToString("F1"))x</MudChip>
+                        </div>
+                        <MudText Typo="Typo.h5" Class="fw-bold mb-1">@_bufferInfo.DurationFormatted <span style="font-size:0.85rem; font-weight:normal;" class="text-muted">(@(_bufferInfo.RetentionHours.ToString("F2")) h)</span></MudText>
+                        <div class="d-flex justify-space-between mb-1">
+                            <MudText Typo="Typo.caption" Class="text-muted">Uso de RAM:</MudText>
+                            <MudText Typo="Typo.caption" Class="fw-bold">@CircularBufferClientService.FormatBytes(_bufferInfo.UsedBytes) / @CircularBufferClientService.FormatBytes(_bufferInfo.TotalCapacityBytes)</MudText>
+                        </div>
+                        <MudProgressLinear Color="Color.Info"
+                                           Value="@GetMemoryUsagePercent()"
+                                           Class="rounded"
+                                           Size="Size.Small" />
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="4">
+                    <MudPaper Class="pa-3 h-100 stat-subcard" Elevation="0">
+                        <MudText Typo="Typo.caption" Class="text-muted fw-bold mb-1">VENTANA TEMPORAL DISPONIBLE</MudText>
+                        <div class="d-flex flex-column gap-1 mt-2">
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.caption" Class="text-muted">Desde (Inicio):</MudText>
+                                <MudText Typo="Typo.body2" Class="fw-bold" Style="font-variant-numeric: tabular-nums;">@FormatUsDateTime(_bufferInfo.StartTimestampUs)</MudText>
+                            </div>
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.caption" Class="text-muted">Hasta (Fin):</MudText>
+                                <MudText Typo="Typo.body2" Class="fw-bold" Style="font-variant-numeric: tabular-nums;">@FormatUsDateTime(_bufferInfo.EndTimestampUs)</MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <!-- 2. Selector de Franja Temporal Intuitivo (Histograma + Cursores) -->
+            <MudPaper Class="pa-4 mb-4 stat-subcard" Elevation="0">
+                <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold">SELECCIÓN DE FRANJA TEMPORAL</MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted">Usa los atajos rápidos, haz clic sobre las barras de actividad o ajusta los deslizadores de Inicio y Fin</MudText>
+                    </div>
+                    <div class="d-flex align-center gap-1 flex-wrap">
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(() => ApplyQuickRangeSeconds(60))">Último 1 min</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(() => ApplyQuickRangeSeconds(300))">Últimos 5 min</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(() => ApplyQuickRangeSeconds(900))">Últimos 15 min</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" OnClick="@(() => ApplyQuickRangeSeconds(1800))">Últimos 30 min</MudButton>
+                        <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" OnClick="SelectFullBufferRange">Todo el buffer</MudButton>
+                    </div>
+                </div>
+
+                <!-- Histograma de actividad por tramos (timeline_buckets) -->
+                @if (_bufferInfo.TimelineBuckets.Count > 0)
+                {
+                    ulong maxBucketFrames = Math.Max(1UL, _bufferInfo.TimelineBuckets.Max(b => b.TotalFrames));
+                    <div class="timeline-histogram-wrapper mb-2">
+                        <div class="timeline-selection-overlay"
+                             style="left: @(_rangeStartPct.ToString("F2", CultureInfo.InvariantCulture))%; width: @(Math.Max(0.5, _rangeEndPct - _rangeStartPct).ToString("F2", CultureInfo.InvariantCulture))%;">
+                        </div>
+                        <div class="timeline-bars">
+                            @for (int i = 0; i < _bufferInfo.TimelineBuckets.Count; i++)
+                            {
+                                var bucket = _bufferInfo.TimelineBuckets[i];
+                                int bucketIdx = i;
+                                double heightPct = bucket.TotalFrames == 0 ? 4.0 : Math.Max(10.0, (double)bucket.TotalFrames / maxBucketFrames * 100.0);
+                                bool inRange = bucket.EndTimestampUs >= _selectedFromUs && bucket.StartTimestampUs <= _selectedToUs;
+                                string tooltip = $"{FormatUsTimeOnly(bucket.StartTimestampUs)} – {FormatUsTimeOnly(bucket.EndTimestampUs)} · {bucket.TotalFrames:N0} tramas";
+                                <div class="timeline-bar-col"
+                                     title="@tooltip"
+                                     @onclick="@(() => OnBucketClicked(bucketIdx))">
+                                    <div class="timeline-bar @(inRange ? "bar-in-range" : "bar-out-range")"
+                                         style="height: @(heightPct.ToString("F1", CultureInfo.InvariantCulture))%;"></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex justify-space-between text-muted mb-3" style="font-size: 0.75rem; font-variant-numeric: tabular-nums;">
+                        <span>@FormatUsDateTime(_bufferInfo.StartTimestampUs)</span>
+                        <span class="fw-bold" style="color: #38bdf8;">
+                            Franja activa: @FormatUsDateTime(_selectedFromUs) → @FormatUsDateTime(_selectedToUs)
+                        </span>
+                        <span>@FormatUsDateTime(_bufferInfo.EndTimestampUs)</span>
+                    </div>
+                }
+
+                <!-- Sliders de Inicio y Fin de Franja -->
+                <MudGrid Class="align-center mb-2">
+                    <MudItem xs="12" md="6">
+                        <div class="d-flex justify-space-between align-center">
+                            <MudText Typo="Typo.caption" Class="fw-bold">Cursor Inicio (@(_rangeStartPct.ToString("F1"))%)</MudText>
+                            <MudText Typo="Typo.caption" Style="font-variant-numeric: tabular-nums;">@FormatUsDateTime(_selectedFromUs)</MudText>
+                        </div>
+                        <MudSlider T="double"
+                                   Value="_rangeStartPct"
+                                   ValueChanged="OnStartPercentChanged"
+                                   Min="0" Max="100" Step="0.2"
+                                   Color="Color.Info" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <div class="d-flex justify-space-between align-center">
+                            <MudText Typo="Typo.caption" Class="fw-bold">Cursor Fin (@(_rangeEndPct.ToString("F1"))%)</MudText>
+                            <MudText Typo="Typo.caption" Style="font-variant-numeric: tabular-nums;">@FormatUsDateTime(_selectedToUs)</MudText>
+                        </div>
+                        <MudSlider T="double"
+                                   Value="_rangeEndPct"
+                                   ValueChanged="OnEndPercentChanged"
+                                   Min="0" Max="100" Step="0.2"
+                                   Color="Color.Primary" />
+                    </MudItem>
+                </MudGrid>
+
+                <!-- Ajuste fino por Fecha/Hora y Filtro de Canal -->
+                <MudGrid Class="align-center">
+                    <MudItem xs="12" sm="4">
+                        <MudTextField T="string"
+                                      Label="Desde (YYYY-MM-DD HH:mm:ss)"
+                                      Value="@_fromInputText"
+                                      ValueChanged="OnFromTextChanged"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Schedule" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField T="string"
+                                      Label="Hasta (YYYY-MM-DD HH:mm:ss)"
+                                      Value="@_toInputText"
+                                      ValueChanged="OnToTextChanged"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Update" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="string"
+                                   Label="Filtro de canal (type)"
+                                   Value="_selectedSourceType"
+                                   ValueChanged="OnSourceTypeChanged"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense">
+                            <MudSelectItem Value="@("all")">Todos los canales</MudSelectItem>
+                            <MudSelectItem Value="@("control_rx")">Control RX (Señales Control → Comms)</MudSelectItem>
+                            <MudSelectItem Value="@("control_tx")">Control TX (Comandos a Control)</MudSelectItem>
+                            <MudSelectItem Value="@("trdp_rx")">TRDP RX (Tren → Placa)</MudSelectItem>
+                            <MudSelectItem Value="@("trdp_tx")">TRDP TX (Placa → Tren)</MudSelectItem>
+                            <MudSelectItem Value="@("pte_rx")">PTE RX</MudSelectItem>
+                            <MudSelectItem Value="@("pte_tx")">PTE TX</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <!-- 3. Resumen en vivo de la franja (/api/session/range-summary) + Acciones -->
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <MudPaper Class="pa-4 h-100 stat-subcard" Elevation="0">
+                        <div class="d-flex justify-space-between align-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Class="fw-bold">RESUMEN DE LA FRANJA SELECCIONADA</MudText>
+                                @if (_rangeSummary != null)
+                                {
+                                    <MudText Typo="Typo.body2">
+                                        Duración: <strong>@_rangeSummary.DurationFormatted</strong> ·
+                                        Registros: <strong>@_rangeSummary.TotalFrames.ToString("N0")</strong> ·
+                                        Tamaño est.: <strong>@CircularBufferClientService.FormatBytes(_rangeSummary.EstimatedRawBytes)</strong>
+                                    </MudText>
+                                }
+                            </div>
+                            @if (_isLoadingRangeSummary)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Info" />
+                            }
+                        </div>
+
+                        @if (_rangeSummary != null)
+                        {
+                            <div class="d-flex flex-wrap gap-1 mb-4">
+                                <span class="source-badge badge-ctrl-rx">Ctrl RX: @_rangeSummary.CountsBySource.ControlRx.ToString("N0")</span>
+                                <span class="source-badge badge-ctrl-tx">Ctrl TX: @_rangeSummary.CountsBySource.ControlTx.ToString("N0")</span>
+                                <span class="source-badge badge-trdp-rx">TRDP RX: @_rangeSummary.CountsBySource.TrdpRx.ToString("N0")</span>
+                                <span class="source-badge badge-trdp-tx">TRDP TX: @_rangeSummary.CountsBySource.TrdpTx.ToString("N0")</span>
+                                <span class="source-badge badge-pte-rx">PTE RX: @_rangeSummary.CountsBySource.PteRx.ToString("N0")</span>
+                                <span class="source-badge badge-pte-tx">PTE TX: @_rangeSummary.CountsBySource.PteTx.ToString("N0")</span>
+                            </div>
+                        }
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.PlayCircleFilled"
+                                       OnClick="LoadSelectedRangeIntoMonitorAsync"
+                                       Disabled="@(_isDownloadingFromBuffer || (_rangeSummary?.TotalFrames == 0))">
+                                @if (_isDownloadingFromBuffer)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <span>Cargando franja...</span>
+                                }
+                                else
+                                {
+                                    <span>Cargar Franja en Monitor Web</span>
+                                }
+                            </MudButton>
+
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.SaveAlt"
+                                       OnClick="DownloadSelectedRangeAsDatAsync"
+                                       Disabled="@(_isDownloadingFromBuffer || (_rangeSummary?.TotalFrames == 0))">
+                                Descargar .DAT
+                            </MudButton>
+
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Info"
+                                       StartIcon="@Icons.Material.Filled.DataObject"
+                                       OnClick="@(() => DownloadSelectedRangeFileAsync("json"))"
+                                       Disabled="@(_isDownloadingFromBuffer || (_rangeSummary?.TotalFrames == 0))">
+                                Descargar JSON
+                            </MudButton>
+
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Success"
+                                       StartIcon="@Icons.Material.Filled.NetworkCheck"
+                                       OnClick="@(() => DownloadSelectedRangeFileAsync("pcap"))"
+                                       Disabled="@(_isDownloadingFromBuffer || (_rangeSummary?.TotalFrames == 0))">
+                                Descargar PCAP (Wireshark)
+                            </MudButton>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- 4. Motor de Replay en Placa (/api/session/replay/start) -->
+                <MudItem xs="12" lg="5">
+                    <MudPaper Class="pa-4 h-100 stat-subcard" Elevation="0">
+                        <div class="d-flex justify-space-between align-center mb-2">
+                            <MudText Typo="Typo.subtitle2" Class="fw-bold">REPLAY EN PLACA (UDP /api/session/replay/start)</MudText>
+                            @if (_replayStatus?.IsReplaying == true)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="@(_replayStatus.IsPaused ? Color.Warning : Color.Success)" Variant="Variant.Filled">
+                                    @(_replayStatus.IsPaused ? "PAUSADO" : "REPRODUCIENDO")
+                                </MudChip>
+                            }
+                        </div>
+
+                        <MudGrid Class="mb-2">
+                            <MudItem xs="4">
+                                <MudSelect T="float" Label="Velocidad" @bind-Value="_replaySpeed" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem Value="0.25f">0.25x</MudSelectItem>
+                                    <MudSelectItem Value="0.5f">0.5x</MudSelectItem>
+                                    <MudSelectItem Value="1.0f">1.0x</MudSelectItem>
+                                    <MudSelectItem Value="2.0f">2.0x</MudSelectItem>
+                                    <MudSelectItem Value="5.0f">5.0x</MudSelectItem>
+                                    <MudSelectItem Value="10.0f">10.0x</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="5">
+                                <MudTextField @bind-Value="_replayTargetIp" Label="IP Destino" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="3">
+                                <MudNumericField T="ushort" @bind-Value="_replayTargetPort" Label="Puerto" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" Max="65535" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+                            <MudCheckBox T="bool" @bind-Value="_replayLoop" Label="Bucle continuo" Dense="true" Color="Color.Info" />
+                            <div class="d-flex align-center gap-1">
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Success"
+                                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                                           OnClick="StartBoardReplayAsync"
+                                           Disabled="@(_isReplayBusy || (_rangeSummary?.TotalFrames == 0))">
+                                    Iniciar Replay
+                                </MudButton>
+                                @if (_replayStatus?.IsReplaying == true)
+                                {
+                                    @if (_replayStatus.IsPaused)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.PlayCircle" Color="Color.Success" Size="Size.Small" OnClick="ResumeBoardReplayAsync" Title="Reanudar replay" />
+                                    }
+                                    else
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.PauseCircle" Color="Color.Warning" Size="Size.Small" OnClick="PauseBoardReplayAsync" Title="Pausar replay" />
+                                    }
+                                    <MudIconButton Icon="@Icons.Material.Filled.StopCircle" Color="Color.Error" Size="Size.Small" OnClick="StopBoardReplayAsync" Title="Detener replay" />
+                                }
+                            </div>
+                        </div>
+
+                        @if (_replayStatus != null && (_replayStatus.IsReplaying || _replayStatus.TotalFrames > 0))
+                        {
+                            <div class="mt-3">
+                                <div class="d-flex justify-space-between mb-1">
+                                    <MudText Typo="Typo.caption" Class="text-muted"> Trama @_replayStatus.CurrentFrameIndex.ToString("N0") / @_replayStatus.TotalFrames.ToString("N0")</MudText>
+                                    <MudText Typo="Typo.caption" Class="fw-bold">@(_replayStatus.ProgressPercent.ToString("F1"))%</MudText>
+                                </div>
+                                <MudProgressLinear Color="Color.Success" Value="@_replayStatus.ProgressPercent" Class="rounded" Size="Size.Small" />
+                            </div>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
         }
-    </MudButton>
-</div>
+    </MudPaper>
+}
 
 @if (!SessionState.IsLoaded)
 {
     <MudPaper Class="pa-8 d-flex flex-column align-center justify-center session-empty" Elevation="0">
         <MudIcon Icon="@Icons.Material.Filled.UploadFile" Size="Size.Large" Color="Color.Primary" Class="mb-4" Style="font-size: 64px;" />
-        <MudText Typo="Typo.h6" Class="mb-2">No hay ninguna sesión activa</MudText>
-        <MudText Typo="Typo.body2" Class="text-muted">Sube un archivo .dat para analizar las tramas y ver los valores de las señales</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">No hay ninguna sesión activa en el reproductor</MudText>
+        <MudText Typo="Typo.body2" Class="text-muted mb-4">Sube un archivo local (.dat / .json) o carga una franja desde el Buffer Circular de la placa (puerto 8080)</MudText>
+        <div class="d-flex gap-3 flex-wrap justify-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.FolderOpen" OnClick="AbrirSelectorDat">
+                Subir archivo (.dat / .json)
+            </MudButton>
+            @if (!_showCircularPanel)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Memory" OnClick="ToggleCircularPanel">
+                    Abrir Buffer Circular en Placa (8080)
+                </MudButton>
+            }
+        </div>
     </MudPaper>
 }
 else
@@ -38,10 +476,10 @@ else
     <MudGrid Class="mb-4">
         <MudItem xs="12" md="4">
             <MudPaper Class="pa-4 h-100" Elevation="0" Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default);">
-                <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">DETALLES DEL ARCHIVO</MudText>
+                <MudText Typo="Typo.subtitle2" Class="text-muted mb-2">DETALLES DE LA SESIÓN ACTIVA</MudText>
                 <div class="d-flex flex-column gap-2">
                     <div class="d-flex justify-space-between">
-                        <MudText Typo="Typo.body2">Nombre:</MudText>
+                        <MudText Typo="Typo.body2">Origen:</MudText>
                         <MudText Typo="Typo.body2" Class="fw-bold">@SessionState.FileName</MudText>
                     </div>
                     <div class="d-flex justify-space-between">
@@ -129,15 +567,90 @@ else
     </MudExpansionPanels>
 }
 
-<InputFile id="datFileInput" OnChange="CargarDat" Accept=".dat" style="display:none" />
+<InputFile id="datFileInput" OnChange="CargarDat" Accept=".dat,.json" style="display:none" />
 
 <style>
     .session-empty {
         border: 2px dashed var(--mud-palette-lines-default);
         background-color: var(--mud-palette-surface);
         border-radius: 12px;
-        min-height: 400px;
+        min-height: 360px;
     }
+    .circular-panel {
+        background-color: var(--mud-palette-surface);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 12px;
+    }
+    .stat-subcard {
+        background-color: var(--mud-palette-background);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 10px;
+    }
+    .source-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-variant-numeric: tabular-nums;
+    }
+    .badge-ctrl-rx { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-ctrl-tx { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-trdp-rx { background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.35); }
+    .badge-trdp-tx { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.35); }
+    .badge-pte-rx  { background: rgba(244, 63, 94, 0.15);  color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.35); }
+    .badge-pte-tx  { background: rgba(234, 88, 12, 0.15);  color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.35); }
+
+    .timeline-histogram-wrapper {
+        position: relative;
+        height: 82px;
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 8px;
+        padding: 8px 6px 4px 6px;
+        overflow: hidden;
+        user-select: none;
+    }
+    .timeline-selection-overlay {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background: rgba(56, 189, 248, 0.14);
+        border-left: 2px solid #38bdf8;
+        border-right: 2px solid #3b82f6;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .timeline-bars {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 100%;
+        width: 100%;
+    }
+    .timeline-bar-col {
+        flex: 1;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+        cursor: pointer;
+    }
+    .timeline-bar {
+        width: 100%;
+        border-radius: 2px 2px 0 0;
+        transition: height 0.15s ease, background-color 0.15s ease;
+    }
+    .bar-in-range {
+        background: linear-gradient(180deg, #38bdf8 0%, #2563eb 100%);
+    }
+    .bar-out-range {
+        background: rgba(148, 163, 184, 0.28);
+    }
+    .timeline-bar-col:hover .timeline-bar {
+        filter: brightness(1.25);
+    }
+
     .nodes-container {
         background: transparent !important;
     }
@@ -171,6 +684,37 @@ else
     private string _searchString = "";
     private readonly SessionParserService _parser = new();
 
+    // ── Estado del Buffer Circular (puerto 8080) ─────────────────────────────────
+    private bool _showCircularPanel = false;
+    private string _boardHost = "192.168.15.1";
+    private int _boardHttpPort = 8080;
+    private bool _isFetchingBuffer = false;
+    private bool _isLoadingRangeSummary = false;
+    private bool _isDownloadingFromBuffer = false;
+    private bool _autoRefreshBuffer = false;
+    private string? _bufferError;
+
+    private CircularSessionInfoDto? _bufferInfo;
+    private CircularRangeSummaryDto? _rangeSummary;
+    private CircularReplayStatusDto? _replayStatus;
+
+    private ulong _selectedFromUs;
+    private ulong _selectedToUs;
+    private double _rangeStartPct = 0.0;
+    private double _rangeEndPct = 100.0;
+    private string _fromInputText = "";
+    private string _toInputText = "";
+    private string _selectedSourceType = "all";
+
+    private float _replaySpeed = 1.0f;
+    private string _replayTargetIp = "127.0.0.1";
+    private ushort _replayTargetPort = 50002;
+    private bool _replayLoop = false;
+    private bool _isReplayBusy = false;
+
+    private System.Threading.Timer? _autoRefreshTimer;
+    private CancellationTokenSource? _rangeSummaryCts;
+
     private Func<SignalValue, bool> _quickFilter => x =>
     {
         if (string.IsNullOrWhiteSpace(_searchString)) return true;
@@ -181,8 +725,504 @@ else
 
     protected override void OnInitialized()
     {
+        if (!string.IsNullOrWhiteSpace(MonitorState.IpAddress))
+        {
+            _boardHost = MonitorState.IpAddress;
+        }
+
         SessionState.OnStateChanged += SyncValues;
         if (SessionState.IsLoaded) SyncValues();
+    }
+
+    private async Task ToggleCircularPanel()
+    {
+        _showCircularPanel = !_showCircularPanel;
+        if (_showCircularPanel && _bufferInfo == null && !_isFetchingBuffer)
+        {
+            await FetchCircularSessionInfoAsync();
+        }
+    }
+
+    private async Task FetchCircularSessionInfoAsync()
+    {
+        if (_isFetchingBuffer) return;
+        _isFetchingBuffer = true;
+        _bufferError = null;
+        StateHasChanged();
+
+        try
+        {
+            bool hadPreviousRange = _bufferInfo != null && _selectedToUs > _selectedFromUs;
+            bool wasAtRightEdge = _rangeEndPct >= 99.5;
+
+            var info = await CircularClient.GetSessionInfoAsync(_boardHost, _boardHttpPort, 60);
+            _bufferInfo = info;
+
+            if (_bufferInfo != null && _bufferInfo.TotalFrames > 0)
+            {
+                if (!hadPreviousRange)
+                {
+                    _rangeStartPct = 0.0;
+                    _rangeEndPct = 100.0;
+                    _selectedFromUs = _bufferInfo.StartTimestampUs;
+                    _selectedToUs = _bufferInfo.EndTimestampUs;
+                }
+                else if (wasAtRightEdge)
+                {
+                    _selectedToUs = _bufferInfo.EndTimestampUs;
+                    _selectedFromUs = Math.Clamp(_selectedFromUs, _bufferInfo.StartTimestampUs, _selectedToUs);
+                    RecalculatePercentagesFromTimestamps();
+                }
+                else
+                {
+                    _selectedFromUs = Math.Clamp(_selectedFromUs, _bufferInfo.StartTimestampUs, _bufferInfo.EndTimestampUs);
+                    _selectedToUs = Math.Clamp(_selectedToUs, _selectedFromUs, _bufferInfo.EndTimestampUs);
+                    RecalculatePercentagesFromTimestamps();
+                }
+
+                SyncTextInputsFromTimestamps();
+                await RefreshRangeSummaryAsync();
+            }
+
+            try
+            {
+                _replayStatus = await CircularClient.GetReplayStatusAsync(_boardHost, _boardHttpPort);
+            }
+            catch { }
+        }
+        catch (Exception ex)
+        {
+            _bufferError = $"No se pudo conectar con http://{_boardHost}:{_boardHttpPort}/api/session/info ({ex.Message})";
+        }
+        finally
+        {
+            _isFetchingBuffer = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnAutoRefreshChanged(bool enabled)
+    {
+        _autoRefreshBuffer = enabled;
+        _autoRefreshTimer?.Dispose();
+        _autoRefreshTimer = null;
+
+        if (enabled)
+        {
+            _autoRefreshTimer = new System.Threading.Timer(async _ =>
+            {
+                if (!_autoRefreshBuffer || _isFetchingBuffer) return;
+                await InvokeAsync(FetchCircularSessionInfoAsync);
+            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+        }
+    }
+
+    private void OnStartPercentChanged(double newStartPct)
+    {
+        if (_bufferInfo == null) return;
+        _rangeStartPct = Math.Clamp(newStartPct, 0.0, Math.Max(0.0, _rangeEndPct - 0.5));
+        UpdateTimestampsFromPercentages();
+        QueueRangeSummaryUpdate();
+    }
+
+    private void OnEndPercentChanged(double newEndPct)
+    {
+        if (_bufferInfo == null) return;
+        _rangeEndPct = Math.Clamp(newEndPct, Math.Min(100.0, _rangeStartPct + 0.5), 100.0);
+        UpdateTimestampsFromPercentages();
+        QueueRangeSummaryUpdate();
+    }
+
+    private void OnBucketClicked(int bucketIndex)
+    {
+        if (_bufferInfo == null || bucketIndex < 0 || bucketIndex >= _bufferInfo.TimelineBuckets.Count)
+            return;
+
+        var b = _bufferInfo.TimelineBuckets[bucketIndex];
+        ulong midClick = b.StartTimestampUs + (b.EndTimestampUs - b.StartTimestampUs) / 2;
+        ulong distToStart = midClick > _selectedFromUs ? midClick - _selectedFromUs : _selectedFromUs - midClick;
+        ulong distToEnd = midClick > _selectedToUs ? midClick - _selectedToUs : _selectedToUs - midClick;
+
+        if (distToStart <= distToEnd)
+        {
+            _selectedFromUs = Math.Min(b.StartTimestampUs, _selectedToUs);
+        }
+        else
+        {
+            _selectedToUs = Math.Max(b.EndTimestampUs, _selectedFromUs);
+        }
+
+        RecalculatePercentagesFromTimestamps();
+        SyncTextInputsFromTimestamps();
+        QueueRangeSummaryUpdate();
+    }
+
+    private void ApplyQuickRangeSeconds(ulong seconds)
+    {
+        if (_bufferInfo == null) return;
+        _selectedToUs = _bufferInfo.EndTimestampUs;
+        ulong deltaUs = seconds * 1_000_000UL;
+        _selectedFromUs = _bufferInfo.EndTimestampUs > deltaUs
+            ? Math.Max(_bufferInfo.StartTimestampUs, _bufferInfo.EndTimestampUs - deltaUs)
+            : _bufferInfo.StartTimestampUs;
+
+        RecalculatePercentagesFromTimestamps();
+        SyncTextInputsFromTimestamps();
+        QueueRangeSummaryUpdate();
+    }
+
+    private void SelectFullBufferRange()
+    {
+        if (_bufferInfo == null) return;
+        _selectedFromUs = _bufferInfo.StartTimestampUs;
+        _selectedToUs = _bufferInfo.EndTimestampUs;
+        _rangeStartPct = 0.0;
+        _rangeEndPct = 100.0;
+        SyncTextInputsFromTimestamps();
+        QueueRangeSummaryUpdate();
+    }
+
+    private void OnFromTextChanged(string value)
+    {
+        _fromInputText = value;
+        if (_bufferInfo == null) return;
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+        {
+            ulong us = CircularBufferClientService.LocalDateTimeToTimestampUs(dt);
+            _selectedFromUs = Math.Clamp(us, _bufferInfo.StartTimestampUs, _selectedToUs);
+            RecalculatePercentagesFromTimestamps();
+            QueueRangeSummaryUpdate();
+        }
+    }
+
+    private void OnToTextChanged(string value)
+    {
+        _toInputText = value;
+        if (_bufferInfo == null) return;
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+        {
+            ulong us = CircularBufferClientService.LocalDateTimeToTimestampUs(dt);
+            _selectedToUs = Math.Clamp(us, _selectedFromUs, _bufferInfo.EndTimestampUs);
+            RecalculatePercentagesFromTimestamps();
+            QueueRangeSummaryUpdate();
+        }
+    }
+
+    private void OnSourceTypeChanged(string newType)
+    {
+        _selectedSourceType = newType;
+        QueueRangeSummaryUpdate();
+    }
+
+    private void UpdateTimestampsFromPercentages()
+    {
+        if (_bufferInfo == null) return;
+        ulong span = _bufferInfo.EndTimestampUs > _bufferInfo.StartTimestampUs
+            ? _bufferInfo.EndTimestampUs - _bufferInfo.StartTimestampUs
+            : 0UL;
+
+        _selectedFromUs = _bufferInfo.StartTimestampUs + (ulong)(span * (_rangeStartPct / 100.0));
+        _selectedToUs = _bufferInfo.StartTimestampUs + (ulong)(span * (_rangeEndPct / 100.0));
+        if (_selectedToUs < _selectedFromUs)
+            _selectedToUs = _selectedFromUs;
+
+        SyncTextInputsFromTimestamps();
+    }
+
+    private void RecalculatePercentagesFromTimestamps()
+    {
+        if (_bufferInfo == null || _bufferInfo.EndTimestampUs <= _bufferInfo.StartTimestampUs)
+        {
+            _rangeStartPct = 0.0;
+            _rangeEndPct = 100.0;
+            return;
+        }
+
+        double span = _bufferInfo.EndTimestampUs - _bufferInfo.StartTimestampUs;
+        _rangeStartPct = Math.Clamp((_selectedFromUs - _bufferInfo.StartTimestampUs) / span * 100.0, 0.0, 100.0);
+        _rangeEndPct = Math.Clamp((_selectedToUs - _bufferInfo.StartTimestampUs) / span * 100.0, 0.0, 100.0);
+    }
+
+    private void SyncTextInputsFromTimestamps()
+    {
+        _fromInputText = FormatUsDateTime(_selectedFromUs);
+        _toInputText = FormatUsDateTime(_selectedToUs);
+    }
+
+    private void QueueRangeSummaryUpdate()
+    {
+        _rangeSummaryCts?.Cancel();
+        _rangeSummaryCts?.Dispose();
+        _rangeSummaryCts = new CancellationTokenSource();
+        var token = _rangeSummaryCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(180, token);
+                await InvokeAsync(() => RefreshRangeSummaryAsync(token));
+            }
+            catch (OperationCanceledException) { }
+        }, token);
+    }
+
+    private async Task RefreshRangeSummaryAsync(CancellationToken ct = default)
+    {
+        if (_bufferInfo == null) return;
+        _isLoadingRangeSummary = true;
+        StateHasChanged();
+
+        try
+        {
+            _rangeSummary = await CircularClient.GetRangeSummaryAsync(
+                _boardHost,
+                _boardHttpPort,
+                _selectedFromUs,
+                _selectedToUs,
+                _selectedSourceType,
+                null,
+                ct);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al consultar resumen de franja: {ex.Message}", Severity.Warning);
+        }
+        finally
+        {
+            _isLoadingRangeSummary = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSelectedRangeIntoMonitorAsync()
+    {
+        if (_bufferInfo == null) return;
+        _isDownloadingFromBuffer = true;
+        StateHasChanged();
+
+        try
+        {
+            var signals = await DataService.GetSignalsAsync();
+            if (signals.Count == 0)
+            {
+                Snackbar.Add("No hay señales configuradas en el proyecto actual.", Severity.Warning);
+                return;
+            }
+
+            // Si el usuario tiene "all", pedimos las tramas de la franja y el parser decodifica las de Control/PTE
+            var sessionDto = await CircularClient.DownloadSessionJsonAsync(
+                _boardHost,
+                _boardHttpPort,
+                _selectedFromUs,
+                _selectedToUs,
+                _selectedSourceType);
+
+            if (sessionDto?.Frames == null || sessionDto.Frames.Count == 0)
+            {
+                Snackbar.Add("No se encontraron tramas en la franja seleccionada.", Severity.Warning);
+                return;
+            }
+
+            var dataset = _parser.ParseCircularFrames(sessionDto.Frames, signals);
+            if (dataset == null || dataset.FrameCount == 0)
+            {
+                Snackbar.Add("La franja descargada no contiene tramas de control decodificables para las señales actuales.", Severity.Warning);
+                return;
+            }
+
+            string label = $"Buffer {_boardHost} ({FormatUsTimeOnly(_selectedFromUs)}–{FormatUsTimeOnly(_selectedToUs)})";
+            SessionState.LoadSession(dataset, signals, label);
+            Snackbar.Add($"Sesión del buffer circular cargada ({dataset.FrameCount:N0} snapshots de señales).", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar franja del buffer circular: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isDownloadingFromBuffer = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadSelectedRangeFileAsync(string format)
+    {
+        if (_bufferInfo == null) return;
+        _isDownloadingFromBuffer = true;
+        StateHasChanged();
+
+        try
+        {
+            var (bytes, fileName, contentType) = await CircularClient.DownloadSessionBytesAsync(
+                _boardHost,
+                _boardHttpPort,
+                format,
+                _selectedFromUs,
+                _selectedToUs,
+                _selectedSourceType);
+
+            await JS.InvokeVoidAsync("apsMonitor.downloadBase64File", fileName, contentType, Convert.ToBase64String(bytes));
+            Snackbar.Add($"Archivo {fileName} descargado ({CircularBufferClientService.FormatBytes((ulong)bytes.Length)}).", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error descargando {format.ToUpperInvariant()}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isDownloadingFromBuffer = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadSelectedRangeAsDatAsync()
+    {
+        if (_bufferInfo == null) return;
+        _isDownloadingFromBuffer = true;
+        StateHasChanged();
+
+        try
+        {
+            var sessionDto = await CircularClient.DownloadSessionJsonAsync(
+                _boardHost,
+                _boardHttpPort,
+                _selectedFromUs,
+                _selectedToUs,
+                _selectedSourceType);
+
+            if (sessionDto?.Frames == null || sessionDto.Frames.Count == 0)
+            {
+                Snackbar.Add("No hay tramas en la franja seleccionada para exportar a .dat.", Severity.Warning);
+                return;
+            }
+
+            byte[] datBytes = _parser.ConvertCircularFramesToDatBytes(sessionDto.Frames);
+            if (datBytes.Length == 0)
+            {
+                Snackbar.Add("No se encontraron tramas compatibles con formato .dat en el rango.", Severity.Warning);
+                return;
+            }
+
+            string fileName = $"sesion_buffer_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+            await JS.InvokeVoidAsync("apsMonitor.downloadBase64File", fileName, "text/plain;charset=utf-8", Convert.ToBase64String(datBytes));
+            Snackbar.Add($"Archivo {fileName} exportado correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error exportando .DAT: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isDownloadingFromBuffer = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartBoardReplayAsync()
+    {
+        if (_bufferInfo == null) return;
+        _isReplayBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            var res = await CircularClient.StartReplayAsync(
+                _boardHost,
+                _boardHttpPort,
+                _selectedFromUs,
+                _selectedToUs,
+                _selectedSourceType,
+                _replaySpeed,
+                _replayTargetIp,
+                _replayTargetPort,
+                _replayLoop);
+
+            _replayStatus = await CircularClient.GetReplayStatusAsync(_boardHost, _boardHttpPort);
+            Snackbar.Add($"Replay iniciado en placa ({res?.ReplayInfo?.TotalFrames ?? 0:N0} tramas a {_replaySpeed}x).", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo iniciar el replay: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isReplayBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PauseBoardReplayAsync()
+    {
+        try
+        {
+            await CircularClient.PauseReplayAsync(_boardHost, _boardHttpPort);
+            _replayStatus = await CircularClient.GetReplayStatusAsync(_boardHost, _boardHttpPort);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al pausar replay: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ResumeBoardReplayAsync()
+    {
+        try
+        {
+            await CircularClient.ResumeReplayAsync(_boardHost, _boardHttpPort);
+            _replayStatus = await CircularClient.GetReplayStatusAsync(_boardHost, _boardHttpPort);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al reanudar replay: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task StopBoardReplayAsync()
+    {
+        try
+        {
+            await CircularClient.StopReplayAsync(_boardHost, _boardHttpPort);
+            _replayStatus = await CircularClient.GetReplayStatusAsync(_boardHost, _boardHttpPort);
+            Snackbar.Add("Replay detenido.", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al detener replay: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ClearCircularBufferAsync()
+    {
+        try
+        {
+            await CircularClient.ClearBufferAsync(_boardHost, _boardHttpPort);
+            Snackbar.Add("Buffer circular vaciado en la placa.", Severity.Info);
+            await FetchCircularSessionInfoAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al limpiar el buffer: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private double GetMemoryUsagePercent()
+    {
+        if (_bufferInfo == null || _bufferInfo.TotalCapacityBytes == 0) return 0;
+        return Math.Clamp((double)_bufferInfo.UsedBytes / _bufferInfo.TotalCapacityBytes * 100.0, 0.0, 100.0);
+    }
+
+    private static string FormatUsDateTime(ulong timestampUs)
+    {
+        var dt = CircularBufferClientService.TimestampUsToLocalDateTime(timestampUs);
+        return dt == DateTime.MinValue ? "—" : dt.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatUsTimeOnly(ulong timestampUs)
+    {
+        var dt = CircularBufferClientService.TimestampUsToLocalDateTime(timestampUs);
+        return dt == DateTime.MinValue ? "—" : dt.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
     }
 
     private void SyncValues()
@@ -321,6 +1361,9 @@ else
     public void Dispose()
     {
         SessionState.OnStateChanged -= SyncValues;
+        _autoRefreshTimer?.Dispose();
+        _rangeSummaryCts?.Cancel();
+        _rangeSummaryCts?.Dispose();
     }
 
     private class SignalValue

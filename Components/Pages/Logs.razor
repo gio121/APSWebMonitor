@@ -5,6 +5,7 @@
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 @inject MonitorStateService MonitorState
+@inject IDialogService DialogService
 @implements IDisposable
 
 <div class="d-flex justify-space-between align-center mb-6">
@@ -12,14 +13,22 @@
         <MudText Typo="Typo.h5" Class="fw-bold">Logs</MudText>
         <MudText Typo="Typo.body2" Class="text-muted">Registros del sistema APS desde un fichero de logs</MudText>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-center">
+        <MudButton Variant="Variant.Outlined"
+                   Color="@(MonitorState.UseTls ? Color.Success : Color.Default)"
+                   StartIcon="@(MonitorState.UseTls ? Icons.Material.Filled.EnhancedEncryption : Icons.Material.Filled.SettingsEthernet)"
+                   OnClick="OpenTlsSettingsDialogAsync">
+            @MonitorState.TlsSecurity.ModeDisplayName
+        </MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RetrieveAsync" Disabled="@(_isLoading || string.IsNullOrWhiteSpace(MonitorState.IpAddress))">Descargar del APS</MudButton>
         <label class="log-file-button">Abrir fichero<InputFile OnChange="OpenLogsAsync" disabled="@_isLoading" aria-label="Abrir fichero de logs" /></label>
         <MudButton OnClick="ExportCsvAsync" Disabled="@(_isLoading || _filteredEvents.Count == 0)">Exportar CSV</MudButton>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadAsync" Disabled="@(_originalBytes is null || _isLoading)">Descargar original</MudButton>
     </div>
 </div>
-<MudText Typo="Typo.caption" Class="mb-3">Equipo monitorizado: @MonitorState.IpAddress · TCP @ApsLogClient.Port</MudText>
+<MudText Typo="Typo.caption" Class="mb-3">
+    Equipo monitorizado: @MonitorState.IpAddress · @(MonitorState.UseTls ? $"HTTPS mTLS {MonitorState.TlsSecurity.LogGatewayTlsPort} / TLS {ApsLogClient.Port}" : $"TCP {ApsLogClient.Port}")
+</MudText>
 <MudPaper Class="filter-panel pa-4 mb-5" Elevation="0">
     <MudText Typo="Typo.subtitle2" Class="filter-heading mb-3">FILTROS DE REGISTRO</MudText>
     <MudGrid>
@@ -97,6 +106,19 @@
     private readonly CancellationTokenSource _lifetime = new();
     private bool HasActiveFilters => !string.IsNullOrWhiteSpace(_searchText) || !string.IsNullOrEmpty(_process) || _startDate.HasValue || _endDate.HasValue;
 
+    protected override void OnInitialized()
+    {
+        MonitorState.OnStateChanged += OnStateChanged;
+    }
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task OpenTlsSettingsDialogAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<TlsSettingsDialog>("Seguridad de Comunicaciones", options);
+    }
+
     private async Task RetrieveAsync()
     {
         if (_isLoading) return;
@@ -104,15 +126,15 @@
         var ip = MonitorState.IpAddress;
         try
         {
-            var bytes = await ApsLogClient.DownloadAsync(ip, _lifetime.Token);
+            var bytes = await ApsLogClient.DownloadAsync(ip, _lifetime.Token, MonitorState.TlsSecurity);
             await LoadBytesAsync(bytes, $"LOG_unknown_carNum_APS_L1_{DateTime.Now:MM-dd-yyyy_HH-mm-ss}.log");
             Snackbar.Add("Log descargado del APS.", Severity.Success);
         }
         catch (OperationCanceledException) when (!_lifetime.IsCancellationRequested)
-        { Snackbar.Add($"Tiempo de espera agotado al descargar de {ip}:{ApsLogClient.Port}.", Severity.Error); }
+        { Snackbar.Add($"Tiempo de espera agotado al descargar de {ip}.", Severity.Error); }
         catch (OperationCanceledException) { }
         catch (Exception ex)
-        { Snackbar.Add($"No se pudo descargar de {ip}:{ApsLogClient.Port}: {ex.Message}", Severity.Error); }
+        { Snackbar.Add($"No se pudo descargar de {ip}: {ex.Message}", Severity.Error); }
         finally { _isLoading = false; }
     }
 
@@ -171,7 +193,12 @@
 
     private static string Csv(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";
 
-    public void Dispose() { _lifetime.Cancel(); _lifetime.Dispose(); }
+    public void Dispose()
+    {
+        MonitorState.OnStateChanged -= OnStateChanged;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
+    }
 
     private async Task DownloadAsync()
     {

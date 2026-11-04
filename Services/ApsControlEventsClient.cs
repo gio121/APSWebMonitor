@@ -32,7 +32,7 @@ public static class ApsControlEventsClient
     }
 
     public static async Task<byte[]> DownloadAsync(string host, int port, ControlEventConfig config,
-        Action<double>? progress = null, CancellationToken cancellationToken = default)
+        Action<double>? progress = null, CancellationToken cancellationToken = default, TlsSecurityService? tlsSecurity = null)
     {
         int length = config.DownloadEnd - config.DownloadStart;
         if (string.IsNullOrWhiteSpace(host) || port is < 1 or > 65535 || config.DownloadStart != 0 || length is < 6 or > ControlEventsParser.MaxFileBytes || config.BlockSize is < 1 or > 32767)
@@ -41,6 +41,41 @@ public static class ApsControlEventsClient
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(TimeSpan.FromMinutes(8));
         var token = deadline.Token;
+
+        // Modo TLS / mTLS: descarga de bloques de eventos mediante HTTPS /api/send
+        if (tlsSecurity is { UseTls: true })
+        {
+            var tlsBytes = new byte[length];
+            progress?.Invoke(0);
+            for (int offset = 0; offset < length;)
+            {
+                int size = Math.Min(config.BlockSize, length - offset);
+                byte[] request = Request(config, config.DownloadStart + offset, (ushort)size);
+                byte[]? received = null;
+                for (int attempt = 0; attempt < 5 && received is null; attempt++)
+                {
+                    using var blockTimeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    blockTimeout.CancelAfter(TimeSpan.FromSeconds(3));
+                    try
+                    {
+                        var res = await tlsSecurity.SendSepsaFrameOverTlsAsync(host, request, blockTimeout.Token);
+                        if (res.IsSuccess && TryReadBlock(res.Payload, config, config.DownloadStart + offset, size, out var block))
+                        {
+                            received = block;
+                        }
+                    }
+                    catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
+                }
+                if (received is null) throw new TimeoutException($"El equipo no respondió por TLS con un bloque válido en la dirección {offset} tras cinco intentos.");
+                received.CopyTo(tlsBytes, offset);
+                offset += received.Length;
+                progress?.Invoke(100.0 * offset / length);
+            }
+            _ = ControlEventsParser.MatchConfig(tlsBytes, [config]);
+            return tlsBytes;
+        }
+
+        // Modo Tradicional: descarga de bloques de eventos por UDP puerto 50001
         using var udp = new UdpClient();
         var ip = IPAddress.TryParse(host, out var parsed) ? parsed :
             (await Dns.GetHostAddressesAsync(host, token)).First(a => a.AddressFamily == AddressFamily.InterNetwork);

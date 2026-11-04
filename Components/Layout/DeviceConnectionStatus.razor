@@ -1,7 +1,16 @@
 @implements IAsyncDisposable
 @inject MonitorStateService Monitor
+@inject TlsSecurityService TlsSecurity
+@inject IDialogService DialogService
 
 <footer class="device-connection-status" aria-label="Conexión en tiempo real con los equipos" role="status" aria-live="polite">
+    <button type="button"
+            class="device-tls-badge @(TlsSecurity.UseTls ? "tls-active" : "tls-traditional")"
+            @onclick="OpenTlsSettingsAsync"
+            title="Haz clic para configurar el modo de comunicación (Tradicional vs TLS / mTLS y certificados)">
+        <span class="device-status-dot @(TlsSecurity.UseTls ? "online" : "traditional-dot")" aria-hidden="true"></span>
+        <span>Modo: @TlsSecurity.ModeDisplayName</span>
+    </button>
     <span class="device-status-item" title="@Description(_state.Communications)">
         <span class="device-status-dot @(_state.Communications ? "online" : "offline")" aria-hidden="true"></span>
         <span>Comunicaciones</span>
@@ -22,7 +31,21 @@
     protected override void OnInitialized()
     {
         _state = Monitor.DeviceConnections;
+        TlsSecurity.OnChanged += OnTlsChanged;
         _refresh = RefreshAsync();
+    }
+
+    private void OnTlsChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task OpenTlsSettingsAsync()
+    {
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true
+        };
+        await DialogService.ShowAsync<TlsSettingsDialog>("Seguridad de Comunicaciones", options);
     }
 
     private static string Description(bool connected) => connected
@@ -48,6 +71,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        TlsSecurity.OnChanged -= OnTlsChanged;
         await _stop.CancelAsync();
         if (_refresh is not null) await _refresh;
         _stop.Dispose();
