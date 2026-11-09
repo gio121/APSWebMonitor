@@ -1,0 +1,58 @@
+@using ApsMonitor.Models
+
+@if (_config.Enabled)
+{
+    <section class="converter-info-card @(!ShowDetails ? "converter-versions-card" : "")" aria-label="@(ShowDetails ? Ui["Converter Info"] : Ui["Control Unit"] + " / " + Ui["Communications"])">
+        @if (ShowVersions)
+        {
+        <div class="converter-versions">
+            <section>
+                <h3>@Ui["Control Unit"]</h3>
+                <div class="version-row"><span>SW</span><span>@ConverterInfoEvaluator.Value(_config.ControlSoftware, Values)</span><span>@ConverterInfoEvaluator.Value(_config.ControlVersion, Values)</span></div>
+                <div class="version-row"><span>FPGA</span><span>@ConverterInfoEvaluator.Value(_config.FpgaName, Values)</span><span>@ConverterInfoEvaluator.Value(_config.FpgaVersion, Values)</span></div>
+            </section>
+            <section>
+                <h3>@Ui["Communications"]</h3>
+                <div class="version-row"><span>SW</span><span>@ConverterInfoEvaluator.Value(_config.CommunicationsSoftware, Values)</span><span>@ConverterInfoEvaluator.Value(_config.CommunicationsVersion, Values)</span></div>
+                <div class="version-row"><span>@Ui["Date"]</span><span class="rtc-value">@ConverterInfoEvaluator.Value(_config.CommunicationsDate, Values)</span></div>
+            </section>
+        </div>
+        }
+        @if (ShowDetails)
+        {
+        <h3 class="converter-info-title">@Ui["Converter Info"]</h3>
+        <div class="converter-info-entries">
+            @if (_entries.Count == 0)
+            {
+                <span class="converter-empty">@(HasDetailData ? Ui["No active converter information"] : Ui["No data"])</span>
+            }
+            @foreach (var entry in _entries)
+            {
+                <div class="converter-info-entry">
+                    @if (ShowTags) { <span class="converter-tag">@entry.Tag · @entry.Bit</span> }
+                    <span>@entry.Description</span>
+                </div>
+            }
+        </div>
+        }
+    </section>
+}
+
+@code {
+    [Parameter] public string? ConfigJson { get; set; }
+    [Parameter] public IReadOnlyList<Signal> Signals { get; set; } = Array.Empty<Signal>();
+    [Parameter] public IReadOnlyDictionary<int, double> Values { get; set; } = new Dictionary<int, double>();
+    [Parameter] public bool ShowTags { get; set; }
+    [Parameter] public bool ShowVersions { get; set; } = true;
+    [Parameter] public bool ShowDetails { get; set; } = true;
+    [Parameter] public IReadOnlyList<ControlEventConfig> Definitions { get; set; } = Array.Empty<ControlEventConfig>();
+    private ConverterInfoConfig _config = new();
+    private List<ConverterInfoEntry> _entries = new();
+    private bool HasDetailData => _config.DetailSignals.Any(b => Values.TryGetValue(b.SignalId, out var value) && double.IsFinite(value));
+
+    protected override void OnParametersSet()
+    {
+        _config = ConverterInfoEvaluator.Load(ConfigJson, Signals);
+        _entries = ConverterInfoEvaluator.Entries(_config, Signals, Values, Definitions);
+    }
+}

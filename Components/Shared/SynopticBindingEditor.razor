@@ -23,6 +23,8 @@
             <MudCheckBox T="bool" Label="@Ui["Count down (maximum minus value)"]" @bind-Value="Element.ProgressCountDown" />
         }
         <MudText Typo="Typo.subtitle2">@Ui["Visibility"]</MudText>
+        <MudCheckBox T="bool" Label="@Ui["Hide element in viewer"]" @bind-Value="Element.Hidden" />
+        <MudCheckBox T="bool" Label="@Ui["Only in administrator mode"]" @bind-Value="Element.RequiresAdminMode" />
         <MudCheckBox T="bool" Label="@Ui["All conditions must match"]" @bind-Value="Element.VisibilityMatchAll" />
         @foreach (var rule in Element.VisibilityRules.ToList())
         {

@@ -16,16 +16,23 @@ public static class SinopticoBindingEvaluator
     public static bool Matches(SynopticCondition rule, IReadOnlyDictionary<int, double> values)
     {
         var value = Read(values, rule.SignalId, rule.SignalBit);
+        value ??= Read(values, rule.FallbackSignalId);
         if (value is null) return false; // Missing telemetry never satisfies an inverted alarm.
         var expected = rule.CompareSignalId.HasValue ? Read(values, rule.CompareSignalId, rule.CompareSignalBit) : rule.ExpectedValue;
         if (rule.CompareSignalId.HasValue && expected is null) return false;
-        var match = expected.HasValue ? value.Value == expected.Value : value.Value != 0;
+        var match = rule.Comparison switch
+        {
+            "GreaterThan" => expected.HasValue && value.Value > expected.Value,
+            "LessOrEqual" => expected.HasValue && value.Value <= expected.Value,
+            _ => expected.HasValue ? value.Value == expected.Value : value.Value != 0
+        };
         return rule.Invert ? !match : match;
     }
 
-    public static bool Visible(SinopticoElement element, IReadOnlyDictionary<int, double> values) =>
-        element.VisibilityRules.Count == 0 || (element.VisibilityMatchAll
-            ? element.VisibilityRules.All(r => Matches(r, values)) : element.VisibilityRules.Any(r => Matches(r, values)));
+    public static bool Visible(SinopticoElement element, IReadOnlyDictionary<int, double> values, bool adminMode = false) =>
+        !element.Hidden && (!element.RequiresAdminMode || adminMode) &&
+        (element.VisibilityRules.Count == 0 || (element.VisibilityMatchAll
+            ? element.VisibilityRules.All(r => Matches(r, values)) : element.VisibilityRules.Any(r => Matches(r, values))));
 
     public static string Color(SinopticoElement element, IReadOnlyDictionary<int, double> values, string? fallback = null) =>
         element.BoxColorRules.FirstOrDefault(r => Matches(r, values))?.Color ?? fallback ?? element.Color;

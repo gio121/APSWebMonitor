@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider @ref="@_themeProvider" @bind-IsDarkMode="@_isDarkMode" Theme="LoginTheme" />
+<MonitorThemeProvider />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -44,23 +44,3 @@
         100% { transform: translate(-3%, -3%); }
     }
 </style>
-
-@code {
-    private bool _isDarkMode = true;
-    private MudThemeProvider? _themeProvider;
-
-    public static readonly MudTheme LoginTheme = new MudTheme()
-    {
-        PaletteDark = new PaletteDark()
-        {
-            Primary = "#3b82f6",
-            Secondary = "#8b5cf6",
-            Background = "#0d1117",
-            Surface = "#1f2937",
-            TextPrimary = "#e2e8f0",
-            TextSecondary = "#94a3b8",
-            Success = "#22c55e",
-            Error = "#ef4444",
-        },
-    };
-}

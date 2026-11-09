@@ -42,6 +42,8 @@ public class SinopticoElement
     public List<SynopticTextRule> TextRules { get; set; } = new();
     public List<SynopticCondition> VisibilityRules { get; set; } = new();
     public bool VisibilityMatchAll { get; set; }
+    public bool Hidden { get; set; }
+    public bool RequiresAdminMode { get; set; }
     public bool InvertState { get; set; }
     public bool InvertCommand { get; set; }
     public bool ProgressCountDown { get; set; }
@@ -49,6 +51,9 @@ public class SinopticoElement
 
 public class SynopticCondition
 {
+    public string Comparison { get; set; } = "Equal";
+    // Used only when the primary signal is unavailable, not when it is zero.
+    public int? FallbackSignalId { get; set; }
     public int? SignalId { get; set; }
     public int? SignalBit { get; set; }
     public double? ExpectedValue { get; set; }

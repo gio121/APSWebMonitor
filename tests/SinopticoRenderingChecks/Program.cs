@@ -84,4 +84,26 @@ label.BoxColorRules.Add(new() { SignalId = 5, Color = "#f59e0b" });
 Check(SinopticoBindingEvaluator.Color(label, values) == "#ef4444", "First color rule has priority.");
 var restored = JsonSerializer.Deserialize<SinopticoElement>(JsonSerializer.Serialize(label))!;
 Check(restored.ValueTexts["25"] == "ON" && restored.TextRules[0].ExpectedValue == 644 && restored.VisibilityMatchAll && restored.BoxColorRules[0].ExpectedValue == 644, "New binding rules must survive save and duplication.");
+var timerValues = new Dictionary<int, double>();
+var fan = new SinopticoElement { VisibilityMatchAll = true, VisibilityRules = [
+    new() { SignalId = 1, Comparison = "GreaterThan", ExpectedValue = 0 },
+    new() { SignalId = 1, Comparison = "LessOrEqual", ExpectedValue = 100 }] };
+foreach (var (value, visible) in new[] { (-1d, false), (0d, false), (1d, true), (100d, true), (101d, false), (double.NaN, false) })
+{
+    timerValues[1] = value;
+    Check(SinopticoBindingEvaluator.Visible(fan, timerValues) == visible, $"Fan percentage boundary {value}");
+}
+var retry = new SinopticoElement { VisibilityRules = [new() { SignalId = 2, SignalBit = 6, FallbackSignalId = 3, Comparison = "GreaterThan", ExpectedValue = 0 }] };
+timerValues[3] = 4;
+Check(SinopticoBindingEvaluator.Visible(retry, timerValues), "KHV uses countdown only when wait flag is absent.");
+timerValues[2] = 0;
+Check(!SinopticoBindingEvaluator.Visible(retry, timerValues), "Explicit inactive KHV flag takes precedence over countdown.");
+timerValues[2] = 64;
+Check(SinopticoBindingEvaluator.Visible(retry, timerValues), "KHV wait bit activates visibility.");
+retry.RequiresAdminMode = true;
+Check(!SinopticoBindingEvaluator.Visible(retry, timerValues) && SinopticoBindingEvaluator.Visible(retry, timerValues, true), "Maintenance visibility requires administrator mode.");
+retry.Hidden = true;
+Check(!SinopticoBindingEvaluator.Visible(retry, timerValues, true), "Hidden DACs remain hidden even in administrator mode.");
+var savedRetry = JsonSerializer.Deserialize<SinopticoElement>(JsonSerializer.Serialize(retry))!;
+Check(savedRetry.Hidden && savedRetry.RequiresAdminMode && savedRetry.VisibilityRules[0].FallbackSignalId == 3 && savedRetry.VisibilityRules[0].Comparison == "GreaterThan", "Visibility options survive serialization.");
 Console.WriteLine("PASS: FLP flags, inverted returns, failure codes, timer directions, missing telemetry, dynamic text, visibility, priority and binding persistence.");

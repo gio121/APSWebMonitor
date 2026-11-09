@@ -1,0 +1,36 @@
+@using ApsMonitor.Models
+
+<MudExpansionPanel Text="@Label">
+    <MudSelect T="string" @bind-Value="Binding.Format" Label="@Ui["Display format"]" Variant="Variant.Outlined" Margin="Margin.Dense">
+        <MudSelectItem T="string" Value="@("Ascii")">ASCII</MudSelectItem>
+        <MudSelectItem T="string" Value="@("Number")">@Ui["Number"]</MudSelectItem>
+        <MudSelectItem T="string" Value="@("DecimalVersion")">@Ui["Version (value / 10)"]</MudSelectItem>
+        <MudSelectItem T="string" Value="@("DateTime")">@Ui["RTC (seconds, minutes, hours, day, month, year)"]</MudSelectItem>
+    </MudSelect>
+    <MudTextField @bind-Value="Binding.Separator" Label="@Ui["Separator"]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+    @for (int i = 0; i < Binding.SignalIds.Count; i++)
+    {
+        var index = i;
+        var id = Binding.SignalIds[index];
+        <div class="d-flex align-center gap-1 my-1" @key="id">
+            <MudText Typo="Typo.caption" Class="flex-grow-1">@(Signals.FirstOrDefault(s => s.Id == id)?.BindingLabel ?? $"ID:{id}")</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" Disabled="@(index == 0)" OnClick="@(() => MoveUp(index))" title="@Ui["Move up"]" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="@(() => Binding.SignalIds.RemoveAt(index))" title="@Ui["Remove"]" />
+        </div>
+    }
+    <MudAutocomplete T="Signal" Label="@Ui["Add signal"]" SearchFunc="Search" ToStringFunc="@(s => s?.BindingLabel ?? "")"
+                     Value="@((Signal?)null)" ValueChanged="Add" Clearable="true" ResetValueOnEmptyText="true"
+                     Variant="Variant.Outlined" Margin="Margin.Dense" MaxItems="100" />
+</MudExpansionPanel>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public InfoValueBinding Binding { get; set; } = new();
+    [Parameter] public IReadOnlyList<Signal> Signals { get; set; } = Array.Empty<Signal>();
+
+    private Task<IEnumerable<Signal>> Search(string text, CancellationToken token) => Task.FromResult(Signals
+        .Where(s => !Binding.SignalIds.Contains(s.Id) && (string.IsNullOrWhiteSpace(text) ||
+            $"{s.BindingLabel} {s.Nombre}".Contains(text, StringComparison.OrdinalIgnoreCase))));
+    private void Add(Signal? signal) { if (signal is not null && !Binding.SignalIds.Contains(signal.Id)) Binding.SignalIds.Add(signal.Id); }
+    private void MoveUp(int index) => (Binding.SignalIds[index - 1], Binding.SignalIds[index]) = (Binding.SignalIds[index], Binding.SignalIds[index - 1]);
+}

@@ -21,6 +21,16 @@
     }
     
     <div class="main-view">
+        @if (!_showFailures)
+        {
+            <div class="synoptic-status-summary" aria-label="@Ui["Status"]">
+                @foreach (var category in _failureCategories)
+                {
+                    var status = GetStatusInfo(category, currentValues, 0);
+                    <span class="synoptic-status-item"><strong>@MonitorLocalization.ElementName(category.Name):</strong> <span class="ind-field @status.Css">@status.Text</span></span>
+                }
+            </div>
+        }
         <div class="editor-header d-flex align-center px-4">
             <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" OnClick="@(() => NavigationManager.NavigateTo("/ventanas"))" />
             <MudText Typo="Typo.h6" Class="ml-2 flex-grow-1">@(_window?.Nombre ?? Ui["Loading..."])</MudText>
@@ -54,19 +64,22 @@
         <div class="failures-top-panel @(_showFailures ? "expanded" : "collapsed")">
             <div class="panel-content-wrapper">
                 <div class="d-flex gap-4 p-4 failures-horizontal-scroll">
+                    <ApsMonitor.Components.Shared.ConverterInfoCard ConfigJson="@_window?.ConverterInfoConfigJson"
+                        Signals="@(MonitorState.IsMonitoring ? MonitorState.Signals : SessionState.Signals)"
+                        Values="currentValues" Definitions="_cardDefinitions" ShowTags="_isAdminMode" ShowVersions="false" />
                     @foreach (var category in _failureCategories)
                     {
                         var catFailures = dialogFailures.ContainsKey(category.Name) ? dialogFailures[category.Name] : new List<ActiveFailure>();
                         var displayCount = 0;
                         if (category.CountSignalId.HasValue && currentValues.TryGetValue(category.CountSignalId.Value, out var sigVal))
                             displayCount = (int)sigVal;
-                        else
+                        else if (!category.CountSignalId.HasValue)
                             displayCount = catFailures.Count;
 
-                        var lastStop = _lastStopPerCategory.GetValueOrDefault(category.Name, "");
-                        var failuresList = string.Join(", ", catFailures.Select(f => f.Description));
-                        var maxFails = 100;
-                        var pct = maxFails > 0 ? Math.Max(0, (int)(((maxFails - displayCount) / (double)maxFails) * 100)) : 100;
+                        var lastStop = SynopticFailureEvaluator.Decode(category.LastStopSignalId, _cardSignals, currentValues, _cardDefinitions, true);
+
+                        var failureDisplay = GetCalculatedFailure(category, currentValues);
+                        var failuresList = failureDisplay.Text;
 
                         var statusInfo = GetStatusInfo(category, currentValues, displayCount);
 
@@ -91,13 +104,13 @@
                             <!-- Last Stop Row -->
                             <div class="ind-row">
                                 <span class="ind-label">@Ui["Last Stop:"]</span>
-                                <div class="ind-field ind-field-laststop">@(string.IsNullOrEmpty(lastStop) ? "—" : lastStop)</div>
+                                <div class="ind-field ind-field-laststop" title="@lastStop">@lastStop</div>
                             </div>
 
                             <!-- Failures Row -->
                             <div class="ind-row">
                                 <span class="ind-label">@Ui["Failures:"]</span>
-                                <div class="ind-field">@(string.IsNullOrEmpty(failuresList) ? "" : failuresList)</div>
+                                <div class="ind-field @(failureDisplay.Retained ? "ind-failure-retained" : "")" title="@failuresList">@failuresList</div>
                             </div>
 
                             <!-- Failures Counter Row -->
@@ -109,36 +122,37 @@
                                     <button class="ind-btn-reset" @onclick="() => HandleResetFailures(category)">Reset</button>
                                 }
                             </div>
-
-                            <!-- Scrollable Detail Area -->
-                            <div class="ind-detail-scroll">
-                                @foreach (var fail in catFailures)
+                            <div class="ind-descriptions" tabindex="0" role="button"
+                                 aria-label="@Ui["View descriptions"]" title="@Ui["View descriptions"]"
+                                 @ondblclick="@(() => OpenFailureDescriptions(category.Name))"
+                                 @onkeydown="@(e => { if (e.Key is "Enter" or " ") OpenFailureDescriptions(category.Name); })">
+                                @foreach (var failure in catFailures)
                                 {
-                                    <div class="ind-detail-entry">
-                                        @if (_isAdminMode)
-                                        {
-                                            <span class="mini-tag">@fail.Tag</span>
-                                        }
-                                        <span class="mini-desc">@fail.Description</span>
+                                    <div class="ind-description">
+                                        @if (_isAdminMode) { <span>@failure.Tag · @failure.BitIndex: </span> }
+                                        @failure.Description
                                     </div>
                                 }
                             </div>
                         </div>
                     }
+                    <ApsMonitor.Components.Shared.ConverterInfoCard ConfigJson="@_window?.ConverterInfoConfigJson"
+                        Signals="@(MonitorState.IsMonitoring ? MonitorState.Signals : SessionState.Signals)"
+                        Values="currentValues" ShowDetails="false" />
                 </div>
             </div>
         </div>
 
-        <div class="editor-container @(SessionState.IsDarkMode ? "dark-theme" : "light-theme")" style="min-width: 100%; width: fit-content;">
+        <div class="editor-container @(SessionState.IsDarkMode ? "dark-theme" : "light-theme")">
             <div class="main-canvas-area">
-                <div class="canvas mx-auto" style="width: @(_elements.Any() ? _elements.Max(e => e.X + e.Width) + 100 : 800)px; height: @(_elements.Any() ? _elements.Max(e => e.Y + e.Height) + 100 : 600)px;">
+                <ApsMonitor.Components.Shared.SynopticViewport @key="WindowId" Elements="_elements" DarkMode="SessionState.IsDarkMode">
                     @foreach (var el in _elements)
                     {
-                        if (!SinopticoBindingEvaluator.Visible(el, currentValues)) continue;
+                        if (!SinopticoBindingEvaluator.Visible(el, currentValues, _isAdminMode)) continue;
                         if (el.Type == "ACpresence" && !IsElementActive(el, currentValues)) continue;
                         if (el.Type == "Barra" && !IsBarraVisible(el, currentValues)) continue;
 
-                        <div class="canvas-element" style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
+                        <div class="canvas-element" data-synoptic-id="@el.Id" @key="el.Id" style="left: @(el.X)px; top: @(el.Y)px; width: @(el.Width)px; height: @(el.Height)px; transform: rotate(@(el.Rotation)deg);">
                             @if (el.Type == "Etiqueta")
                             {
                                 var textColor = SinopticoBindingEvaluator.Color(el, currentValues);
@@ -225,7 +239,7 @@
                             }
                         </div>
                     }
-                </div>
+                </ApsMonitor.Components.Shared.SynopticViewport>
             </div>
         </div>
     </div>
@@ -233,22 +247,80 @@
     <!-- El panel lateral anterior ha sido eliminado y movido arriba -->
 </div>
 
+<MudDialog @bind-Visible="_descriptionsVisible" Options="_descriptionsOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@Ui["Error descriptions"] — @MonitorLocalization.ElementName(_descriptionsCategory)</MudText>
+    </TitleContent>
+    <DialogContent>
+        @{
+            var descriptions = GetActiveFailures(GetMergedValues()).GetValueOrDefault(_descriptionsCategory) ?? new List<ActiveFailure>();
+        }
+        @if (descriptions.Count == 0)
+        {
+            <MudText>@Ui["No active errors"]</MudText>
+        }
+        else
+        {
+            <div class="synoptic-descriptions-list">
+                @foreach (var failure in descriptions)
+                {
+                    <div class="synoptic-description-item">
+                        @if (_isAdminMode)
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Primary">@failure.Tag · @failure.BitIndex</MudText>
+                        }
+                        <MudText Style="white-space: normal; overflow-wrap: anywhere;">@failure.Description</MudText>
+                    </div>
+                }
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _descriptionsVisible = false)">@Ui["Close"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
 <style>
+    .ind-descriptions {
+        height: 56px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 5px 7px;
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 4px;
+        background: var(--mud-palette-surface);
+        color: var(--mud-palette-text-primary);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+    }
+    .ind-description + .ind-description { margin-top: 4px; }
+    .ind-descriptions:focus-visible { outline: 2px solid var(--mud-palette-primary); }
+    :root body .sinoptico-viewer-layout .ind-field.ind-failure-retained { background: #fffde1; color: #777; }
+    .synoptic-descriptions-list { max-height: 60dvh; overflow-y: auto; }
+    .synoptic-description-item { padding: 10px 0; border-bottom: 1px solid var(--mud-palette-lines-default); }
     .sinoptico-viewer-layout {
-        min-height: calc(100vh - 96px);
+        /* Compact cards leave the remaining height to the diagram. */
+        --viewer-cards-height: 270px;
+        width: 100%;
+        min-width: 0;
         display: flex;
         flex-direction: column;
-        overflow: auto; /* Permitir scroll tanto vertical como horizontal */
+        overflow: hidden;
         background-color: #0d1117;
-        margin-top: -65px;
     }
 
     .main-view {
         display: flex;
         flex-direction: column;
+        min-width: 0;
     }
 
     /* ESTILOS DEL PANEL SUPERIOR */
+    .synoptic-status-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; padding: 2px 16px; font-size: 12px; min-height: 24px; }
+    .synoptic-status-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .synoptic-status-item .ind-field { flex: none; min-width: 85px; }
+    .monitor-page-content.has-session:has(.sinoptico-viewer-layout) { padding-bottom: 0; }
+
     .failures-top-panel {
         background: rgba(22, 27, 34, 0.95);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -264,13 +336,56 @@
     }
 
     .failures-top-panel.expanded {
-        max-height: 600px;
+        max-height: var(--viewer-cards-height);
         opacity: 1;
     }
 
     .failures-horizontal-scroll {
         overflow-x: auto;
     }
+
+    .sinoptico-viewer-layout .failures-horizontal-scroll {
+        padding: 10px !important;
+        gap: 12px !important;
+        align-items: stretch;
+    }
+
+    .sinoptico-viewer-layout .ind-card,
+    .sinoptico-viewer-layout .converter-info-card {
+        height: calc(var(--viewer-cards-height) - 38px);
+        min-height: 0;
+        overflow: hidden;
+    }
+    .sinoptico-viewer-layout .ind-card {
+        height: auto;
+        align-self: flex-start;
+        width: 320px;
+        min-width: 320px;
+        max-width: 320px;
+        padding: 10px;
+        gap: 5px;
+    }
+    .sinoptico-viewer-layout .converter-info-card {
+        flex-basis: 380px;
+        width: 380px;
+    }
+    .sinoptico-viewer-layout .converter-versions-card {
+        margin-left: auto;
+        align-self: flex-start;
+        height: auto;
+        max-height: calc(var(--viewer-cards-height) - 38px);
+    }
+    .sinoptico-viewer-layout .ind-card > * { flex-shrink: 0; }
+    .sinoptico-viewer-layout .ind-card-header { padding-bottom: 5px; }
+    .sinoptico-viewer-layout .ind-card-title { font-size: 12px; }
+    .sinoptico-viewer-layout .ind-label { min-width: 105px; }
+    .sinoptico-viewer-layout .ind-field { padding: 3px 7px; min-height: 24px; }
+    .sinoptico-viewer-layout .ind-status-text-btn { height: 26px; }
+    .sinoptico-viewer-layout .converter-versions { flex-shrink: 0; }
+    .sinoptico-viewer-layout .converter-versions section { padding: 6px 8px; }
+    .sinoptico-viewer-layout .version-row { min-height: 19px; }
+    .sinoptico-viewer-layout .converter-info-title { padding: 6px 8px; }
+    .sinoptico-viewer-layout .converter-info-entries { min-height: 0; padding: 4px 8px; }
 
     /* ===== INDUSTRIAL CARD ===== */
     .ind-card {
@@ -484,27 +599,6 @@
         transition: width 0.3s ease;
     }
 
-    /* Scrollable detail area */
-    .ind-detail-scroll {
-        background: #0d1117;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 6px;
-        min-height: 60px;
-        max-height: 120px;
-        overflow-y: auto;
-        padding: 8px;
-    }
-
-    .ind-detail-entry {
-        display: flex;
-        gap: 8px;
-        font-size: 11px;
-        margin-bottom: 3px;
-    }
-
-    .mini-tag { color: #58a6ff; font-family: monospace; font-weight: bold; }
-    .mini-desc { color: #e6edf3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
     /* ESTILOS HEADER */
     .header-status-badge {
         background: rgba(244, 67, 54, 0.15);
@@ -534,7 +628,8 @@
         position: sticky;
         top: 0;
         z-index: 1000;
-        height: 56px;
+        min-height: 56px;
+        flex-wrap: wrap;
         background-color: #161b22;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         color: #e6edf3;
@@ -582,16 +677,7 @@
 
     .main-canvas-area {
         width: 100%;
-        min-width: fit-content;
-        display: flex;
-        justify-content: flex-start; /* Cambiado a flex-start para evitar recortes en el scroll */
-        padding: 40px; /* Más margen para que no quede pegado a los bordes */
-    }
-    .canvas {
-        min-width: 100%;
-        min-height: 100%;
-        background-color: transparent;
-        position: relative;
+        min-width: 0;
     }
     
     .canvas-element {
@@ -873,16 +959,44 @@
 </style>
 
 @code {
+    private bool _descriptionsVisible;
+    private string _descriptionsCategory = "";
+    private readonly DialogOptions _descriptionsOptions = new() { FullWidth = true, MaxWidth = MaxWidth.Medium, CloseButton = true, CloseOnEscapeKey = true };
+
+    private void OpenFailureDescriptions(string category)
+    {
+        _descriptionsCategory = category;
+        _descriptionsVisible = true;
+    }
+
     [Parameter] public int WindowId { get; set; }
     
     private Window? _window;
     private List<SinopticoElement> _elements = new();
     private List<FailureCategoryConfig> _failureCategories = new();
     private bool _showFailures = true;
-    private Dictionary<string, string> _lastStopPerCategory = new();
-    private HashSet<string> _previousFailureKeys = new();
+    private List<Signal> _cardSignals = new();
+    private List<ControlEventConfig> _cardDefinitions = new();
+    private readonly Dictionary<string, string> _lastCalculatedFailures = new();
+
     private bool _statusMapped = false;
     private bool _isAdminMode = false;
+
+    private (string Text, bool Retained) GetCalculatedFailure(FailureCategoryConfig category, Dictionary<int, double> values)
+    {
+        var text = SynopticFailureEvaluator.Decode(category.FailureSignalId, _cardSignals, values, _cardDefinitions, false);
+        if (text == "—")
+        {
+            _lastCalculatedFailures.Remove(category.Id);
+            return (text, false);
+        }
+        if (text.Length > 0)
+        {
+            _lastCalculatedFailures[category.Id] = text;
+            return (text, false);
+        }
+        return (_lastCalculatedFailures.GetValueOrDefault(category.Id, ""), _lastCalculatedFailures.ContainsKey(category.Id));
+    }
 
     private class StatusDisplayInfo
     {
@@ -1053,7 +1167,7 @@
                 resetSubCmd = 0x0000;
             else if (catName.Equals("LVPS", StringComparison.OrdinalIgnoreCase))
                 resetSubCmd = 0x0001;
-            else if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+            else if (catName.Equals("Inversor", StringComparison.OrdinalIgnoreCase) || catName.Equals("Inverter", StringComparison.OrdinalIgnoreCase))
                 resetSubCmd = 0x0004;
         }
 
@@ -1063,19 +1177,11 @@
             return;
         }
 
-        var confirmed = await DialogService.ShowMessageBoxAsync(
-            ApsMonitor.Resources.MonitorResources.Text("Confirm RESET"),
-            ApsMonitor.Resources.MonitorResources.Format("Confirm fault RESET for {0} (SubCmd 0x{1:X4})?",catName,resetSubCmd.Value),
-            yesText: ApsMonitor.Resources.MonitorResources.Text("Confirm"), cancelText: ApsMonitor.Resources.MonitorResources.Text("Cancel"));
-
-        if (confirmed == true)
-        {
-            var result = await MonitorState.SendControlCommandAsync(resetFrameType, resetSubCmd.Value);
-            if (result)
-                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: reset sent",catName), Severity.Success);
-            else
-                Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: unable to send reset",catName), Severity.Error);
-        }
+        var result = await MonitorState.SendControlCommandAsync(resetFrameType, resetSubCmd.Value);
+        if (result)
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: reset sent",catName), Severity.Success);
+        else
+            Snackbar.Add(ApsMonitor.Resources.MonitorResources.Format("{0}: unable to send reset",catName), Severity.Error);
     }
 
     private static ushort? ParseSubCmd(string? val)
@@ -1192,6 +1298,9 @@
             }
         }
         
+        _cardSignals = await DataService.GetSignalsAsync();
+        _cardDefinitions = await DataService.GetControlEventConfigurationsAsync();
+        foreach (var category in _failureCategories) SynopticFailureEvaluator.ApplyDefaults(category, _cardSignals);
         SessionState.OnStateChanged += SyncValues;
         MonitorState.OnStateChanged += SyncValues;
     }
@@ -1293,28 +1402,6 @@
             }
         }
 
-        // Detect new failures for Last Stop tracking — usa los valores activos (monitor o sesión)
-        try
-        {
-            var values = GetMergedValues();
-            var currentFailures = GetActiveFailures(values);
-            var currentKeys = new HashSet<string>();
-            foreach (var kvp in currentFailures)
-            {
-                foreach (var f in kvp.Value)
-                {
-                    var key = $"{kvp.Key}|{f.Tag}|{f.BitIndex}";
-                    currentKeys.Add(key);
-                    if (!_previousFailureKeys.Contains(key))
-                    {
-                        // New failure detected — update Last Stop for this category
-                        _lastStopPerCategory[kvp.Key] = f.Description;
-                    }
-                }
-            }
-            _previousFailureKeys = currentKeys;
-        }
-        catch { /* Ignore during init */ }
 
         try
         {
@@ -1482,9 +1569,11 @@
                 var sig = availableSignals.FirstOrDefault(s => s.Id == sigId);
                 if (sig != null && values.TryGetValue(sig.Id, out double val))
                 {
-                    if (val == 0) continue;
+                    if (!double.IsFinite(val) || val == 0) continue;
 
-                    int intVal = (int)Math.Truncate(val);
+                    int intVal = SynopticFailureEvaluator.DetailBits(category, sig.Id, val);
+                    if (intVal == 0) continue;
+                    bool referenceDetails = category.DetailSignalMasks.ContainsKey(sig.Id);
                     bool bitAdded = false;
 
                     // Siempre intentamos desglosar por bits primero
@@ -1493,6 +1582,7 @@
                         if ((intVal & (1 << i)) != 0)
                         {
                             var bitText = (sig.BitTextoActivo != null && sig.BitTextoActivo.Length > i) ? sig.BitTextoActivo[i] : null;
+                            bitText = SynopticFailureEvaluator.Label(sig, i, _cardDefinitions, bitText);
                             
                             // Si tiene texto, lo añadimos
                             if (!string.IsNullOrWhiteSpace(bitText))
@@ -1510,7 +1600,7 @@
                                 // Si NO tiene texto pero la señal es "virgen" (no tiene ningún texto configurado),
                                 // mostramos el fallback genérico para que el usuario siempre vea algo
                                 bool hasAnyBitTextDefined = sig.BitTextoActivo?.Any(t => !string.IsNullOrWhiteSpace(t)) ?? false;
-                                if (!hasAnyBitTextDefined)
+                                if (!hasAnyBitTextDefined && !referenceDetails)
                                 {
                                     categorized[category.Name].Add(new ActiveFailure
                                     {
@@ -1525,7 +1615,7 @@
                     }
 
                     // Si no se añadió nada (porque no había bits con texto o es una señal analógica), lo añadimos como valor puro
-                    if (!bitAdded)
+                    if (!bitAdded && !referenceDetails)
                     {
                         categorized[category.Name].Add(new ActiveFailure
                         {

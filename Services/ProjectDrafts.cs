@@ -105,6 +105,16 @@ public sealed partial class ProjectDatabaseService
                 var manifest = RecoverPublication(candidate);
                 if (manifest.SourceId != source.Id || manifest.PublishedId is not null || manifest.Discarded) continue;
                 if (!File.Exists(candidate.DatabasePath)) throw new IOException(ApsMonitor.Resources.MonitorResources.Text("The draft database is missing. Check the .Working folder before continuing."));
+                // Recovered working copies can predate newly mapped columns. Upgrade them
+                // under the edit lock before page services or authentication-related views query them.
+                var wasClean = ConfigurationHash(candidate.ConnectionString) == manifest.BaselineHash;
+                await PrepareAsync(candidate);
+                if (wasClean)
+                {
+                    var upgradedHash = ConfigurationHash(candidate.ConnectionString);
+                    if (upgradedHash != manifest.BaselineHash)
+                        WriteManifest(candidate, manifest with { BaselineHash = upgradedHash });
+                }
                 return candidate;
             }
             var path = Path.Combine(working, Guid.NewGuid().ToString("N"), "aps.db");

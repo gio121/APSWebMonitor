@@ -1,0 +1,28 @@
+.synoptic-viewport {
+    --synoptic-background: #fff;
+    --synoptic-ink: #172033;
+    --synoptic-line: #cbd5e1;
+    --synoptic-panel: #f1f5f9;
+    width: 100%; min-width: 0; min-height: 200px;
+    height: var(--synoptic-height, 65dvh);
+    position: relative; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--synoptic-background); color: var(--synoptic-ink);
+    border: 1px solid var(--synoptic-line); border-radius: 6px;
+}
+.is-dark { --synoptic-background: #0d1117; --synoptic-ink: #e2e8f0; --synoptic-line: #334155; --synoptic-panel: #19212d; }
+.synoptic-tools { position: absolute; right: 20px; bottom: 20px; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap; width: max-content; max-width: calc(100% - 40px); padding: 4px; background: var(--synoptic-panel); border: 1px solid var(--synoptic-line); border-radius: 6px; }
+.synoptic-tools button { font: inherit; font-size: 12px; min-height: 32px; padding: 4px 9px; background: var(--synoptic-background); border: 1px solid var(--synoptic-line); border-radius: 4px; cursor: pointer; color: inherit; }
+.synoptic-tools button:focus-visible, .synoptic-percentage input:focus-visible, .synoptic-scroll:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+.synoptic-percentage { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.synoptic-percentage input { width: 76px; min-height: 32px; padding: 4px 6px; text-align: right; border: 1px solid var(--synoptic-line); border-radius: 4px; background: var(--synoptic-background); color: inherit; font: inherit; }
+.synoptic-scroll { flex: 1; min-height: 0; min-width: 0; overflow: scroll; position: relative; z-index: 0; overscroll-behavior: contain; touch-action: none; overflow-anchor: none; }
+.synoptic-scroll.is-panning { cursor: grabbing; user-select: none; }
+.synoptic-scroll ::deep .canvas-element { touch-action: none; }
+.synoptic-surface { position: relative; overflow: hidden; min-width: 100%; min-height: 100%; }
+.synoptic-canvas { position: absolute; transform-origin: 0 0; visibility: hidden; }
+.synoptic-viewport[data-ready] .synoptic-canvas { visibility: visible; }
+.synoptic-viewport ::deep .resize-handle { transform: scale(var(--synoptic-inverse-scale, 1)); transform-origin: center; }
+@media (max-width: 600px) {
+    .synoptic-tools { gap: 3px; padding: 4px; }
+    .synoptic-tools button { min-height: 36px; padding: 4px 7px; }
+}

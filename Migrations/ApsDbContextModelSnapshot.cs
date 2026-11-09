@@ -228,6 +228,10 @@ namespace ApsMonitor.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ConverterInfoConfigJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("TEXT");

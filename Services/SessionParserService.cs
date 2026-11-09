@@ -246,6 +246,14 @@ public class SessionParserService
         if (frameData.Length < 7)
             return false;
 
+        // DAT recordings contain both outgoing commands and telemetry responses.
+        // Requests have no signal payload: matching their short size to a node
+        // would overwrite its last snapshot with command bytes (often zeros).
+        // Header byte 4 is the source; address 1 is the monitor (including
+        // polling 1A/1D and reset 2A commands). Only received data updates signals.
+        if (frameData[0] == 0xAA && frameData[4] == 0x01)
+            return false;
+
         int payloadLength = frameData.Length - 7;
         if (payloadLength < 0)
             return false;

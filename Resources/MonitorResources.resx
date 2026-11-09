@@ -4689,4 +4689,54 @@ Start the firmware update?</value>
   <data name="You need configuration editing permissions to publish or discard a draft." xml:space="preserve">
     <value>You need configuration editing permissions to publish or discard a draft.</value>
   </data>
+  <data name="Select the signals in display order. RTC values must be decoded BCD. Detail signals show only active bit descriptions." xml:space="preserve"><value>Select the signals in display order. RTC values must be decoded BCD. Detail signals show only active bit descriptions.</value></data>
+  <data name="Software version" xml:space="preserve"><value>Software version</value></data>
+  <data name="Move up" xml:space="preserve"><value>Move up</value></data>
+  <data name="Version (value / 10)" xml:space="preserve"><value>Version (value / 10)</value></data>
+  <data name="Number" xml:space="preserve"><value>Number</value></data>
+  <data name="Bit mask (hex)" xml:space="preserve"><value>Bit mask (hex)</value></data>
+  <data name="No data" xml:space="preserve"><value>No data</value></data>
+  <data name="Converter Info" xml:space="preserve"><value>Converter Info</value></data>
+  <data name="Configure converter information" xml:space="preserve"><value>Configure converter information</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Show converter information card" xml:space="preserve"><value>Show converter information card</value></data>
+  <data name="Fill from monitor defaults" xml:space="preserve"><value>Fill from monitor defaults</value></data>
+  <data name="Display format" xml:space="preserve"><value>Display format</value></data>
+  <data name="Add signal" xml:space="preserve"><value>Add signal</value></data>
+  <data name="No active converter information" xml:space="preserve"><value>No active converter information</value></data>
+  <data name="Replace bindings with monitor defaults" xml:space="preserve"><value>Replace bindings with monitor defaults</value></data>
+  <data name="Separator" xml:space="preserve"><value>Separator</value></data>
+  <data name="Enter a hexadecimal mask from 0000 to FFFF" xml:space="preserve"><value>Enter a hexadecimal mask from 0000 to FFFF</value></data>
+  <data name="RTC (seconds, minutes, hours, day, month, year)" xml:space="preserve"><value>RTC (seconds, minutes, hours, day, month, year)</value></data>
+  <data name="FPGA version" xml:space="preserve"><value>FPGA version</value></data>
+  <data name="Control Unit" xml:space="preserve"><value>Control Unit</value></data>
+  <data name="Converter information updated. Remember to save." xml:space="preserve"><value>Converter information updated. Remember to save.</value></data>
+  <data name="Zoom out" xml:space="preserve"><value>Zoom out</value></data>
+  <data name="Expand area" xml:space="preserve"><value>Expand area</value></data>
+  <data name="Synoptic zoom" xml:space="preserve"><value>Synoptic zoom</value></data>
+  <data name="Add to center" xml:space="preserve"><value>Add to center</value></data>
+  <data name="Synoptic canvas. Control plus wheel to zoom; Space plus drag to pan." xml:space="preserve"><value>Synoptic canvas. Control plus wheel to zoom; Space plus drag to pan.</value></data>
+  <data name="Fit all" xml:space="preserve"><value>Fit all</value></data>
+  <data name="Zoom level" xml:space="preserve"><value>Zoom level</value></data>
+  <data name="Restore area" xml:space="preserve"><value>Restore area</value></data>
+  <data name="Resize work area. Use the up and down arrow keys." xml:space="preserve"><value>Resize work area. Use the up and down arrow keys.</value></data>
+  <data name="Fit width" xml:space="preserve"><value>Fit width</value></data>
+  <data name="Zoom in" xml:space="preserve"><value>Zoom in</value></data>
+  <data name="Synoptic work area" xml:space="preserve"><value>Synoptic work area</value></data>
+  <data name="Center synoptic" xml:space="preserve"><value>Center</value></data>
+  <data name="No active errors" xml:space="preserve">
+    <value>No active errors</value>
+  </data>
+  <data name="Error descriptions" xml:space="preserve">
+    <value>Error descriptions</value>
+  </data>
+  <data name="View descriptions" xml:space="preserve"><value>View descriptions</value></data>
+  <data name="Comparison" xml:space="preserve"><value>Comparison</value></data>
+  <data name="Greater than" xml:space="preserve"><value>Greater than</value></data>
+  <data name="Less than or equal to" xml:space="preserve"><value>Less than or equal to</value></data>
+  <data name="Hide element in viewer" xml:space="preserve"><value>Hide element in viewer</value></data>
+  <data name="Only in administrator mode" xml:space="preserve"><value>Only in administrator mode</value></data>
+  <data name="Fallback signal when data is missing" xml:space="preserve"><value>Fallback signal when data is missing</value></data>
 </root>

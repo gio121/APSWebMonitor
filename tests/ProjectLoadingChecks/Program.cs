@@ -367,6 +367,52 @@ try
     Check(projects.Current?.Id == initialId, "Firmware transfer keeps the current project selected");
     monitor.EndReprogramming();
 
+    // Existing working copies must be upgraded on restart, not only when first created.
+    var legacyDraftConfig = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["Projects:RootDirectory"] = Path.Combine(root, "legacy-drafts")
+    }).Build();
+    foreach (var dirty in new[] { false, true })
+    {
+        var legacyProjects = new ProjectDatabaseService(environment, NullLogger<ProjectDatabaseService>.Instance, legacyDraftConfig);
+        var legacySource = await legacyProjects.ImportAsync(dirty ? "Dirty" : "Clean", "0.1", "aps.db", new MemoryStream(sourceBytes));
+        var sourceBeforeUpgrade = await File.ReadAllBytesAsync(legacySource.DatabasePath);
+        var legacyBranding = new ProjectBrandingService(new ActiveProjectDbContextFactory(legacyProjects), legacyProjects);
+        await new ProjectLoadingService(legacyProjects, legacyBranding, monitor).LoadAsync(legacySource.Id);
+        var legacyDraft = legacyProjects.Current!;
+        using (var db = new ProjectDbContextFactory(legacyDraft.ConnectionString).CreateDbContext())
+            db.Database.ExecuteSqlRaw("ALTER TABLE Windows DROP COLUMN ConverterInfoConfigJson");
+        // Recreate the manifest written by the previous application version.
+        var legacyHash = (string)typeof(ProjectDatabaseService).GetMethod("ConfigurationHash",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(null, [legacyDraft.ConnectionString])!;
+        var manifestPath = Path.Combine(Path.GetDirectoryName(legacyDraft.DatabasePath)!, "estado.json");
+        var legacyManifest = System.Text.Json.JsonSerializer.Deserialize<DraftManifest>(File.ReadAllText(manifestPath))!;
+        File.WriteAllText(manifestPath, System.Text.Json.JsonSerializer.Serialize(legacyManifest with { BaselineHash = legacyHash }));
+        if (dirty)
+            using (var db = new ProjectDbContextFactory(legacyDraft.ConnectionString).CreateDbContext())
+                db.Database.ExecuteSqlRaw("UPDATE Windows SET Nombre = 'Saved draft edit'");
+
+        var legacyRestart = new ProjectDatabaseService(environment, NullLogger<ProjectDatabaseService>.Instance, legacyDraftConfig);
+        legacyRestart.RestoreSelection();
+        Check(legacyRestart.Current?.DatabasePath == legacyDraft.DatabasePath, "Restart upgrades the same legacy working copy");
+        var resumedData = new ApsDataService(legacyRestart.CaptureFactory(), application);
+        var resumedWindow = (await resumedData.GetWindowsAsync()).Single();
+        Check(resumedWindow.ConverterInfoConfigJson == "{}", "Login can query windows from a legacy draft after restart");
+        Check(resumedWindow.Nombre == (dirty ? "Saved draft edit" : "Ventana Norte"), "Schema upgrade preserves saved draft edits");
+        Check((await legacyRestart.GetDraftStatusAsync()).HasChanges == dirty, "Schema upgrade preserves clean and dirty draft status");
+        var nextRestart = new ProjectDatabaseService(environment, NullLogger<ProjectDatabaseService>.Instance, legacyDraftConfig);
+        nextRestart.RestoreSelection();
+        Check((await nextRestart.GetDraftStatusAsync()).HasChanges == dirty, "Repeated recovery is idempotent");
+        resumedWindow.ConverterInfoConfigJson = "{\"Enabled\":false}";
+        await resumedData.UpdateWindowAsync(resumedWindow);
+        Check((await resumedData.GetWindowsAsync()).Single().ConverterInfoConfigJson == resumedWindow.ConverterInfoConfigJson,
+            "Converter configuration remains writable after legacy recovery");
+        var sourceAfterUpgrade = await File.ReadAllBytesAsync(legacySource.DatabasePath);
+        Check(sourceBeforeUpgrade.SequenceEqual(sourceAfterUpgrade),
+            "Recovery never upgrades or changes the published source revision");
+    }
+
     var legacyDirectory = Path.Combine(root, "Projects");
     Directory.CreateDirectory(legacyDirectory);
     await File.WriteAllBytesAsync(Path.Combine(legacyDirectory, "OldProject.db"), sourceBytes);

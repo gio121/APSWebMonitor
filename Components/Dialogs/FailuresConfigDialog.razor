@@ -42,11 +42,21 @@
                                          Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Clearable="true" MaxItems="1000" />
                     </div>
 
+                    <MudAutocomplete T="Signal" Label="@Ui["Last Stop:"]"
+                                     Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.LastStopSignalId))"
+                                     SearchFunc="@SearchSignals" ToStringFunc="@(s => s?.BindingLabel ?? "")"
+                                     ValueChanged="@(s => category.LastStopSignalId = s?.Id)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" MaxItems="1000" />
+                    <MudAutocomplete T="Signal" Label="@Ui["Failures:"]"
+                                     Value="@(AvailableSignals.FirstOrDefault(s => s.Id == category.FailureSignalId))"
+                                     SearchFunc="@SearchSignals" ToStringFunc="@(s => s?.BindingLabel ?? "")"
+                                     ValueChanged="@(s => category.FailureSignalId = s?.Id)"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" MaxItems="1000" />
                     <MudText Typo="Typo.caption" Class="fw-bold text-uppercase mt-4 d-block">@Ui["Detail signals (descriptions)"]</MudText>
                     
                     @if (category.SignalIds.Any())
                     {
-                        <div class="d-flex flex-wrap gap-1 my-2 pa-2 rounded" style="background: rgba(0,0,0,0.1); border: 1px solid var(--mud-palette-lines-default);">
+                        <div class="d-flex flex-wrap gap-1 my-2 pa-2 rounded" style="background: var(--mud-palette-background); border: 1px solid var(--mud-palette-lines-default);">
                             @foreach (var sigId in category.SignalIds.ToList())
                             {
                                 var sig = AvailableSignals.FirstOrDefault(s => s.Id == sigId);
@@ -75,7 +85,7 @@
                                                      Placeholder="@Ui["Type to search..."]"
                                                      Immediate="true" />
                                         
-                                        <div class="mt-2 rounded border border-solid border-white-5" style="height: 250px; overflow-y: auto; background: #1a1a1a;">
+                                        <div class="mt-2 rounded border border-solid border-white-5" style="height: 250px; overflow-y: auto; background: var(--mud-palette-surface);">
                                             @{
                                                 var term = _searchTerms.GetValueOrDefault(category.Id) ?? "";
                                                 var filtered = AvailableSignals.Where(s => 
@@ -231,8 +241,9 @@
 
     private void ApplyDefaultsIfEmpty(FailureCategoryConfig cat)
     {
+        ApsMonitor.Services.SynopticFailureEvaluator.ApplyDefaults(cat, AvailableSignals);
         string name = cat.Name?.Trim() ?? "";
-        if (name.Equals("Inversor", StringComparison.OrdinalIgnoreCase))
+        if (name.Equals("Inversor", StringComparison.OrdinalIgnoreCase) || name.Equals("Inverter", StringComparison.OrdinalIgnoreCase))
         {
             cat.StatusSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("status_ac", StringComparison.OrdinalIgnoreCase))?.Id;
             cat.CountSignalId ??= AvailableSignals.FirstOrDefault(s => s.Tag.Equals("nfails_ac", StringComparison.OrdinalIgnoreCase))?.Id;
@@ -273,6 +284,8 @@
     {
         cat.StatusSignalId = null;
         cat.CountSignalId = null;
+        cat.LastStopSignalId = null;
+        cat.FailureSignalId = null;
         cat.CmdFrameType = "";
         cat.StopSubCmd = "";
         cat.StartSubCmd = "";

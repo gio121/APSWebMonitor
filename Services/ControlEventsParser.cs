@@ -43,11 +43,16 @@ public static class ControlEventsParser
                 var value = element.Element("value");
                 var info = element.Element("info");
                 var labels = new Dictionary<int, string>();
+                var spanishLabels = new Dictionary<int, string>();
                 foreach (var label in info?.Element("info_elements")?.Elements("info_value_element_t") ?? [])
+                {
                     labels.TryAdd(Int(label, "value"), Localized(label.Element("value_description")));
+                    if (MonitorLocalization.Description(label.Element("value_description"), "es") is { } spanish)
+                        spanishLabels.TryAdd(Int(label, "value"), spanish);
+                }
                 values.Add(key, new(key, Localized(element.Element("description"), key), Text(value, "valtype").ToUpperInvariant(),
                     Number(value, "scale", 1), Number(value, "offset", 0), Text(info, "units"), Text(info, "type") == "BITFIELD",
-                    Number(info, "min", 0), Number(info, "max", double.MaxValue), labels));
+                    Number(info, "min", 0), Number(info, "max", double.MaxValue), labels) { SpanishLabels = spanishLabels });
             }
             var blocks = new List<ControlEventBlock>();
             foreach (var block in trace.Element("eventdata")?.Elements("data_block_t") ?? [])

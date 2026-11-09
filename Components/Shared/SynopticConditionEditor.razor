@@ -6,7 +6,12 @@
                      Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
     <MudNumericField T="int?" Label="@Ui["Bit (blank: full value)"]" @bind-Value="Condition.SignalBit" Min="0" Max="63" Margin="Margin.Dense" />
 }
-<MudNumericField T="double?" Label="@Ui["Equals (blank: non-zero)"]" @bind-Value="Condition.ExpectedValue" Margin="Margin.Dense" />
+<MudSelect T="string" Label="@Ui["Comparison"]" @bind-Value="Condition.Comparison" Margin="Margin.Dense">
+    <MudSelectItem Value="@("Equal")">@Ui["Equals (blank: non-zero)"]</MudSelectItem>
+    <MudSelectItem Value="@("GreaterThan")">@Ui["Greater than"]</MudSelectItem>
+    <MudSelectItem Value="@("LessOrEqual")">@Ui["Less than or equal to"]</MudSelectItem>
+</MudSelect>
+<MudNumericField T="double?" Label="@(Condition.Comparison == "Equal" ? Ui["Equals (blank: non-zero)"] : Ui["Comparison value"])" @bind-Value="Condition.ExpectedValue" Margin="Margin.Dense" />
 <MudCheckBox T="bool" Label="@Ui["Invert condition"]" @bind-Value="Condition.Invert" />
 <MudAutocomplete T="Signal" Label="@Ui["Compare with another signal (optional)"]" Value="@(Signals.FirstOrDefault(s => s.Id == Condition.CompareSignalId))"
                  SearchFunc="Search" ToStringFunc="@(s => s?.BindingLabel)" ValueChanged="@(s => Condition.CompareSignalId = s?.Id)"
@@ -15,6 +20,9 @@
 {
     <MudNumericField T="int?" Label="@Ui["Comparison bit"]" @bind-Value="Condition.CompareSignalBit" Min="0" Max="63" Margin="Margin.Dense" />
 }
+<MudAutocomplete T="Signal" Label="@Ui["Fallback signal when data is missing"]" Value="@(Signals.FirstOrDefault(s => s.Id == Condition.FallbackSignalId))"
+                 SearchFunc="Search" ToStringFunc="@(s => s?.BindingLabel)" ValueChanged="@(s => Condition.FallbackSignalId = s?.Id)"
+                 Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
 @code {
     [Parameter, EditorRequired] public SynopticCondition Condition { get; set; } = new();
     [Parameter] public IEnumerable<Signal> Signals { get; set; } = Array.Empty<Signal>();

@@ -1,0 +1,159 @@
+/* Loaded only by MonitorThemeProvider in light mode, including dialogs and full-screen views.
+   The root/body prefix wins over page-local rules regardless of navigation/render order. */
+html { color-scheme: light; }
+:root body .mud-nav-link:hover,
+:root body .drag-handle:hover,
+:root body .log-entry:hover { background-color: #e8e8e8 !important; }
+:root body .mud-nav-link.active {
+    color: #2563eb !important;
+    background-color: #eaf1ff !important;
+    border-right-color: #2563eb;
+}
+:root body .mud-table-root .mud-table-head .mud-table-cell {
+    background: #e8e8e8 !important;
+    color: #616161;
+}
+:root body .text-muted { color: #616161 !important; }
+:root body .custom-input .mud-input { background: var(--mud-palette-surface) !important; }
+:root body .console-header,
+:root body .console-footer,
+:root body .event-log-header,
+:root body .access-panel { background: var(--mud-palette-surface); }
+:root body .console-panel-wrapper::before,
+:root body .console-scanlines { display: none; }
+:root body .console-title-icon { background: #eaf1ff; color: #2563eb; }
+:root body .console-header-divider { background: #dddddd; }
+:root body .console-footer,
+:root body .console-empty-text,
+:root body .console-empty-sub,
+:root body .log-time { color: #616161; }
+:root body .log-tx .log-msg,
+:root body .log-rx .log-msg { color: #252525; }
+:root body .stat-tx .stat-badge,
+:root body .badge-tx { color: #1d4ed8; box-shadow: none; }
+:root body .stat-rx .stat-badge,
+:root body .badge-rx,
+:root body .console-live-text { color: #15803d; box-shadow: none; }
+:root body .stat-er .stat-badge,
+:root body .badge-er,
+:root body .log-error .log-msg { color: #b91c1c; box-shadow: none; }
+:root body .value-changed { color: #2563eb !important; text-shadow: none; }
+
+:root body .session-player-global-bar { background: var(--mud-palette-surface); }
+:root body .session-player-global-bar .mud-paper,
+:root body .session-player-minimized {
+    border-color: #dddddd;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Synoptic chrome follows the monitor theme; the diagram retains its own theme selector. */
+:root body .editor-container.light-theme { background-color: var(--mud-palette-surface); }
+:root body .synoptic-viewport:not(.is-dark) {
+    --synoptic-background: var(--mud-palette-surface);
+    --synoptic-panel: #e8e8e8;
+}
+:root body .editor-header,
+:root body .editor-container > .sidebar,
+:root body .ind-card,
+:root body .failures-side-panel,
+:root body .panel-header,
+:root body .panel-footer,
+:root body .converter-info-card {
+    background: var(--mud-palette-surface);
+    color: #252525;
+    border-color: #dddddd;
+    box-shadow: none;
+}
+:root body .ind-card.has-errors { border-left-color: #dc2626; }
+:root body .ind-card.is-ok { border-left-color: #15803d; }
+/* Separate viewer cards with a subtle border/shadow instead of a dark backdrop. */
+:root body .sinoptico-viewer-layout,
+:root body .sinoptico-viewer-layout .failures-top-panel {
+    background: var(--mud-palette-background);
+    border-color: var(--mud-palette-lines-default);
+}
+:root body .sinoptico-viewer-layout .failures-top-panel { backdrop-filter: none; }
+:root body .sinoptico-viewer-layout .ind-card,
+:root body .sinoptico-viewer-layout .converter-info-card {
+    border: 1px solid #d0d0d0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+}
+:root body .sinoptico-viewer-layout .ind-counter-box,
+:root body .sinoptico-viewer-layout .ind-detail-scroll {
+    background: var(--mud-palette-surface);
+    color: #252525;
+    border-color: #dddddd;
+}
+:root body .sinoptico-viewer-layout .ind-progress { background: #e8e8e8; border-color: #dddddd; }
+:root body .sinoptico-viewer-layout .ind-pct,
+:root body .sinoptico-viewer-layout .mini-desc { color: #252525; }
+:root body .sinoptico-viewer-layout .mini-tag { color: #2563eb; }
+:root body .sinoptico-viewer-layout .synoptic-status-summary {
+    background: #ffffff;
+    color: #000000;
+    border-bottom: 1px solid #dddddd;
+}
+:root body .ind-card-title,
+:root body .entry-text { color: #252525; }
+:root body .ind-label,
+:root body .converter-tag,
+:root body .version-row span:not(:first-child) { color: #2563eb; }
+:root body .ind-field { background: var(--mud-palette-surface); color: #252525; border-color: #dddddd; }
+:root body .ind-field.status-run { background: #e6f4ea; color: #166534; border-color: #a7d7b5; }
+:root body .ind-field.status-stop { background: #fce8e8; color: #b91c1c; border-color: #f0b4b4; }
+:root body .ind-field.status-warn { background: #fff4ce; color: #805300; border-color: #e6cd85; }
+:root body .ind-field.status-off,
+:root body .converter-empty,
+:root body .entry-meta .bit,
+:root body .footer-msg { color: #616161; }
+:root body .ind-card-badge { background: #eeeeee; color: #252525; }
+:root body .has-errors .ind-card-badge { background: #dc2626; color: #ffffff; }
+:root body .converter-info-title { background: #e8e8e8; }
+:root body .converter-versions,
+:root body .converter-versions section + section,
+:root body .converter-info-entry,
+:root body .ind-card-header,
+:root body .category-title-row,
+:root body .failure-entry { border-color: #dddddd; }
+:root body .panel-toggle-handle { background: #e8e8e8; color: #616161; border-color: #dddddd; }
+:root body .panel-toggle-handle:hover { background: #eeeeee; color: #252525; }
+:root body .panel-toggle-handle.has-errors { background: #b91c1c; color: #ffffff; border-color: #dc2626; }
+:root body .category-pill.ok { color: #15803d; }
+:root body .category-pill.error,
+:root body .header-badge { color: #b91c1c; }
+:root body .btn-run { color: #15803d; }
+:root body .btn-warn { color: #996300; }
+
+:root body .login-layout { background: var(--mud-palette-background); }
+:root body .login-card {
+    background: var(--mud-palette-surface);
+    border-color: #dddddd;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+:root body .login-layout::before { display: none; }
+:root body .login-language { color: #616161; }
+:root body .login-input { --login-input-background: var(--mud-palette-surface); }
+:root body .login-divider { background: #dddddd; }
+:root body .login-hint { border-color: #dddddd; }
+
+/* Session and protocol indicators need darker ink on a white surface. */
+:root body .badge-ctrl-rx { color: #15803d; }
+:root body .badge-ctrl-tx { color: #996300; }
+:root body .badge-trdp-rx { color: #0369a1; }
+:root body .badge-trdp-tx { color: #7e22ce; }
+:root body .badge-pte-rx { color: #be123c; }
+:root body .badge-pte-tx { color: #c2410c; }
+:root body .type-scalar { color: #0369a1; }
+:root body .type-bit { color: #996300; }
+:root body .bit-on .bit-label,
+:root body .bit-on .bit-tick { color: #15803d; text-shadow: none; }
+:root body .trdp-live-icon { color: #0369a1 !important; }
+:root body .trdp-stat-box .stat-value,
+:root body .player-time-val,
+:root body .trdp-val-badge,
+:root body .hexdump-code { color: #0369a1; }
+:root body .trdp-raw-dec { color: #996300; }
+:root body .trdp-offset-badge { color: #7e22ce; }
+:root body .trdp-led-chip.led-on { color: #15803d; }
+:root body .trdp-table th,
+:root body .trdp-struct-table th { background: #e8e8e8; color: #616161; }

@@ -4689,4 +4689,54 @@ La monitorización continua activa se detendrá temporalmente durante la transfe
   <data name="You need configuration editing permissions to publish or discard a draft." xml:space="preserve">
     <value>Necesitas permisos de edición de configuración para publicar o descartar un borrador.</value>
   </data>
+  <data name="Select the signals in display order. RTC values must be decoded BCD. Detail signals show only active bit descriptions." xml:space="preserve"><value>Selecciona las señales en orden de visualización. Los valores RTC deben estar decodificados de BCD. El detalle muestra solo los textos de los bits activos.</value></data>
+  <data name="Software version" xml:space="preserve"><value>Versión de software</value></data>
+  <data name="Move up" xml:space="preserve"><value>Subir</value></data>
+  <data name="Version (value / 10)" xml:space="preserve"><value>Versión (valor / 10)</value></data>
+  <data name="Number" xml:space="preserve"><value>Número</value></data>
+  <data name="Bit mask (hex)" xml:space="preserve"><value>Máscara de bits (hex)</value></data>
+  <data name="No data" xml:space="preserve"><value>Sin datos</value></data>
+  <data name="Converter Info" xml:space="preserve"><value>Información del convertidor</value></data>
+  <data name="Configure converter information" xml:space="preserve"><value>Configurar información del convertidor</value></data>
+  <data name="Date" xml:space="preserve"><value>Fecha</value></data>
+  <data name="Remove" xml:space="preserve"><value>Quitar</value></data>
+  <data name="Apply" xml:space="preserve"><value>Aplicar</value></data>
+  <data name="Show converter information card" xml:space="preserve"><value>Mostrar tarjeta de información del convertidor</value></data>
+  <data name="Fill from monitor defaults" xml:space="preserve"><value>Rellenar con valores del monitor</value></data>
+  <data name="Display format" xml:space="preserve"><value>Formato de visualización</value></data>
+  <data name="Add signal" xml:space="preserve"><value>Añadir señal</value></data>
+  <data name="No active converter information" xml:space="preserve"><value>Sin información activa del convertidor</value></data>
+  <data name="Replace bindings with monitor defaults" xml:space="preserve"><value>Sustituir señales por las del monitor</value></data>
+  <data name="Separator" xml:space="preserve"><value>Separador</value></data>
+  <data name="Enter a hexadecimal mask from 0000 to FFFF" xml:space="preserve"><value>Introduce una máscara hexadecimal de 0000 a FFFF</value></data>
+  <data name="RTC (seconds, minutes, hours, day, month, year)" xml:space="preserve"><value>RTC (segundos, minutos, horas, día, mes, año)</value></data>
+  <data name="FPGA version" xml:space="preserve"><value>Versión de FPGA</value></data>
+  <data name="Control Unit" xml:space="preserve"><value>Unidad de control</value></data>
+  <data name="Converter information updated. Remember to save." xml:space="preserve"><value>Información del convertidor actualizada. Recuerda guardar.</value></data>
+  <data name="Zoom out" xml:space="preserve"><value>Reducir</value></data>
+  <data name="Expand area" xml:space="preserve"><value>Expandir área</value></data>
+  <data name="Synoptic zoom" xml:space="preserve"><value>Zoom del sinóptico</value></data>
+  <data name="Add to center" xml:space="preserve"><value>Añadir al centro</value></data>
+  <data name="Synoptic canvas. Control plus wheel to zoom; Space plus drag to pan." xml:space="preserve"><value>Lienzo del sinóptico. Control y rueda para ampliar; espacio y arrastre para desplazar.</value></data>
+  <data name="Fit all" xml:space="preserve"><value>Ajustar todo</value></data>
+  <data name="Zoom level" xml:space="preserve"><value>Nivel de zoom</value></data>
+  <data name="Restore area" xml:space="preserve"><value>Restaurar área</value></data>
+  <data name="Resize work area. Use the up and down arrow keys." xml:space="preserve"><value>Cambiar altura del área de trabajo. Usa las flechas arriba y abajo.</value></data>
+  <data name="Fit width" xml:space="preserve"><value>Ajustar ancho</value></data>
+  <data name="Zoom in" xml:space="preserve"><value>Ampliar</value></data>
+  <data name="Synoptic work area" xml:space="preserve"><value>Área de trabajo del sinóptico</value></data>
+  <data name="Center synoptic" xml:space="preserve"><value>Centrar</value></data>
+  <data name="No active errors" xml:space="preserve">
+    <value>No hay errores activos</value>
+  </data>
+  <data name="Error descriptions" xml:space="preserve">
+    <value>Descripciones de errores</value>
+  </data>
+  <data name="View descriptions" xml:space="preserve"><value>Ver descripciones</value></data>
+  <data name="Comparison" xml:space="preserve"><value>Comparación</value></data>
+  <data name="Greater than" xml:space="preserve"><value>Mayor que</value></data>
+  <data name="Less than or equal to" xml:space="preserve"><value>Menor o igual que</value></data>
+  <data name="Hide element in viewer" xml:space="preserve"><value>Ocultar elemento en el visor</value></data>
+  <data name="Only in administrator mode" xml:space="preserve"><value>Solo en modo administrador</value></data>
+  <data name="Fallback signal when data is missing" xml:space="preserve"><value>Señal alternativa si falta el dato</value></data>
 </root>

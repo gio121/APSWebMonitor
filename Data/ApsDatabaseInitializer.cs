@@ -26,16 +26,24 @@ public static class ApsDatabaseInitializer
             command.CommandText = "PRAGMA table_info(Windows)";
             using var reader = command.ExecuteReader();
             bool hasFailuresColumn = false;
+            bool hasConverterInfoColumn = false;
             bool hasPermitirColumn = false;
             bool hasAllowedRolesColumn = false;
             while (reader.Read())
             {
                 var colName = reader.GetString(1);
                 if (colName == "FailuresConfigJson") { hasFailuresColumn = true; }
+                if (colName == "ConverterInfoConfigJson") { hasConverterInfoColumn = true; }
                 if (colName == "PermitirMantenimiento") { hasPermitirColumn = true; }
                 if (colName == "AllowedRolesJson") { hasAllowedRolesColumn = true; }
             }
             reader.Close();
+
+            if (!hasConverterInfoColumn)
+            {
+                command.CommandText = "ALTER TABLE Windows ADD COLUMN ConverterInfoConfigJson TEXT NOT NULL DEFAULT '{}'";
+                command.ExecuteNonQuery();
+            }
 
             if (!hasFailuresColumn)
             {

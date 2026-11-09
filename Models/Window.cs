@@ -23,6 +23,8 @@ public class Window
     // Failure configuration (JSON serialized List<FailureCategoryConfig>)
     public string FailuresConfigJson { get; set; } = "[]";
 
+    public string ConverterInfoConfigJson { get; set; } = "{}";
+
     public List<string> GetAllowedRoles()
     {
         try
@@ -58,7 +60,10 @@ public class FailureCategoryConfig
     public string Name { get; set; } = string.Empty;
     public int? StatusSignalId { get; set; }
     public int? CountSignalId { get; set; }
+    public int? LastStopSignalId { get; set; }
+    public int? FailureSignalId { get; set; }
     public List<int> SignalIds { get; set; } = new();
+    public Dictionary<int, ushort> DetailSignalMasks { get; set; } = new();
 
     // ── Subcomandos Start/Stop/Reset ───────────────────────────────────────────
     /// <summary>FrameType para comandos start/stop (por defecto 0x7A).</summary>

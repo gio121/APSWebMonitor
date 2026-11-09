@@ -1,6 +1,7 @@
 @using ApsMonitor.Services
 @using ApsMonitor.Models
 @inject SessionStateService SessionState
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 @if (SessionState.IsLoaded)
@@ -98,6 +99,7 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.6);
         border: 1px solid rgba(59, 130, 246, 0.3);
     }
+    .mud-main-content:has(.sinoptico-viewer-layout) .session-player-minimized { left: 24px; right: auto; }
     .drag-handle {
         cursor: grab;
         padding: 4px 2px;
@@ -125,7 +127,20 @@
 
     protected override void OnInitialized()
     {
-        SessionState.OnStateChanged += () => InvokeAsync(StateHasChanged);
+        _minimized = IsSynopticViewer();
+        SessionState.OnStateChanged += Refresh;
+        NavigationManager.LocationChanged += LocationChanged;
+    }
+
+    private bool IsSynopticViewer() => NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+        .StartsWith("sinoptico/ver/", StringComparison.OrdinalIgnoreCase);
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    private void LocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
+    {
+        _minimized = IsSynopticViewer();
+        Refresh();
     }
     
     private void StartDrag(MouseEventArgs e)
@@ -159,6 +174,7 @@
 
     public void Dispose()
     {
-        SessionState.OnStateChanged -= StateHasChanged;
+        SessionState.OnStateChanged -= Refresh;
+        NavigationManager.LocationChanged -= LocationChanged;
     }
 }

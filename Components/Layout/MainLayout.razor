@@ -10,7 +10,7 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudDrawer Class="monitor-sidebar" @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Variant="DrawerVariant.Persistent">
+    <MudDrawer Class="monitor-sidebar" @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Never" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md">
         <div class="px-4 py-4 d-flex align-center justify-space-between logo-header">
             <ProjectIdentity />
             <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Inherit" Size="Size.Small" OnClick="@(() => _drawerOpen = false)" Title="@Ui["Hide sidebar"]" />
@@ -34,14 +34,14 @@
         </div>
     </MudDrawer>
 
-    <MudMainContent>
+    <MudMainContent Class="monitor-main-content">
         @if (!_drawerOpen)
         {
             <div class="px-4 pt-2">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => _drawerOpen = true)" Title="@Ui["Show sidebar"]" />
             </div>
         }
-        <div class="@(_sessionState.IsLoaded ? "px-8 pt-4 pb-24" : "px-8 pt-4")">
+        <div class="monitor-page-content @(_sessionState.IsLoaded ? "has-session" : "")">
             @Body
         </div>
         <SessionPlayerBar />
@@ -50,6 +50,11 @@
 <DeviceConnectionStatus />
 
 <style>
+    /* Use a small top gutter instead of the unused MudAppBar reservation. */
+    .monitor-main-content { min-width: 0; padding-top: 16px !important; }
+    .monitor-page-content { min-width: 0; padding: 0 32px; }
+    .monitor-page-content.has-session { padding-bottom: 96px; }
+    @@media (max-width: 600px) { .monitor-page-content { padding: 0 8px; } }
     .logo-header {
         border-bottom: 1px solid var(--mud-palette-lines-default);
     }

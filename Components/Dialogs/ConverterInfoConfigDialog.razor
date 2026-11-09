@@ -1,0 +1,96 @@
+@using System.Text.Json
+@using System.Globalization
+@using ApsMonitor.Models
+@using ApsMonitor.Components.Shared
+
+<MudDialog>
+    <DialogContent>
+        <MudCheckBox @bind-Value="_config.Enabled" Label="@Ui["Show converter information card"]" Color="Color.Info" />
+        <MudText Typo="Typo.body2" Class="mb-3">@Ui["Select the signals in display order. RTC values must be decoded BCD. Detail signals show only active bit descriptions."]</MudText>
+        <MudPaper Outlined="true" Class="pa-3 mb-3">
+            <MudText Typo="Typo.subtitle2">@Ui["Fill from monitor defaults"]</MudText>
+            <div class="d-flex gap-2">
+                <MudSelect T="int?" @bind-Value="_controlNode" Label="@Ui["Control Unit"]" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var node in Nodes) { <MudSelectItem T="int?" Value="@((int?)node.Key)">@node.Key · @node.First().NodoDescripcion</MudSelectItem> }
+                </MudSelect>
+                <MudSelect T="int?" @bind-Value="_communicationsNode" Label="@Ui["Communications"]" Clearable="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var node in Nodes) { <MudSelectItem T="int?" Value="@((int?)node.Key)">@node.Key · @node.First().NodoDescripcion</MudSelectItem> }
+                </MudSelect>
+            </div>
+            <MudButton OnClick="ApplyDefaults" StartIcon="@Icons.Material.Filled.AutoFixHigh" Disabled="@(!_controlNode.HasValue && !_communicationsNode.HasValue)">@Ui["Replace bindings with monitor defaults"]</MudButton>
+        </MudPaper>
+        <div style="max-height: 50vh; overflow-y: auto;">
+            <MudExpansionPanels MultiExpansion="true" @key="_config">
+                <InfoValueBindingEditor Label="@(Ui["Control Unit"] + " · SW")" Binding="_config.ControlSoftware" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Control Unit"] + " · " + Ui["Software version"])" Binding="_config.ControlVersion" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Control Unit"] + " · FPGA")" Binding="_config.FpgaName" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Control Unit"] + " · " + Ui["FPGA version"])" Binding="_config.FpgaVersion" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Communications"] + " · SW")" Binding="_config.CommunicationsSoftware" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Communications"] + " · " + Ui["Software version"])" Binding="_config.CommunicationsVersion" Signals="AvailableSignals" />
+                <InfoValueBindingEditor Label="@(Ui["Communications"] + " · " + Ui["Date"])" Binding="_config.CommunicationsDate" Signals="AvailableSignals" />
+                <MudExpansionPanel Text="@Ui["Converter Info"]">
+                    @foreach (var binding in _config.DetailSignals.ToList())
+                    {
+                        <div class="d-flex align-center gap-2 mb-2" @key="binding.SignalId">
+                            <MudText Typo="Typo.caption" Class="flex-grow-1">@(AvailableSignals.FirstOrDefault(s => s.Id == binding.SignalId)?.BindingLabel ?? $"ID:{binding.SignalId}")</MudText>
+                            <MudTextField T="string" Value="@_maskTexts.GetValueOrDefault(binding.SignalId, binding.Mask.ToString("X4"))" ValueChanged="@(text => SetMask(binding, text))"
+                                          Label="@Ui["Bit mask (hex)"]" Error="@_invalidMasks.Contains(binding.SignalId)" ErrorText="@Ui["Enter a hexadecimal mask from 0000 to FFFF"]"
+                                          Immediate="true" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 180px" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="@(() => RemoveDetail(binding))" title="@Ui["Remove"]" />
+                        </div>
+                    }
+                    <MudAutocomplete T="Signal" Label="@Ui["Add signal"]" SearchFunc="SearchDetailSignals" ToStringFunc="@(s => s?.BindingLabel ?? "")"
+                                     Value="@((Signal?)null)" ValueChanged="AddDetail" Clearable="true" ResetValueOnEmptyText="true"
+                                     Variant="Variant.Outlined" Margin="Margin.Dense" MaxItems="100" />
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@Ui["Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_invalidMasks.Count > 0)">@Ui["Apply"]</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string ConfigJson { get; set; } = "{}";
+    [Parameter] public List<Signal> AvailableSignals { get; set; } = new();
+    private ConverterInfoConfig _config = new();
+    private int? _controlNode;
+    private int? _communicationsNode;
+    private HashSet<int> _invalidMasks = new();
+    private Dictionary<int, string> _maskTexts = new();
+    private IEnumerable<IGrouping<int, Signal>> Nodes => AvailableSignals.Where(s => !s.IsDeleted).GroupBy(s => s.NodoNumero).OrderBy(n => n.Key);
+
+    protected override void OnInitialized()
+    {
+        _config = ConverterInfoEvaluator.Load(ConfigJson, AvailableSignals);
+        _controlNode = AvailableSignals.FirstOrDefault(s => _config.ControlSoftware.SignalIds.Contains(s.Id))?.NodoNumero;
+        _communicationsNode = AvailableSignals.FirstOrDefault(s => _config.CommunicationsSoftware.SignalIds.Contains(s.Id))?.NodoNumero;
+    }
+    private void ApplyDefaults()
+    {
+        var enabled = _config.Enabled;
+        _config = ConverterInfoEvaluator.Defaults(AvailableSignals, _controlNode, _communicationsNode);
+        _config.Enabled = enabled;
+        _invalidMasks.Clear();
+        _maskTexts.Clear();
+    }
+    private void SetMask(InfoFlagBinding binding, string text)
+    {
+        _maskTexts[binding.SignalId] = text;
+        if (ushort.TryParse(text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? text[2..] : text,
+            NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var mask))
+        { binding.Mask = mask; _invalidMasks.Remove(binding.SignalId); }
+        else _invalidMasks.Add(binding.SignalId);
+    }
+    private Task<IEnumerable<Signal>> SearchDetailSignals(string text, CancellationToken token) => Task.FromResult(AvailableSignals
+        .Where(s => !_config.DetailSignals.Any(b => b.SignalId == s.Id) && (string.IsNullOrWhiteSpace(text) ||
+            $"{s.BindingLabel} {s.Nombre}".Contains(text, StringComparison.OrdinalIgnoreCase))));
+    private void AddDetail(Signal? signal)
+    { if (signal is not null && !_config.DetailSignals.Any(b => b.SignalId == signal.Id)) _config.DetailSignals.Add(new() { SignalId = signal.Id }); }
+    private void RemoveDetail(InfoFlagBinding binding) { _config.DetailSignals.Remove(binding); _invalidMasks.Remove(binding.SignalId); _maskTexts.Remove(binding.SignalId); }
+    private void Cancel() => MudDialog.Cancel();
+    private void Submit() { if (_invalidMasks.Count == 0) MudDialog.Close(DialogResult.Ok(JsonSerializer.Serialize(_config))); }
+}

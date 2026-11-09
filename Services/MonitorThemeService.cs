@@ -4,7 +4,7 @@ namespace ApsMonitor.Services;
 
 public sealed class MonitorThemeService(IJSRuntime js)
 {
-    public bool IsDark { get; private set; } = true;
+    public bool IsDark { get; private set; } = false;
     private bool _loaded;
     public event Action? Changed;
     public async Task LoadAsync()
@@ -13,7 +13,7 @@ public sealed class MonitorThemeService(IJSRuntime js)
         try
         {
             var saved = await js.InvokeAsync<string?>("localStorage.getItem", "aps-monitor-theme");
-            IsDark = saved != "light";
+            IsDark = saved == "dark";
             _loaded = true;
             Changed?.Invoke();
         }

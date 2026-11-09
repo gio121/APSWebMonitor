@@ -1,7 +1,10 @@
 namespace ApsMonitor.Models;
 
 public sealed record ControlEventValue(string Key, string Name, string Type, double Scale, double Offset,
-    string Units, bool IsBitfield, double Min, double Max, IReadOnlyDictionary<int, string> Labels);
+    string Units, bool IsBitfield, double Min, double Max, IReadOnlyDictionary<int, string> Labels)
+{
+    public Dictionary<int, string> SpanishLabels { get; init; } = new();
+}
 public sealed record ControlEventReference(string Key, int Position);
 public sealed record ControlEventBlock(string Name, bool IsTrace, int Offset, int RegisterSize,
     int RegisterCount, IReadOnlyList<ControlEventReference> References);
