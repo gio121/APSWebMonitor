@@ -446,18 +446,61 @@
         {
             var host = TlsSecurityService.ExtractHost(MonitorState.IpAddress);
             using var client = TlsSecurity.CreateHttpClient(TimeSpan.FromSeconds(5));
-            var scheme = TlsSecurity.UseTls ? "https" : "http";
-            var apiUrl = $"{scheme}://{host}:{TlsSecurity.HttpsApiPort}/api/status";
 
-            using var resp = await client.GetAsync(apiUrl);
-            if (resp.IsSuccessStatusCode)
+            if (!TlsSecurity.UseTls)
             {
-                _testResultSuccess = true;
-                _testResultMessage = $"Conexión {scheme.ToUpperInvariant()} exitosa con {apiUrl} (HTTP {(int)resp.StatusCode}).";
+                var httpUrl = $"http://{host}:{TlsSecurity.HttpsApiPort}/api/session/info";
+                using var resp = await client.GetAsync(httpUrl);
+                _testResultSuccess = resp.IsSuccessStatusCode;
+                _testResultMessage = resp.IsSuccessStatusCode
+                    ? $"Conexión HTTP tradicional exitosa con {httpUrl} (HTTP {(int)resp.StatusCode})."
+                    : $"Respuesta recibida de {httpUrl}: HTTP {(int)resp.StatusCode}.";
                 return;
             }
+
+            var candidateUrls = new List<string>();
+            if (TlsSecurity.ClientCertSubject.Contains("APS Log Reader", StringComparison.OrdinalIgnoreCase))
+            {
+                candidateUrls.Add($"https://{host}:{TlsSecurity.LogGatewayTlsPort}/api/v1/health");
+            }
+            else if (TlsSecurity.ClientCertSubject.Contains("APS Supertool", StringComparison.OrdinalIgnoreCase))
+            {
+                candidateUrls.Add($"https://{host}:{TlsSecurity.RecoveryAgentTlsPort}/api/v1/ping");
+            }
+            else
+            {
+                candidateUrls.Add($"https://{host}:{TlsSecurity.LogGatewayTlsPort}/api/v1/health");
+                candidateUrls.Add($"https://{host}:{TlsSecurity.RecoveryAgentTlsPort}/api/v1/ping");
+                candidateUrls.Add($"https://{host}:{TlsSecurity.HttpsApiPort}/api/session/info");
+            }
+
+            Exception? lastError = null;
+            string lastTestedUrl = candidateUrls[0];
+
+            foreach (var apiUrl in candidateUrls)
+            {
+                lastTestedUrl = apiUrl;
+                try
+                {
+                    using var resp = await client.GetAsync(apiUrl);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        _testResultSuccess = true;
+                        _testResultMessage = $"Conexión mTLS 1.3 ({TlsSecurity.ClientKeyAlgorithm}) exitosa con {apiUrl} (HTTP {(int)resp.StatusCode}).";
+                        return;
+                    }
+                    _testResultSuccess = false;
+                    _testResultMessage = $"Respuesta recibida de {apiUrl}: HTTP {(int)resp.StatusCode}.";
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                }
+            }
+
             _testResultSuccess = false;
-            _testResultMessage = $"Respuesta recibida de {apiUrl}: HTTP {(int)resp.StatusCode}.";
+            _testResultMessage = $"No se pudo conectar con {lastTestedUrl}: {lastError?.Message}";
         }
         catch (Exception ex)
         {

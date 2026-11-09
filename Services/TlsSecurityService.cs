@@ -572,6 +572,7 @@ public sealed class TlsSecurityService
     /// <summary>
     /// Establece una conexión TCP + TLS 1.3/1.2 (incluyendo soporte Ed25519 mTLS) hacia el host y puerto indicados.
     /// </summary>
+    [System.Diagnostics.DebuggerNonUserCode]
     public async Task<Stream> ConnectTlsStreamAsync(string host, int port, CancellationToken ct = default)
     {
         var tcp = new TcpClient();
@@ -596,7 +597,26 @@ public sealed class TlsSecurityService
             var protocol = new TlsClientProtocol(netStream);
             var tlsClient = new SepsaBcTlsClient(host, rootCa, clientChain, clientKey, allowUntrusted);
 
-            await Task.Run(() => protocol.Connect(tlsClient), ct);
+            Exception? handshakeError = await Task.Run<Exception?>(() =>
+            {
+                try
+                {
+                    protocol.Connect(tlsClient);
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    return ex;
+                }
+            }, ct);
+
+            if (handshakeError != null)
+            {
+                throw new IOException(
+                    $"Fallo en handshake TLS con {host}:{port}: {handshakeError.Message}",
+                    handshakeError);
+            }
+
             return new BcTlsSocketStream(tcp, protocol);
         }
         catch
@@ -667,6 +687,7 @@ public sealed class TlsSecurityService
 
     // ── Motor TLS 1.3 / 1.2 BouncyCastle con soporte Ed25519 ─────────────────
 
+    [System.Diagnostics.DebuggerNonUserCode]
     private sealed class SepsaBcTlsClient : DefaultTlsClient
     {
         private readonly string _targetHost;
@@ -693,17 +714,35 @@ public sealed class TlsSecurityService
         protected override ProtocolVersion[] GetSupportedVersions() =>
             ProtocolVersion.TLSv13.DownTo(ProtocolVersion.TLSv12);
 
-        protected override IList<ServerName> GetSniServerNames()
+        protected override IList<SignatureAndHashAlgorithm> GetSupportedSignatureAlgorithms()
+        {
+            var result = new List<SignatureAndHashAlgorithm>
+            {
+                SignatureAndHashAlgorithm.ed25519,
+                SignatureAndHashAlgorithm.ed448
+            };
+
+            foreach (SignatureAndHashAlgorithm alg in TlsUtilities.GetDefaultSupportedSignatureAlgorithms(m_context))
+            {
+                if (!result.Contains(alg))
+                    result.Add(alg);
+            }
+
+            return result;
+        }
+
+        protected override IList<ServerName>? GetSniServerNames()
         {
             if (string.IsNullOrWhiteSpace(_targetHost) || IPAddress.TryParse(_targetHost, out _))
-                return [];
-            return [new ServerName(NameType.host_name, Encoding.ASCII.GetBytes(_targetHost))];
+                return null;
+            return new List<ServerName> { new(NameType.host_name, Encoding.ASCII.GetBytes(_targetHost)) };
         }
 
         public override TlsAuthentication GetAuthentication() =>
             new SepsaBcTlsAuthentication(m_context, (BcTlsCrypto)Crypto, _rootCa, _clientChain, _clientPrivateKey, _allowUntrusted);
     }
 
+    [System.Diagnostics.DebuggerNonUserCode]
     private sealed class SepsaBcTlsAuthentication : TlsAuthentication
     {
         private readonly TlsContext _context;
@@ -785,7 +824,19 @@ public sealed class TlsSecurityService
                 .ToArray();
 
             SignatureAndHashAlgorithm sigAlg = DetermineSignatureAlgorithm(_clientPrivateKey, certificateRequest);
-            var certChain = new Certificate(tlsCerts);
+            Certificate certChain;
+            if (TlsUtilities.IsTlsV13(_context))
+            {
+                var entries = tlsCerts
+                    .Select(c => new CertificateEntry(c, null))
+                    .ToArray();
+                byte[] reqCtx = certificateRequest.GetCertificateRequestContext() ?? TlsUtilities.EmptyBytes;
+                certChain = new Certificate(reqCtx, entries);
+            }
+            else
+            {
+                certChain = new Certificate(tlsCerts);
+            }
 
             return new BcDefaultTlsCredentialedSigner(
                 new TlsCryptoParameters(_context),
@@ -832,6 +883,7 @@ public sealed class TlsSecurityService
         }
     }
 
+    [System.Diagnostics.DebuggerNonUserCode]
     private sealed class BcTlsSocketStream(TcpClient tcpClient, TlsClientProtocol protocol) : Stream
     {
         private readonly Stream _inner = protocol.Stream;
@@ -850,17 +902,77 @@ public sealed class TlsSecurityService
         public override void Flush() => _inner.Flush();
         public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
 
-        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            try
+            {
+                return _inner.Read(buffer, offset, count);
+            }
+            catch (TlsNoCloseNotifyException)
+            {
+                return 0;
+            }
+            catch (EndOfStreamException)
+            {
+                return 0;
+            }
+        }
 
-        public override int Read(Span<byte> buffer) => _inner.Read(buffer);
+        public override int Read(Span<byte> buffer)
+        {
+            try
+            {
+                return _inner.Read(buffer);
+            }
+            catch (TlsNoCloseNotifyException)
+            {
+                return 0;
+            }
+            catch (EndOfStreamException)
+            {
+                return 0;
+            }
+        }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return await Task.Run(() => _inner.Read(buffer.Span), cancellationToken);
+            var (bytesRead, error) = await Task.Run<(int, Exception?)>(() =>
+            {
+                try
+                {
+                    return (Read(buffer.Span), null);
+                }
+                catch (Exception ex)
+                {
+                    return (0, ex);
+                }
+            }, cancellationToken);
+
+            if (error != null)
+                throw new IOException($"Error de lectura en stream TLS: {error.Message}", error);
+
+            return bytesRead;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            Task.Run(() => _inner.Read(buffer, offset, count), cancellationToken);
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var (bytesRead, error) = await Task.Run<(int, Exception?)>(() =>
+            {
+                try
+                {
+                    return (Read(buffer, offset, count), null);
+                }
+                catch (Exception ex)
+                {
+                    return (0, ex);
+                }
+            }, cancellationToken);
+
+            if (error != null)
+                throw new IOException($"Error de lectura en stream TLS: {error.Message}", error);
+
+            return bytesRead;
+        }
 
         public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
 
@@ -868,11 +980,41 @@ public sealed class TlsSecurityService
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            await Task.Run(() => _inner.Write(buffer.Span), cancellationToken);
+            Exception? error = await Task.Run<Exception?>(() =>
+            {
+                try
+                {
+                    _inner.Write(buffer.Span);
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    return ex;
+                }
+            }, cancellationToken);
+
+            if (error != null)
+                throw new IOException($"Error de escritura en stream TLS: {error.Message}", error);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            Task.Run(() => _inner.Write(buffer, offset, count), cancellationToken);
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Exception? error = await Task.Run<Exception?>(() =>
+            {
+                try
+                {
+                    _inner.Write(buffer, offset, count);
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    return ex;
+                }
+            }, cancellationToken);
+
+            if (error != null)
+                throw new IOException($"Error de escritura en stream TLS: {error.Message}", error);
+        }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
@@ -892,8 +1034,11 @@ public sealed class TlsSecurityService
     /// HttpMessageHandler que delega peticiones http:// al SocketsHttpHandler estándar y redirige
     /// peticiones https:// a través de un túnel TLS 1.3/1.2 de BouncyCastle (compatible con Ed25519 mTLS en Windows).
     /// </summary>
+    [System.Diagnostics.DebuggerNonUserCode]
     private sealed class BcTlsHttpMessageHandler : HttpMessageHandler
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> PlainHttp8080Endpoints = new(StringComparer.OrdinalIgnoreCase);
+
         private readonly HttpMessageInvoker _plainInvoker;
         private readonly HttpMessageInvoker _bcTlsTunnelInvoker;
 
@@ -925,17 +1070,40 @@ public sealed class TlsSecurityService
             if (originalUri != null && originalUri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
             {
                 int port = originalUri.IsDefaultPort ? 443 : originalUri.Port;
-                var tunnelUriBuilder = new UriBuilder(originalUri)
+                string endpointKey = $"{originalUri.Host}:{port}";
+                var httpEquivalentUri = new UriBuilder(originalUri)
                 {
                     Scheme = "http",
                     Port = port
-                };
-                request.RequestUri = tunnelUriBuilder.Uri;
+                }.Uri;
+
+                // En placas APSComms donde MonitorManager / WebMonitorBackend escucha HTTP en el puerto 8080
+                // (mientras LogGateway 16801 y RecoveryAgent 16800 usan mTLS 1.3), evitamos reintentar TLS en 8080 si ya respondió HTTP plano.
+                if (port == 8080 && PlainHttp8080Endpoints.ContainsKey(endpointKey) && request.Method == HttpMethod.Get)
+                {
+                    request.RequestUri = httpEquivalentUri;
+                    try
+                    {
+                        return await _plainInvoker.SendAsync(request, cancellationToken);
+                    }
+                    finally
+                    {
+                        request.RequestUri = originalUri;
+                    }
+                }
+
+                request.RequestUri = httpEquivalentUri;
                 try
                 {
-                    var response = await _bcTlsTunnelInvoker.SendAsync(request, cancellationToken);
-                    request.RequestUri = originalUri;
-                    return response;
+                    return await _bcTlsTunnelInvoker.SendAsync(request, cancellationToken);
+                }
+                catch (HttpRequestException ex) when (port == 8080 && request.Method == HttpMethod.Get && IsPlainHttpHandshakeRejection(ex))
+                {
+                    PlainHttp8080Endpoints[endpointKey] = true;
+                    using var fallbackReq = new HttpRequestMessage(HttpMethod.Get, httpEquivalentUri);
+                    foreach (var header in request.Headers)
+                        fallbackReq.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    return await _plainInvoker.SendAsync(fallbackReq, cancellationToken);
                 }
                 finally
                 {
@@ -944,6 +1112,16 @@ public sealed class TlsSecurityService
             }
 
             return await _plainInvoker.SendAsync(request, cancellationToken);
+        }
+
+        private static bool IsPlainHttpHandshakeRejection(Exception ex)
+        {
+            for (Exception? cur = ex; cur != null; cur = cur.InnerException)
+            {
+                if (cur is TlsFatalAlert or TlsException)
+                    return true;
+            }
+            return false;
         }
 
         protected override void Dispose(bool disposing)

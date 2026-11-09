@@ -19,32 +19,38 @@ public static class ApsLogClient
 
         if (tlsSecurity is { UseTls: true })
         {
-            // 1. Intentar LogGateway HTTPS mTLS (puerto 16801 por defecto en APSComms secureboot)
+            if (tlsSecurity.LogGatewayTlsPort == Port)
+            {
+                using var tlsConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                tlsConnectTimeout.CancelAfter(TimeSpan.FromSeconds(8));
+                await using var sslStream = await tlsSecurity.ConnectTlsStreamAsync(host, Port, tlsConnectTimeout.Token);
+                return await ReadStreamWithLimitAsync(sslStream, cancellationToken);
+            }
+
             try
             {
                 using var httpClient = tlsSecurity.CreateHttpClient(TimeSpan.FromSeconds(30));
                 var url = $"https://{host}:{tlsSecurity.LogGatewayTlsPort}/api/v1/logs";
                 using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                if (response.IsSuccessStatusCode)
-                {
-                    await using var respStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    return await ReadStreamWithLimitAsync(respStream, cancellationToken);
-                }
+                response.EnsureSuccessStatusCode();
+                await using var respStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                return await ReadStreamWithLimitAsync(respStream, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback al stream TLS directo en el puerto 9882
+                string certHint = !tlsSecurity.HasClientCertificate
+                    ? " Asegúrate de haber cargado el certificado 'sepsa_aps_log_reader.pem' + '.key' (Perfil Log Reader mTLS)."
+                    : !tlsSecurity.ClientCertSubject.Contains("APS Log Reader", StringComparison.OrdinalIgnoreCase)
+                        ? $" El certificado activo ({tlsSecurity.ClientCertSubject}) no es 'CN=APS Log Reader'; LogGateway exige 'sepsa_aps_log_reader.pem'."
+                        : "";
+                throw new InvalidOperationException(
+                    $"Error al descargar logs por mTLS desde https://{host}:{tlsSecurity.LogGatewayTlsPort}/api/v1/logs: {ex.Message}.{certHint}",
+                    ex);
             }
-
-            // 2. Stream TCP+TLS directo en el puerto 9882
-            using var tlsConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            tlsConnectTimeout.CancelAfter(TimeSpan.FromSeconds(8));
-            await using var sslStream = await tlsSecurity.ConnectTlsStreamAsync(host, Port, tlsConnectTimeout.Token);
-            return await ReadStreamWithLimitAsync(sslStream, cancellationToken);
         }
 
         // Modo Tradicional: TCP directo en claro al puerto 9882
