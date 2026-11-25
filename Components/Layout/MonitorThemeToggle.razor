@@ -1,13 +1,12 @@
 @inject MonitorThemeService Theme
 @implements IDisposable
 
-<div class="px-4 py-3">
-    <MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@(Theme.IsDark ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)" OnClick="Theme.ToggleAsync">
-        @(Theme.IsDark ? Ui["Switch to light theme"] : Ui["Switch to dark theme"])
-    </MudButton>
-</div>
+<MudIconButton Icon="@(Theme.IsDark ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)"
+               Color="Color.Inherit" Size="Size.Small" OnClick="Theme.ToggleAsync"
+               title="@Label" aria-label="@Label" />
 
 @code {
+    private string Label => Theme.IsDark ? Ui["Switch to light theme"] : Ui["Switch to dark theme"];
     protected override void OnInitialized() => Theme.Changed += Refresh;
     private void Refresh() => _ = InvokeAsync(StateHasChanged);
     public void Dispose() => Theme.Changed -= Refresh;

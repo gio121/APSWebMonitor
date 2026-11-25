@@ -40,6 +40,9 @@ public class MonitorStateService : IDisposable
     private int _reprogramming;
     private readonly object _operationLock = new();
     private bool _changingProject;
+    private int _openPlaybackSessions;
+    private bool _resumeAfterPlayback;
+    public bool IsPlaybackOpen { get { lock (_operationLock) return _openPlaybackSessions > 0; } }
     private Task _monitoringTask = Task.CompletedTask;
     private readonly SemaphoreSlim _protocolGate = new(1, 1);
     public bool IsReprogramming => Volatile.Read(ref _reprogramming) != 0;
@@ -270,6 +273,7 @@ public class MonitorStateService : IDisposable
     /// </summary>
     public void Disconnect()
     {
+        lock (_operationLock) _resumeAfterPlayback = false;
         _connectionHealth.Reset();
         StopMonitoring();
         IsConnected = false;
@@ -316,7 +320,7 @@ public class MonitorStateService : IDisposable
     {
         lock (_operationLock)
         {
-            if (!IsConnected || IsMonitoring || IsReprogramming || _downloadingControlEvents || _changingProject) return;
+            if (!IsConnected || IsMonitoring || IsReprogramming || _downloadingControlEvents || _changingProject || _openPlaybackSessions > 0) return;
 
             IsMonitoring = true;
             SessionId = $"{DateTime.UtcNow:yyyyMMddTHHmmssZ}_{Guid.NewGuid():N}";
@@ -331,8 +335,41 @@ public class MonitorStateService : IDisposable
     }
 
     /// <summary>
-    /// Detiene el bucle de monitorización.
+    /// Suspende la monitorización hasta cerrar todas las sesiones de reproducción.
     /// </summary>
+    public IDisposable SuspendForSession()
+    {
+        lock (_operationLock)
+        {
+            if (_openPlaybackSessions++ == 0)
+                _resumeAfterPlayback = IsMonitoring;
+            StopMonitoring();
+        }
+        NotifyStateChanged();
+        return new PlaybackSuspension(this);
+    }
+
+    private void ReleasePlaybackSession()
+    {
+        lock (_operationLock)
+        {
+            if (--_openPlaybackSessions == 0)
+            {
+                bool resume = _resumeAfterPlayback;
+                _resumeAfterPlayback = false;
+                if (resume) StartMonitoring();
+            }
+        }
+        NotifyStateChanged();
+    }
+
+    private sealed class PlaybackSuspension(MonitorStateService owner) : IDisposable
+    {
+        private MonitorStateService? _owner = owner;
+        public void Dispose() => Interlocked.Exchange(ref _owner, null)?.ReleasePlaybackSession();
+    }
+
+    /// <summary>Detiene el bucle de monitorización.</summary>
     public void StopMonitoring()
     {
         if (!IsMonitoring) return;

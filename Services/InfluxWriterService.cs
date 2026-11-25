@@ -18,6 +18,7 @@ public sealed class InfluxWriterService : BackgroundService
     private readonly object _gate = new();
     private readonly string? _configurationError;
     private string? _error;
+    private volatile bool _enabled;
     private long _pending, _written, _dropped;
     private DateTimeOffset? _lastWrite;
 
@@ -26,10 +27,10 @@ public sealed class InfluxWriterService : BackgroundService
     public InfluxWriterService(IOptions<InfluxOptions> options, IHttpClientFactory clients)
     {
         _options = options.Value;
+        _enabled = _options.Enabled;
         _clients = clients;
         _queue = Channel.CreateBounded<string>(new BoundedChannelOptions(Math.Clamp(_options.QueueCapacity, 1, 1000000))
         { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
-        if (_options.Enabled)
         {
             if (!Uri.TryCreate(_options.Url, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "http" && uri.Scheme != "https") || !string.IsNullOrEmpty(uri.UserInfo) ||
@@ -47,12 +48,18 @@ public sealed class InfluxWriterService : BackgroundService
 
     public InfluxStatus Status
     {
-        get { lock (_gate) return new(_options.Enabled, _error, _pending, _written, _dropped, _lastWrite); }
+        get { lock (_gate) return new(_enabled, _error, _pending, _written, _dropped, _lastWrite); }
+    }
+
+    public void SetEnabled(bool enabled)
+    {
+        lock (_gate) _enabled = enabled;
+        Notify();
     }
 
     public void Enqueue(string device, string session, int node, int signalId, string signal, double value, long timestampNs)
     {
-        if (!_options.Enabled || _configurationError != null) return;
+        if (!_enabled || _configurationError != null) return;
         if (!double.IsFinite(value) || new[] { device, session, signal }.Any(x => x.Any(char.IsControl)))
         {
             lock (_gate) _dropped++;
@@ -61,6 +68,7 @@ public sealed class InfluxWriterService : BackgroundService
         var line = $"aps_monitor,equipo={Tag(device)},Sesion={Tag(session)},nodo={node.ToString(CultureInfo.InvariantCulture)},signal_id={signalId.ToString(CultureInfo.InvariantCulture)},senal={Tag(string.IsNullOrEmpty(signal) ? signalId.ToString(CultureInfo.InvariantCulture) : signal)} valor={value.ToString("R", CultureInfo.InvariantCulture)} {timestampNs.ToString(CultureInfo.InvariantCulture)}";
         lock (_gate)
         {
+            if (!_enabled) return;
             if (_queue.Writer.TryWrite(line)) _pending++;
             else _dropped++;
         }
@@ -70,7 +78,7 @@ public sealed class InfluxWriterService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_options.Enabled || _configurationError != null) return;
+        if (_configurationError != null) return;
         var batch = new List<string>();
         using var client = _clients.CreateClient("InfluxDB");
         var endpoint = $"{_options.Url.TrimEnd('/')}/api/v2/write?org={Uri.EscapeDataString(_options.Organization)}&bucket={Uri.EscapeDataString(_options.Bucket)}&precision=ns";
@@ -79,6 +87,7 @@ public sealed class InfluxWriterService : BackgroundService
             while (!stoppingToken.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(_options.FlushIntervalSeconds), stoppingToken);
+                if (!_enabled) continue;
                 while (batch.Count < _options.BatchSize && _queue.Reader.TryRead(out var line)) batch.Add(line);
                 if (batch.Count == 0) { Notify(); continue; }
                 try
@@ -86,7 +95,15 @@ public sealed class InfluxWriterService : BackgroundService
                     using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                     request.Headers.Authorization = new AuthenticationHeaderValue("Token", _options.Token);
                     request.Content = new StringContent(string.Join('\n', batch), Encoding.UTF8, "text/plain");
-                    using var response = await client.SendAsync(request, stoppingToken);
+                    // Serialize starting a request with the UI toggle. An already-started
+                    // request can finish; paused batches remain available for resuming.
+                    Task<HttpResponseMessage> sendTask;
+                    lock (_gate)
+                    {
+                        if (!_enabled) continue;
+                        sendTask = client.SendAsync(request, stoppingToken);
+                    }
+                    using var response = await sendTask;
                     lock (_gate)
                     {
                         if (response.IsSuccessStatusCode)

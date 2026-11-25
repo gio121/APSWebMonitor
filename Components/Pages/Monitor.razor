@@ -14,6 +14,11 @@
 <div class="d-flex justify-space-between align-center mb-4 mt-n2">
     <MudText Typo="Typo.h5" Class="fw-bold">@Ui["Live monitor"]</MudText>
     <div class="d-flex align-center gap-2">
+        <MudButton Variant="Variant.Outlined"
+                   Color="@(_influxStatus.Enabled ? Color.Success : Color.Default)"
+                   OnClick="ToggleInflux">
+            @(_influxStatus.Enabled ? "Deshabilitar envío a InfluxDB" : "Habilitar envío a InfluxDB")
+        </MudButton>
         <MudChip T="string"
                  Color="@(MonitorState.UseTls ? Color.Info : Color.Default)"
                  Variant="Variant.Outlined"
@@ -38,6 +43,10 @@
         {
             <MudText Color="Color.Warning">@_influxStatus.Error</MudText>
         }
+    }
+    @if (!_influxStatus.Enabled && _influxStatus.Pending > 0)
+    {
+        <MudText Typo="Typo.caption">Muestras pendientes en pausa: @_influxStatus.Pending</MudText>
     }
 </MudPaper> *@
 
@@ -114,6 +123,7 @@
                            Color="@(MonitorState.IsMonitoring ? Color.Warning : Color.Primary)"
                            FullWidth="true"
                            OnClick="ToggleMonitoring"
+                           Disabled="MonitorState.IsPlaybackOpen"
                            Class="mt-2 fw-bold">
                     @if (MonitorState.IsMonitoring)
                     {
@@ -643,6 +653,7 @@ else
 
 @code {
     private InfluxStatus _influxStatus = new(false, null, 0, 0, 0, null);
+    private void ToggleInflux() => InfluxWriter.SetEnabled(!InfluxWriter.Status.Enabled);
     private void OnInfluxChanged() => _ = InvokeAsync(() =>
     {
         _influxStatus = InfluxWriter.Status;

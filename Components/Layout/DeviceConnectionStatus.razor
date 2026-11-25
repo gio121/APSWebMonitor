@@ -1,5 +1,6 @@
 @implements IAsyncDisposable
 @inject MonitorStateService Monitor
+@inject SessionStateService Session
 @inject TlsSecurityService TlsSecurity
 @inject IDialogService DialogService
 
@@ -12,15 +13,19 @@
         <span>Modo: @TlsSecurity.ModeDisplayName</span>
     </button>
     <span class="device-status-item" title="@Description(_state.Communications)">
-        <span class="device-status-dot @(_state.Communications ? "online" : "offline")" aria-hidden="true"></span>
+        <span class="device-status-dot @StatusClass(_state.Communications)" aria-hidden="true"></span>
         <span>@Ui["Communications"]</span>
-        <span class="device-status-accessible">: @(_state.Communications ? Ui["connected"] : Ui["disconnected"])</span>
+        <span class="device-status-accessible">: @StatusText(_state.Communications)</span>
     </span>
     <span class="device-status-item" title="@Description(_state.Control)">
-        <span class="device-status-dot @(_state.Control ? "online" : "offline")" aria-hidden="true"></span>
+        <span class="device-status-dot @StatusClass(_state.Control)" aria-hidden="true"></span>
         <span>Control</span>
-        <span class="device-status-accessible">: @(_state.Control ? Ui["connected"] : Ui["disconnected"])</span>
+        <span class="device-status-accessible">: @StatusText(_state.Control)</span>
     </span>
+    @if (Session.IsLoaded)
+    {
+        <span>@Ui["Session playback"]</span>
+    }
 </footer>
 
 @code {
@@ -30,12 +35,22 @@
 
     protected override void OnInitialized()
     {
-        _state = Monitor.DeviceConnections;
+        _state = CurrentConnections;
         TlsSecurity.OnChanged += OnTlsChanged;
+        Session.OnStateChanged += OnSessionChanged;
         _refresh = RefreshAsync();
     }
 
     private void OnTlsChanged() => _ = InvokeAsync(StateHasChanged);
+    private void OnSessionChanged() => _ = InvokeAsync(() =>
+    {
+        _state = CurrentConnections;
+        StateHasChanged();
+    });
+
+    private (bool Communications, bool Control) CurrentConnections => Session.IsLoaded ? Session.DeviceConnections : Monitor.DeviceConnections;
+    private string StatusClass(bool connected) => connected ? "online" : "offline";
+    private string StatusText(bool connected) => connected ? Ui["connected"] : Ui["disconnected"];
 
     private async Task OpenTlsSettingsAsync()
     {
@@ -48,7 +63,9 @@
         await DialogService.ShowAsync<TlsSettingsDialog>("Seguridad de Comunicaciones", options);
     }
 
-    private static string Description(bool connected) => connected
+    private string Description(bool connected) => Session.IsLoaded
+        ? connected ? Ui["Session: response received from this device."] : Ui["Session: no response received from this device yet."]
+        : connected
         ? ApsMonitor.Resources.MonitorResources.Text("Connected: SEPSA response received within the last 3 seconds.")
         : ApsMonitor.Resources.MonitorResources.Text("Connection unconfirmed: no recent SEPSA responses received.");
 
@@ -60,7 +77,7 @@
             while (await timer.WaitForNextTickAsync(_stop.Token))
                 await InvokeAsync(() =>
                 {
-                    var next = Monitor.DeviceConnections;
+                    var next = CurrentConnections;
                     if (next == _state) return;
                     _state = next;
                     StateHasChanged();
@@ -72,6 +89,7 @@
     public async ValueTask DisposeAsync()
     {
         TlsSecurity.OnChanged -= OnTlsChanged;
+        Session.OnStateChanged -= OnSessionChanged;
         await _stop.CancelAsync();
         if (_refresh is not null) await _refresh;
         _stop.Dispose();

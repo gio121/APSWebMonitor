@@ -29,6 +29,11 @@ var text = string.Join("\n", frames.Select((f, i) => $"2026-10-29 09:50:36.{i * 
 var parser = new SessionParserService();
 var dataset = parser.Parse(Encoding.ASCII.GetBytes(text), signals)!;
 Check(dataset.FrameCount == 2, "Polling requests must not become telemetry snapshots.");
+Check(dataset.DeviceConnections[0] == (true, false), "Communications response only activates communications.");
+Check(dataset.DeviceConnections[1] == (true, true), "Copy response activates control independently of its gateway source.");
+var controlOnly = parser.Parse(Encoding.ASCII.GetBytes($"2026-10-29 09:50:36.000;{Convert.ToHexString(frames[3])}"), signals)!;
+Check(controlOnly.DeviceConnections[0] == (false, true), "Control-only session must not invent communications responses.");
+Check(dataset.DeviceConnections[0] == (true, false), "Seeking backwards restores the state before control responded.");
 for (var row = 0; row < dataset.FrameCount; row++)
     Check(new string(Enumerable.Range(0, 6).Select(i => (char)dataset.RawValues[row, i]).ToArray()) == "B160KX",
         "Communications software must survive intervening requests/control responses.");

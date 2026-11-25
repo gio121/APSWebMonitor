@@ -35,8 +35,13 @@ public sealed class DeviceConnectionHealth(TimeProvider? clock = null)
         if (frame[^1] != (byte)sum && frame[^1] != (byte)(sum + 2)) return;
         lock (_gate)
         {
-            if (frame[4] == 2) _control = _clock.GetTimestamp();
-            else _communications = _clock.GetTimestamp();
+            // ControlManager is the communications gateway, including for forwarded
+            // control responses. A reply from control also confirms this transport.
+            long now = _clock.GetTimestamp();
+            _communications = now;
+            // Monitoring response 0x15 carries control data even when the gateway
+            // keeps its own source address (3) in the response header.
+            if (frame[4] == 2 || frame[5] == 0x15) _control = now;
         }
     }
 }

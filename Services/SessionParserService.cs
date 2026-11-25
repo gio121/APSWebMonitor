@@ -291,6 +291,11 @@ public class SessionParserService
 
         dataset.Timestamps[processedFrames] = timestamp - startTime.Value;
         dataset.AbsoluteTimestamps[processedFrames] = timestamp;
+        // MON/frmMain.ProcessFrame maps GET_DATA_COPY_RESPONSE (0x15)
+        // to control (2); other responses retain their source node.
+        dataset.ResponseNodes[processedFrames] = frameData[0] == 0xAA
+            ? frameData[5] == 0x15 ? 2 : frameData[4]
+            : matchingNode.Value;
 
         for (int s = 0; s < dataset.SignalCount; s++)
         {
@@ -314,6 +319,7 @@ public class SessionParserService
         // 2. Crear el nuevo dataset
         var @new = new SessionDataset(count, old.SignalIds);
         DateTime minTime = old.AbsoluteTimestamps[indices[0]];
+        bool communications = false, control = false;
 
         for (int i = 0; i < count; i++)
         {
@@ -322,6 +328,10 @@ public class SessionParserService
             // Tiempos
             @new.AbsoluteTimestamps[i] = old.AbsoluteTimestamps[oldIdx];
             @new.Timestamps[i] = @new.AbsoluteTimestamps[i] - minTime;
+            @new.ResponseNodes[i] = old.ResponseNodes[oldIdx];
+            communications |= @new.ResponseNodes[i] == 3;
+            control |= @new.ResponseNodes[i] == 2;
+            @new.DeviceConnections[i] = (communications, control);
 
             // Valores de todas las señales
             for (int s = 0; s < old.SignalCount; s++)

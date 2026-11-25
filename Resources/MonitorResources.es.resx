@@ -4739,4 +4739,8 @@ La monitorización continua activa se detendrá temporalmente durante la transfe
   <data name="Hide element in viewer" xml:space="preserve"><value>Ocultar elemento en el visor</value></data>
   <data name="Only in administrator mode" xml:space="preserve"><value>Solo en modo administrador</value></data>
   <data name="Fallback signal when data is missing" xml:space="preserve"><value>Señal alternativa si falta el dato</value></data>
+  <data name="Session playback" xml:space="preserve"><value>Reproducción de sesión</value></data>
+  <data name="Session playback: live connections are not evaluated." xml:space="preserve"><value>Reproducción de sesión: no se evalúan las conexiones en directo.</value></data>
+  <data name="Session: response received from this device." xml:space="preserve"><value>Sesión: se ha recibido respuesta de este equipo.</value></data>
+  <data name="Session: no response received from this device yet." xml:space="preserve"><value>Sesión: todavía no se ha recibido respuesta de este equipo.</value></data>
 </root>

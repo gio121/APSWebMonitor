@@ -1033,7 +1033,7 @@ else
             }
 
             string label = $"Buffer {_boardHost} ({FormatUsTimeOnly(_selectedFromUs)}–{FormatUsTimeOnly(_selectedToUs)})";
-            SessionState.LoadSession(dataset, signals, label);
+            await SessionState.LoadSessionAsync(dataset, signals, label);
             Snackbar.Add($"Sesión del buffer circular cargada ({dataset.FrameCount:N0} snapshots de señales).", Severity.Success);
         }
         catch (Exception ex)
@@ -1267,7 +1267,7 @@ else
                 return;
             }
 
-            SessionState.LoadSession(dataset, signals, file.Name);
+            await SessionState.LoadSessionAsync(dataset, signals, file.Name);
             Snackbar.Add($"Session loaded successfully.", Severity.Success);
         }
         catch (Exception ex)

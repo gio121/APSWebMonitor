@@ -110,7 +110,7 @@
                             <!-- Failures Row -->
                             <div class="ind-row">
                                 <span class="ind-label">@Ui["Failures:"]</span>
-                                <div class="ind-field @(failureDisplay.Retained ? "ind-failure-retained" : "")" title="@failuresList">@failuresList</div>
+                                <div class="ind-field ind-failure-text @(failureDisplay.Retained ? "ind-failure-retained" : "")" title="@failuresList">@failuresList</div>
                             </div>
 
                             <!-- Failures Counter Row -->
@@ -337,6 +337,7 @@
 
     .failures-top-panel.expanded {
         max-height: var(--viewer-cards-height);
+        overflow-y: auto;
         opacity: 1;
     }
 
@@ -380,6 +381,13 @@
     .sinoptico-viewer-layout .ind-card-title { font-size: 12px; }
     .sinoptico-viewer-layout .ind-label { min-width: 105px; }
     .sinoptico-viewer-layout .ind-field { padding: 3px 7px; min-height: 24px; }
+    .sinoptico-viewer-layout .ind-field.ind-failure-text {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        overflow: visible;
+        text-overflow: clip;
+    }
     .sinoptico-viewer-layout .ind-status-text-btn { height: 26px; }
     .sinoptico-viewer-layout .converter-versions { flex-shrink: 0; }
     .sinoptico-viewer-layout .converter-versions section { padding: 6px 8px; }

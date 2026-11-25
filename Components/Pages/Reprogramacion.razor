@@ -82,7 +82,7 @@
             else
             {
                 <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartMonitoring" Disabled="Busy">
+                           StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartMonitoring" Disabled="@(Busy || Monitor.IsPlaybackOpen)">
                     @Ui["Start pre-update monitoring"]
                 </MudButton>
             }

@@ -10,9 +10,11 @@
         <AuthorizeView Policy="Page:eventos-control"><MudNavLink Href="/eventos-control" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.ListAlt">@Ui["Control events"]</MudNavLink></AuthorizeView>
         <AuthorizeView Policy="Page:analizador-sesiones"><MudNavLink Href="/analizador-sesiones" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.QueryStats">@Ui["Analyser"]</MudNavLink></AuthorizeView>
         <AuthorizeView Policy="Page:comandos"><MudNavLink Href="/comandos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Terminal">@Ui["Commands"]</MudNavLink></AuthorizeView>
-        <AuthorizeView Policy="Page:trdp"><MudNavLink Href="/trdp" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Router">TRDP Config</MudNavLink></AuthorizeView>
+        @* <AuthorizeView Policy="Page:trdp"><MudNavLink Href="/trdp" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Router">TRDP Config</MudNavLink></AuthorizeView>
         <AuthorizeView Policy="Page:trdp-live"><MudNavLink Href="/trdp-live" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Stream">TRDP Live</MudNavLink></AuthorizeView>
         <AuthorizeView Policy="Page:configuracion-red"><MudNavLink Href="/configuracion-red" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.SettingsEthernet">@Ui["Network and DHCP"]</MudNavLink></AuthorizeView>
+        las 3 pages estan comentadas, pero no se han borrado por si acaso.
+         *@
         <AuthorizeView Roles="Administrador"><MudNavLink Href="/administracion" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Settings">@Ui["Administration"]</MudNavLink></AuthorizeView>
 </MudNavMenu>
 

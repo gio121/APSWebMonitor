@@ -4739,4 +4739,8 @@ Start the firmware update?</value>
   <data name="Hide element in viewer" xml:space="preserve"><value>Hide element in viewer</value></data>
   <data name="Only in administrator mode" xml:space="preserve"><value>Only in administrator mode</value></data>
   <data name="Fallback signal when data is missing" xml:space="preserve"><value>Fallback signal when data is missing</value></data>
+  <data name="Session playback" xml:space="preserve"><value>Session playback</value></data>
+  <data name="Session playback: live connections are not evaluated." xml:space="preserve"><value>Session playback: live connections are not evaluated.</value></data>
+  <data name="Session: response received from this device." xml:space="preserve"><value>Session: response received from this device.</value></data>
+  <data name="Session: no response received from this device yet." xml:space="preserve"><value>Session: no response received from this device yet.</value></data>
 </root>

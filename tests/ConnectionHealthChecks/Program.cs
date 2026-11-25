@@ -16,7 +16,7 @@ byte[] Frame(byte node)
 }
 Check(health.Snapshot() == (false, false), "Initially disconnected");
 health.Observe(Frame(2));
-Check(health.Snapshot() == (false, true), "Control response does not claim communications");
+Check(health.Snapshot() == (true, true), "Control response confirms communications gateway too");
 clock.Advance(2);
 health.Observe(Frame(3));
 Check(health.Snapshot() == (true, true), "Independent responses");
@@ -39,6 +39,13 @@ Check(health.Snapshot() == (true, false), "Existing checksum variant supported")
 health.Observe(Frame(2));
 health.Reset();
 Check(health.Snapshot() == (false, false), "Disconnect or target change clears both states");
+var forwardedControl = Frame(3);
+forwardedControl[5] = 0x15;
+forwardedControl[^1] += 3;
+health.Observe(forwardedControl);
+Check(health.Snapshot() == (true, true), "Gateway control telemetry confirms both devices");
+clock.Advance(3);
+Check(health.Snapshot() == (false, false), "Forwarded telemetry expires without new traffic");
 Console.WriteLine($"PASS: {checks} device connection checks.");
 
 sealed class ManualClock : TimeProvider

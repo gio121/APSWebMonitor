@@ -19,6 +19,9 @@ public class SessionDataset
     // Tiempos para cada frame
     public TimeSpan[] Timestamps { get; }
     public DateTime[] AbsoluteTimestamps { get; }
+    // Node confirmed by each recorded response, and accumulated playback state.
+    public int[] ResponseNodes { get; }
+    public (bool Communications, bool Control)[] DeviceConnections { get; }
     
     // Mapeo: SignalId -> Index en la dimensión [SignalCount]
     public Dictionary<int, int> SignalIdToIndex { get; } = new();
@@ -34,6 +37,8 @@ public class SessionDataset
         RawValues = new double[frameCount, SignalCount];
         Timestamps = new TimeSpan[frameCount];
         AbsoluteTimestamps = new DateTime[frameCount];
+        ResponseNodes = new int[frameCount];
+        DeviceConnections = new (bool Communications, bool Control)[frameCount];
 
         for (int i = 0; i < signalIds.Count; i++)
         {

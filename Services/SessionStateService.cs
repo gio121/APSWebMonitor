@@ -7,8 +7,9 @@ namespace ApsMonitor.Services;
 /// Servicio compartido (Scoped) que mantiene el estado de la sesión cargada.
 /// Motor de reproducción basado en Stopwatch para máxima estabilidad.
 /// </summary>
-public class SessionStateService : IDisposable
+public class SessionStateService(MonitorStateService monitor) : IDisposable
 {
+    private IDisposable? _monitorSuspension;
     private System.Threading.Timer? _playTimer;
     private Stopwatch? _playStopwatch;
     private TimeSpan _playStartSessionTime; // Timestamp de la sesión cuando se pulsó Play
@@ -22,6 +23,9 @@ public class SessionStateService : IDisposable
     public int CurrentFrame { get; set; } = 0;
     public bool IsPlaying { get; private set; } = false;
     public bool IsLoaded => Dataset != null && Dataset.FrameCount > 0;
+    public (bool Communications, bool Control) DeviceConnections => IsLoaded
+        ? Dataset!.DeviceConnections[Math.Clamp(CurrentFrame, 0, Dataset.FrameCount - 1)]
+        : (false, false);
     public TimeSpan TotalDuration => IsLoaded ? Dataset!.Timestamps[Dataset.FrameCount - 1] : TimeSpan.Zero;
 
     public double VelocidadActual { get; set; } = 1;
@@ -31,8 +35,15 @@ public class SessionStateService : IDisposable
 
     public event Action? OnStateChanged;
 
-    public void LoadSession(SessionDataset dataset, List<Signal> signals, string fileName)
+    public async Task LoadSessionAsync(SessionDataset dataset, List<Signal> signals, string fileName)
     {
+        if (dataset.FrameCount == 0)
+            throw new ArgumentException("The session contains no frames.", nameof(dataset));
+
+        var suspension = _monitorSuspension ??= monitor.SuspendForSession();
+        await monitor.WaitForMonitoringStoppedAsync();
+        // Closing the session while the monitor was stopping cancels this load.
+        if (!ReferenceEquals(_monitorSuspension, suspension)) return;
         Stop();
         Dataset = dataset;
         Signals = signals;
@@ -113,6 +124,7 @@ public class SessionStateService : IDisposable
         Signals = new List<Signal>();
         FileName = string.Empty;
         CurrentFrame = 0;
+        Interlocked.Exchange(ref _monitorSuspension, null)?.Dispose();
         NotifyStateChanged();
     }
 
@@ -195,7 +207,9 @@ public class SessionStateService : IDisposable
 
     public void Dispose()
     {
+        IsPlaying = false;
         _playTimer?.Dispose();
         _playStopwatch?.Stop();
+        Interlocked.Exchange(ref _monitorSuspension, null)?.Dispose();
     }
 }

@@ -60,7 +60,28 @@ foreach (var options in new[] { new InfluxOptions(), new InfluxOptions { Enabled
     Check(!options.Enabled || writer.Status.Error != null, "Configuration error missing");
     await writer.StopAsync(default);
 }
-Console.WriteLine("PASS: batching, timestamps, culture, escaping, token, retry, queue limits, errors, disabled/configuration.");
+var toggled = new CaptureHandler(HttpStatusCode.NoContent);
+var initiallyDisabled = Config();
+initiallyDisabled.Enabled = false;
+using (var writer = new InfluxWriterService(Options.Create(initiallyDisabled), new ClientFactory(toggled)))
+{
+    await writer.StartAsync(default);
+    writer.Enqueue("d", "s", 1, 1, "disabled", 1, 1);
+    Check(writer.Status.Pending == 0, "Initially disabled writer accepted a sample");
+    writer.SetEnabled(true);
+    writer.Enqueue("d", "s", 1, 1, "queued", 1, 2);
+    writer.SetEnabled(false);
+    writer.Enqueue("d", "s", 1, 1, "paused", 1, 3);
+    await Task.Delay(1200);
+    Check(!writer.Status.Enabled && writer.Status.Pending == 1 && toggled.Requests.IsEmpty,
+        "Paused writer sent or accepted samples");
+    writer.SetEnabled(true);
+    await Until(() => writer.Status.Written == 1);
+    Check(writer.Status.Enabled && writer.Status.Pending == 0 && toggled.Requests.Count == 1,
+        "Resuming did not flush the pending sample");
+    await writer.StopAsync(default);
+}
+Console.WriteLine("PASS: batching, timestamps, culture, escaping, token, retry, queue limits, errors, disabled/configuration, runtime toggle.");
 
 sealed class ClientFactory(HttpMessageHandler handler) : IHttpClientFactory
 {
